@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { buscarLocal, estiloMarca } from "@/lib/locales";
 import { clienteActual, toquePendienteActual } from "@/lib/sesion-cliente";
 import { CabeceraLocal } from "@/components/CabeceraLocal";
+import { formasTermino } from "@/lib/terminos";
 import { FormRegistro } from "./FormRegistro";
 
 export const metadata = { title: "Creá tu tarjeta" };
@@ -24,7 +25,7 @@ export default async function Registro() {
           +1 punto te espera
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Creá tu tarjeta</h1>
-        <p className="text-stone-600">Es una sola vez. La próxima, el mozo apoya el llavero y sumás al toque.</p>
+        <p className="text-stone-600">Es una sola vez. La próxima, el {formasTermino(local.termino_personal).singular} apoya el llavero y sumás al toque.</p>
       </div>
       <div className="mt-8">
         <FormRegistro slug={local.slug} />

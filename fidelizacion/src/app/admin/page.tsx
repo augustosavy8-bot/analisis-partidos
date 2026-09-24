@@ -16,13 +16,13 @@ type Resumen = {
 const MOTIVOS: Record<string, string> = {
   limite: "Toque antes de tiempo",
   chip_invalido: "Chip desconocido",
-  chip_sin_mozo: "Chip sin mozo",
+  chip_sin_mozo: "Chip sin asignar",
   modo_prueba_off: "Chip de prueba (apagado)",
   qr_usado: "QR reusado",
   qr_vencido: "QR vencido o adulterado",
-  qr_invalido: "QR de mozo inactivo",
+  qr_invalido: "QR de personal inactivo",
   local_inactivo: "Local inactivo",
-  mozo_invalido: "Mozo inválido",
+  mozo_invalido: "Personal inválido",
   sun_invalido: "Llavero 424: datos ilegibles",
   sun_cmac: "Llavero 424: firma inválida",
   sun_repetido: "Llavero 424: toque repetido",
@@ -70,7 +70,7 @@ export default async function Estado() {
                       {!l.activo && <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">inactivo</span>}
                     </p>
                     <p className="text-xs text-stone-500">
-                      /{l.slug} · {l.duenos} {l.duenos === 1 ? "dueño" : "dueños"} · {l.mozos} mozos ·{" "}
+                      /{l.slug} · {l.duenos} {l.duenos === 1 ? "dueño" : "dueños"} · {l.mozos} en el equipo ·{" "}
                       {l.chips_produccion} chips{l.chips_prueba > 0 && ` + ${l.chips_prueba} de prueba`}
                     </p>
                   </div>

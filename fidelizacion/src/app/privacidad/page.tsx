@@ -12,7 +12,7 @@ export default function Privacidad() {
           <h2 className="font-semibold text-stone-900">Qué datos guardamos</h2>
           <p>
             Tu nombre, tu número de WhatsApp, la fecha en que aceptaste esta política, los puntos
-            que sumás y canjeás en cada local (con fecha, hora y mozo que te atendió) y un
+            que sumás y canjeás en cada local (con fecha, hora y quién te atendió) y un
             identificador anónimo de tu celular para reconocerte sin pedirte contraseña.
           </p>
         </section>

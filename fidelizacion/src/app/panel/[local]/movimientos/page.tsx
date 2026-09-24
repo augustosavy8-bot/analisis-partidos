@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fechaHora, requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
+import { formasTermino } from "@/lib/terminos";
 
 export const metadata = { title: "Movimientos" };
 
@@ -57,7 +58,7 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
         <Link href={filtro({ tipo: "suma" })} className={chip(tipo === "suma")}>Puntos</Link>
         <Link href={filtro({ tipo: "canje" })} className={chip(tipo === "canje")}>Canjes</Link>
         <span className="mx-1 w-px bg-stone-200" />
-        <Link href={filtro({ mozo: null })} className={chip(!mozo)}>Todos los mozos</Link>
+        <Link href={filtro({ mozo: null })} className={chip(!mozo)}>Todos los {formasTermino(local.termino_personal).plural}</Link>
         {(mozos ?? []).map((m) => (
           <Link key={m.id} href={filtro({ mozo: m.id })} className={chip(mozo === m.id)}>
             {m.nombre}

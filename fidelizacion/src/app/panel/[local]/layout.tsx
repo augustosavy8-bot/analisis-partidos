@@ -4,6 +4,7 @@ import { localesDelUsuario, requerirLocal } from "@/lib/panel";
 import { LogoLocal } from "@/components/CabeceraLocal";
 import { salir } from "../ingresar/actions";
 import { NavPanel } from "./NavPanel";
+import { formasTermino } from "@/lib/terminos";
 
 export default async function LayoutPanel({ children, params }: LayoutProps<"/panel/[local]">) {
   const { local: slug } = await params;
@@ -30,7 +31,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
             </form>
           </div>
           <div className="mt-3 pb-3">
-            <NavPanel slug={slug} />
+            <NavPanel slug={slug} personal={formasTermino(local.termino_personal).Plural} />
           </div>
         </div>
       </header>

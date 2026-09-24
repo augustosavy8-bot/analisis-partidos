@@ -2,12 +2,14 @@ import Link from "next/link";
 import { requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { AccionesMozo, FormNuevoMozo } from "./Formularios";
+import { formasTermino } from "@/lib/terminos";
 
-export const metadata = { title: "Mozos" };
+export const metadata = { title: "Equipo" };
 
 export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos">) {
   const { local: slug } = await params;
   const { db, local } = await requerirLocal(slug);
+  const t = formasTermino(local.termino_personal);
   const [{ data: mozos }, { data: chips }] = await Promise.all([
     db.from("mozos").select("id, nombre, activo").eq("local_id", local.id).order("activo", { ascending: false }).order("nombre"),
     db.from("chips").select("id, uid, etiqueta, modo, mozo_id, activo").eq("local_id", local.id),
@@ -15,9 +17,9 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
 
   return (
     <>
-      <Titulo>Mozos</Titulo>
+      <Titulo>{t.Plural}</Titulo>
       <Tarjeta className="mb-4">
-        <h2 className="mb-3 font-medium">Nuevo mozo</h2>
+        <h2 className="mb-3 font-medium">Nuevo {t.singular}</h2>
         <FormNuevoMozo slug={slug} />
         <p className="mt-3 text-xs text-stone-500">
           El PIN lo usa para mostrar el QR de respaldo en{" "}
@@ -26,7 +28,7 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
       </Tarjeta>
 
       {!mozos?.length ? (
-        <Vacio>Todavía no hay mozos.</Vacio>
+        <Vacio>Todavía no hay {t.plural}.</Vacio>
       ) : (
         <Tarjeta className="!p-0 overflow-hidden">
           <ul className="divide-y divide-stone-100">
@@ -53,7 +55,7 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
         </Tarjeta>
       )}
       <p className="mt-3 text-sm text-stone-500">
-        Un mozo desactivado no puede sumar puntos ni con el llavero ni con el QR. Su historial se conserva.
+        Un {t.singular} desactivado no puede sumar puntos ni con el llavero ni con el QR. Su historial se conserva.
       </p>
     </>
   );

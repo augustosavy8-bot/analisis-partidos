@@ -8,6 +8,7 @@ import { cifrarClaveChip, descifrarClaveChip, esClaveChipValida } from "@/lib/ci
 import { generarSun } from "@/lib/sun";
 import { hashToken } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
+import { esTermino } from "@/lib/terminos";
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,12 +45,14 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
   const secundario = String(form.get("color_secundario") ?? "#f59e0b");
   const horas = Number(String(form.get("horas") ?? "4").replace(",", "."));
   const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const termino = String(form.get("termino_personal") ?? "mozo");
 
   if (nombre.length < 2 || nombre.length > 60) return { error: "Poné el nombre del local." };
   if (slug.length < 2) return { error: "La dirección (slug) no es válida." };
   if (!HEX.test(primario) || !HEX.test(secundario)) return { error: "Colores inválidos." };
   if (!Number.isFinite(horas) || horas < 0 || horas > 168) return { error: "La regla va de 0 a 168 horas." };
   if (email && !EMAIL.test(email)) return { error: "El email del dueño no es válido." };
+  if (!esTermino(termino)) return { error: "Elegí cómo se llama su personal." };
 
   const db = crearClienteAdmin();
   const { data: existe } = await db.from("locales").select("id").eq("slug", slug).maybeSingle();
@@ -64,6 +67,7 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
       color_primario: primario.toLowerCase(),
       color_secundario: secundario.toLowerCase(),
       minutos_entre_puntos: Math.round(horas * 60),
+      termino_personal: termino,
     })
     .select("id, slug")
     .single();

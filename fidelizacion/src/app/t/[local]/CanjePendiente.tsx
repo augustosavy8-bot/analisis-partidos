@@ -4,9 +4,9 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cancelarCanje } from "./actions";
 
-type Props = { slug: string; canjeId: string; premio: string; expiraEn: string };
+type Props = { slug: string; canjeId: string; premio: string; expiraEn: string; termino: string };
 
-export function CanjePendiente({ slug, canjeId, premio, expiraEn }: Props) {
+export function CanjePendiente({ slug, canjeId, premio, expiraEn, termino }: Props) {
   const router = useRouter();
   const [ahora, setAhora] = useState(() => Date.now());
   const [cancelando, startTransition] = useTransition();
@@ -14,7 +14,7 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn }: Props) {
 
   useEffect(() => {
     const reloj = setInterval(() => setAhora(Date.now()), 1000);
-    // Refrescamos por si el mozo ya lo validó desde otra pestaña.
+    // Refrescamos por si ya lo validaron desde otra pestaña.
     const refresco = setInterval(() => router.refresh(), 5000);
     return () => {
       clearInterval(reloj);
@@ -41,7 +41,7 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn }: Props) {
       <p className="mt-4 text-sm font-semibold uppercase tracking-widest opacity-80">Canje pendiente</p>
       <h2 className="mt-1 text-2xl font-semibold">{premio}</h2>
       <p className="mt-3 text-base">
-        Mostrale esta pantalla al mozo y pedile que <strong>apoye su llavero</strong> en tu celular.
+        Mostrale esta pantalla al {termino} y pedile que <strong>apoye su llavero</strong> en tu celular.
       </p>
       <p className="mt-3 font-mono text-sm opacity-80">
         Vence en {mm}:{ss}

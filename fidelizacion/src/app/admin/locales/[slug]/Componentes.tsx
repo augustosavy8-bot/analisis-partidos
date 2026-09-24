@@ -87,7 +87,7 @@ export function AccionesDueno({ localId, userId, email, appUrl }: { localId: str
   );
 }
 
-export function FormChip({ localId, mozos }: { localId: string; mozos: Mozo[] }) {
+export function FormChip({ localId, mozos, etiqueta = "Mozo" }: { localId: string; mozos: Mozo[]; etiqueta?: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoChip, FormData>(crearChip.bind(null, localId), {});
   const [modo, setModo] = useState<"prueba" | "produccion">("prueba");
   return (
@@ -102,7 +102,7 @@ export function FormChip({ localId, mozos }: { localId: string; mozos: Mozo[] })
           <input name="etiqueta" maxLength={40} placeholder="Ej: Llavero rojo" className={inputPanel} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-stone-600">Mozo</span>
+          <span className="text-xs font-medium text-stone-600">{etiqueta}</span>
           <select name="mozo" className={inputPanel} defaultValue="">
             <option value="">Sin asignar</option>
             {mozos.filter((m) => m.activo).map((m) => (
@@ -177,9 +177,9 @@ export function AccionesChip({
           disabled={p}
           onChange={(e) => start(() => asignarMozo(chip.id, e.target.value || null))}
           className="rounded-lg border border-stone-300 bg-white px-2 py-2 text-sm"
-          aria-label="Mozo asignado"
+          aria-label="Asignado a"
         >
-          <option value="">Sin mozo</option>
+          <option value="">Sin asignar</option>
           {mozos.map((m) => (
             <option key={m.id} value={m.id}>{m.nombre}{m.activo ? "" : " (inactivo)"}</option>
           ))}

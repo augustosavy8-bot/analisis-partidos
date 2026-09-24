@@ -11,7 +11,7 @@ export default function Inicio() {
           La tarjeta de puntos que se suma con un toque.
         </h1>
         <p className="text-stone-600">
-          El mozo apoya su llavero en tu celular y listo: sumaste. Sin apps, sin papelitos.
+          Te apoyan un llavero en el celular y listo: sumaste. Sin apps, sin papelitos.
         </p>
       </div>
       <div className="flex flex-col gap-3 text-sm">
@@ -22,7 +22,7 @@ export default function Inicio() {
           Soy dueño de un local
         </Link>
         <p className="text-center text-stone-500">
-          ¿Sos cliente? Pedile al mozo que apoye su llavero en tu celular.
+          ¿Sos cliente? Pedile a quien te atiende que apoye su llavero en tu celular.
         </p>
       </div>
     </main>

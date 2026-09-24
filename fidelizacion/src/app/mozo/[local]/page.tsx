@@ -3,10 +3,11 @@ import { buscarLocal, estiloMarca } from "@/lib/locales";
 import { mozoActual } from "@/lib/sesion-mozo";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { CabeceraLocal } from "@/components/CabeceraLocal";
+import { formasTermino } from "@/lib/terminos";
 import { LoginMozo } from "./LoginMozo";
 import { PantallaQR } from "./PantallaQR";
 
-export const metadata = { title: "Mozo · QR de respaldo", robots: { index: false } };
+export const metadata = { title: "QR de respaldo", robots: { index: false } };
 
 export default async function Mozo({ params }: PageProps<"/mozo/[local]">) {
   const { local: slug } = await params;
@@ -26,7 +27,7 @@ export default async function Mozo({ params }: PageProps<"/mozo/[local]">) {
         <>
           <div className="mt-10 space-y-2">
             <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--marca)" }}>
-              Para mozos
+              Para {formasTermino(local.termino_personal).plural}
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-stone-900">QR de respaldo</h1>
             <p className="text-stone-600">Para clientes con celulares sin NFC: mostrás un QR y lo escanean con la cámara.</p>

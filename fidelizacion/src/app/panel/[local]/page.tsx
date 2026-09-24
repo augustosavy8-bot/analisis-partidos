@@ -1,6 +1,7 @@
 import { requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo } from "@/components/Panel";
 import { GraficoVisitas } from "./GraficoVisitas";
+import { formasTermino } from "@/lib/terminos";
 
 type Metricas = {
   clientes_total: number;
@@ -21,6 +22,7 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
   const { data, error } = await db.rpc("panel_metricas", { p_local_id: local.id, p_dias: 30 });
   if (error) throw new Error(error.message);
   const m = data as Metricas;
+  const t = formasTermino(local.termino_personal);
 
   const pctRecurrentes = m.clientes_activos ? Math.round((m.clientes_recurrentes / m.clientes_activos) * 100) : 0;
   const maxMozo = Math.max(1, ...m.ranking_mozos.map((r) => r.sumas));
@@ -47,10 +49,10 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
         </Tarjeta>
 
         <Tarjeta>
-          <h2 className="font-medium">Ranking de mozos</h2>
+          <h2 className="font-medium">Ranking de {t.plural}</h2>
           <p className="text-sm text-stone-500">Puntos dados en 30 días</p>
           {m.ranking_mozos.length === 0 ? (
-            <p className="mt-4 text-sm text-stone-500">Todavía no hay mozos.</p>
+            <p className="mt-4 text-sm text-stone-500">Todavía no hay {t.plural}.</p>
           ) : (
             <ol className="mt-4 space-y-3">
               {m.ranking_mozos.map((r, i) => (

@@ -20,7 +20,7 @@ export async function tarjetaPorPase(serial: string, token: string) {
     .from("tarjetas")
     .select(
       "id, cliente_id, wallet_auth_token, clientes(nombre), " +
-        "locales(id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, activo)",
+        "locales(id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, activo)",
     )
     .eq("serial", serial)
     .maybeSingle();

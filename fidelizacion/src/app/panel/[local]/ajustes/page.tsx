@@ -22,7 +22,7 @@ export default async function Ajustes({ params }: PageProps<"/panel/[local]/ajus
             Tu cuenta: <Link href="/panel/nueva-contrasena" className="underline">cambiar mi contraseña</Link>
           </li>
           <li>
-            QR de respaldo para mozos: <Link href={`/mozo/${slug}`} className="underline">/mozo/{slug}</Link>
+            QR de respaldo para tu equipo: <Link href={`/mozo/${slug}`} className="underline">/mozo/{slug}</Link>
           </li>
         </ul>
       </Tarjeta>

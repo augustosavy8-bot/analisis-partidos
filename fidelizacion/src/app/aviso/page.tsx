@@ -5,11 +5,11 @@ export const metadata = { title: "Aviso" };
 const MENSAJES: Record<string, { titulo: string; texto: string }> = {
   chip_invalido: {
     titulo: "No reconocimos este llavero",
-    texto: "Puede que el llavero no esté dado de alta. Avisale al mozo.",
+    texto: "Puede que el llavero no esté dado de alta. Avisale a quien te atiende.",
   },
   chip_sin_mozo: {
-    titulo: "Este llavero no tiene mozo asignado",
-    texto: "El local tiene que asignarlo a un mozo antes de usarlo.",
+    titulo: "Este llavero no está asignado",
+    texto: "El local tiene que asignarlo a alguien de su equipo antes de usarlo.",
   },
   modo_prueba_off: {
     titulo: "Llavero de prueba",
@@ -21,23 +21,23 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
   },
   toque_vencido: {
     titulo: "Pasó mucho tiempo",
-    texto: "Pedile al mozo que vuelva a apoyar el llavero en tu celular.",
+    texto: "Pedile a quien te atiende que vuelva a apoyar el llavero en tu celular.",
   },
   canje_expirado: {
     titulo: "El canje venció",
-    texto: "Volvé a tocar “Canjear” en tu tarjeta y pedile al mozo que apoye el llavero.",
+    texto: "Volvé a tocar “Canjear” en tu tarjeta y pedile a quien te atiende que apoye el llavero.",
   },
   sun_invalido: {
     titulo: "No pudimos leer el llavero",
-    texto: "Pedile al mozo que lo vuelva a apoyar en tu celular.",
+    texto: "Pedile a quien te atiende que lo vuelva a apoyar en tu celular.",
   },
   sun_cmac: {
     titulo: "Llavero no válido",
-    texto: "La firma del llavero no coincide. Avisale al mozo.",
+    texto: "La firma del llavero no coincide. Avisale a quien te atiende.",
   },
   sun_repetido: {
     titulo: "Este toque ya se usó",
-    texto: "Cada toque del llavero sirve una sola vez. Pedile al mozo que lo apoye de nuevo.",
+    texto: "Cada toque del llavero sirve una sola vez. Pedile a quien te atiende que lo apoye de nuevo.",
   },
   sun_sin_configurar: {
     titulo: "Llavero no configurado",
@@ -45,15 +45,15 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
   },
   qr_vencido: {
     titulo: "Este QR ya no sirve",
-    texto: "Venció o está incompleto. Los códigos cambian cada 30 segundos. Pedile al mozo que te muestre uno nuevo y escanealo de nuevo.",
+    texto: "Venció o está incompleto. Los códigos cambian cada 30 segundos. Pedile a quien te atiende que te muestre uno nuevo y escanealo de nuevo.",
   },
   qr_usado: {
     titulo: "Este QR ya se usó",
-    texto: "Cada código sirve una sola vez. Pedile al mozo que te muestre el siguiente.",
+    texto: "Cada código sirve una sola vez. Pedile a quien te atiende que te muestre el siguiente.",
   },
   qr_invalido: {
     titulo: "QR no válido",
-    texto: "Este código no corresponde a un mozo activo del local.",
+    texto: "Este código no corresponde a nadie activo del local.",
   },
   puntos_insuficientes: {
     titulo: "No te alcanzan los puntos",

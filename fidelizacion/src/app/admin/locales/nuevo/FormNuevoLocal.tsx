@@ -6,6 +6,7 @@ import { crearLocal, type EstadoLocal } from "../../actions";
 import { BotonPrimario, Tarjeta, inputPanel } from "@/components/Panel";
 import { ErrorForm } from "@/components/Campo";
 import { Credenciales } from "@/components/Credenciales";
+import { TERMINOS, capitalizar, plural } from "@/lib/terminos";
 
 function slugDesde(nombre: string) {
   return nombre.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
@@ -67,8 +68,16 @@ export function FormNuevoLocal({ appUrl }: { appUrl: string }) {
           <input name="rubro" maxLength={60} placeholder="Ej: Barbería" className={inputPanel} />
         </label>
         <label className="block">
+          <span className="text-xs font-medium text-stone-600">Su personal se llama</span>
+          <select name="termino_personal" defaultValue="mozo" className={inputPanel}>
+            {TERMINOS.map((t) => (
+              <option key={t} value={t}>{capitalizar(plural(t))}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
           <span className="text-xs font-medium text-stone-600">Horas entre puntos</span>
-          <input name="horas" type="number" step={0.25} min={0} max={168} defaultValue={4} className={inputPanel} />
+          <input name="horas" type="number" step="any" min={0} max={168} defaultValue={4} className={inputPanel} />
         </label>
         <label className="block">
           <span className="text-xs font-medium text-stone-600">Color principal</span>

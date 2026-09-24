@@ -3,21 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const SECCIONES = [
+function secciones(personal: string) {
+  return [
   { ruta: "", nombre: "Resumen" },
   { ruta: "/clientes", nombre: "Clientes" },
   { ruta: "/movimientos", nombre: "Movimientos" },
   { ruta: "/premios", nombre: "Premios" },
-  { ruta: "/mozos", nombre: "Mozos" },
+  { ruta: "/mozos", nombre: personal },
   { ruta: "/ajustes", nombre: "Ajustes" },
-];
+  ];
+}
 
-export function NavPanel({ slug }: { slug: string }) {
+export function NavPanel({ slug, personal }: { slug: string; personal: string }) {
   const actual = usePathname();
   return (
     <nav className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
       <ul className="flex min-w-max gap-1">
-        {SECCIONES.map((s) => {
+        {secciones(personal).map((s) => {
           const href = `/panel/${slug}${s.ruta}`;
           const activa = s.ruta === "" ? actual === href : actual.startsWith(href);
           return (

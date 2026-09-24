@@ -55,7 +55,7 @@ export default async function Demo() {
         <p className="text-xs font-medium uppercase tracking-widest text-stone-500">Fase 1 · verificación</p>
         <h1 className="text-2xl font-semibold tracking-tight">Demo</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Tocá “Simular toque” para hacer de cuenta que el mozo apoyó su llavero en tu celular.
+          Tocá “Simular toque” para hacer de cuenta que te apoyaron un llavero en tu celular.
         </p>
       </header>
 
@@ -91,13 +91,13 @@ export default async function Demo() {
                 Ver mi tarjeta →
               </Link>
               <Link href={`/mozo/${local.slug}`} className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium">
-                Modo mozo (QR) →
+                Pantalla del QR →
               </Link>
             </div>
           </div>
           <div className="grid gap-5 p-5 text-sm">
             <div>
-              <h3 className="mb-2 font-medium">Mozos</h3>
+              <h3 className="mb-2 font-medium">Equipo</h3>
               <ul className="space-y-1 text-stone-700">
                 {local.mozos.map((m) => (
                   <li key={m.id}>{m.nombre}{m.activo ? "" : " (inactivo)"}</li>
@@ -121,7 +121,7 @@ export default async function Demo() {
                           {c.modo}
                         </span>
                       </div>
-                      <p className="text-stone-500">UID {c.uid} · {mozo?.nombre ?? "sin mozo"}</p>
+                      <p className="text-stone-500">UID {c.uid} · {mozo?.nombre ?? "sin asignar"}</p>
                       {c.modo === "prueba" && token && (
                         <>
                           <a

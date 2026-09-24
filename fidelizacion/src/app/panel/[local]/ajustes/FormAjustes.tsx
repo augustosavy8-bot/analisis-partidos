@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { guardarAjustes, type EstadoAjustes } from "./actions";
 import { BotonPrimario, Tarjeta, inputPanel } from "@/components/Panel";
 import { ErrorForm } from "@/components/Campo";
+import { TERMINOS, capitalizar, plural } from "@/lib/terminos";
 
 type Local = {
   slug: string;
@@ -13,6 +14,7 @@ type Local = {
   color_primario: string;
   color_secundario: string;
   minutos_entre_puntos: number;
+  termino_personal: string;
 };
 
 function textoSobre(hex: string) {
@@ -51,7 +53,7 @@ export function FormAjustes({ local }: { local: Local }) {
               inputMode="decimal"
               min={0}
               max={168}
-              step={0.25}
+              step="any"
               value={horas}
               onChange={(e) => setHoras(e.target.value)}
               className={inputPanel}
@@ -85,6 +87,17 @@ export function FormAjustes({ local }: { local: Local }) {
                 <input type="color" name="color_secundario" value={secundario} onChange={(e) => setSecundario(e.target.value)} className="h-[38px] w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1" />
                 <input value={secundario} readOnly className={`${inputPanel} font-mono`} aria-label="Código del color de acento" />
               </div>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-stone-600">¿Cómo llamás a tu personal?</span>
+              <select name="termino_personal" defaultValue={local.termino_personal} className={inputPanel}>
+                {TERMINOS.map((t) => (
+                  <option key={t} value={t}>
+                    {capitalizar(plural(t))}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-stone-500">Se usa en la tarjeta: “Pedile al vendedor que apoye su llavero”.</span>
             </label>
             <label className="block sm:col-span-2">
               <span className="text-xs font-medium text-stone-600">Logo (link https a una imagen cuadrada, opcional)</span>

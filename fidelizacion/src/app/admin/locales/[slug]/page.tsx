@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { AccionesChip, AccionesDueno, FormChip, FormDueno, InterruptorLocal } from "./Componentes";
 import { GuiaChip } from "./GuiaChip";
+import { formasTermino } from "@/lib/terminos";
 
 export const metadata = { title: "Local" };
 
@@ -17,7 +18,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
 
   const { data: local } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, activo, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, created_at")
+    .select("id, slug, nombre, rubro, activo, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, created_at")
     .eq("slug", slug)
     .maybeSingle();
   if (!local) notFound();
@@ -35,6 +36,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
   );
   const nombreMozo = new Map((mozos ?? []).map((m) => [m.id, m.nombre]));
   const tz = local.zona_horaria;
+  const t = formasTermino(local.termino_personal);
 
   return (
     <>
@@ -51,7 +53,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
         <span>1 punto cada {+(local.minutos_entre_puntos / 60).toFixed(2)} h</span>
         <Link href={`/panel/${local.slug}`} className="underline">Ver su panel</Link>
         <Link href={`/t/${local.slug}`} className="underline">Tarjeta</Link>
-        <Link href={`/mozo/${local.slug}`} className="underline">QR mozos</Link>
+        <Link href={`/mozo/${local.slug}`} className="underline">QR {t.plural}</Link>
       </p>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -78,9 +80,9 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
         </Tarjeta>
 
         <Tarjeta>
-          <h2 className="font-medium">Mozos</h2>
+          <h2 className="font-medium">{t.Plural}</h2>
           {!mozos?.length ? (
-            <p className="mt-2 text-sm text-stone-500">Sin mozos. Los carga el dueño desde su panel.</p>
+            <p className="mt-2 text-sm text-stone-500">Sin {t.plural}. Los carga el dueño desde su panel.</p>
           ) : (
             <ul className="mt-3 flex flex-wrap gap-2">
               {mozos.map((m) => (
@@ -90,7 +92,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
               ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-stone-500">Para asignar un chip a un mozo nuevo, primero el dueño lo tiene que crear en “Mozos”.</p>
+          <p className="mt-3 text-xs text-stone-500">Para asignar un chip a alguien nuevo, primero el dueño lo tiene que crear en “{t.Plural}”.</p>
         </Tarjeta>
       </div>
 
@@ -111,7 +113,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
                     {!c.activo && <span className="ml-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">inactivo</span>}
                   </p>
                   <p className="font-mono text-xs text-stone-500">
-                    UID {c.uid} · {c.mozo_id ? nombreMozo.get(c.mozo_id) : "sin mozo"} · último uso {fechaHora(c.ultimo_uso, tz)}
+                    UID {c.uid} · {c.mozo_id ? nombreMozo.get(c.mozo_id) : "sin asignar"} · último uso {fechaHora(c.ultimo_uso, tz)}
                     {c.modo === "produccion" && ` · contador ${c.ultimo_contador}`}
                   </p>
                 </div>
@@ -123,7 +125,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
       )}
       <Tarjeta className="mt-4">
         <h3 className="mb-3 font-medium">Alta de chip</h3>
-        <FormChip localId={local.id} mozos={mozos ?? []} />
+        <FormChip localId={local.id} mozos={mozos ?? []} etiqueta={t.Singular} />
       </Tarjeta>
       <div className="mt-4">
         <GuiaChip appUrl={env.appUrl} metaKey={process.env.NFC_SDM_META_KEY ?? null} />

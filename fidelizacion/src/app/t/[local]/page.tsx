@@ -20,6 +20,7 @@ import { TarjetaVisual } from "@/components/TarjetaVisual";
 import { LlevalaEnBilletera } from "./LlevalaEnBilletera";
 import QRCode from "qrcode";
 import { urlBilletera } from "@/lib/billetera";
+import { formasTermino } from "@/lib/terminos";
 
 export async function generateMetadata({ params }: PageProps<"/t/[local]">): Promise<Metadata> {
   const { local: slug } = await params;
@@ -93,6 +94,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
             canjeId={tarjeta.canjePendiente.id}
             premio={tarjeta.canjePendiente.premio.nombre}
             expiraEn={tarjeta.canjePendiente.expira_en}
+            termino={formasTermino(local.termino_personal).singular}
           />
         </div>
       )}
@@ -181,7 +183,7 @@ function SinTarjeta({ local }: { local: Local }) {
       </div>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">{local.nombre}</h1>
       <p className="mt-3 text-stone-600">
-        Todavía no tenés tarjeta en este celular. Pedile al mozo que apoye su llavero en tu teléfono y sumás tu primer punto.
+        Todavía no tenés tarjeta en este celular. Pedile al {formasTermino(local.termino_personal).singular} que apoye su llavero en tu teléfono y sumás tu primer punto.
       </p>
       <Link
         href={`/recuperar?l=${local.slug}`}

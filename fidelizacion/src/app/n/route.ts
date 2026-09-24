@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { validarChipPrueba, type ResultadoChip } from "@/lib/chips";
+import { validarQR } from "@/lib/qr";
 import {
   COOKIE_DISPOSITIVO,
   COOKIE_TOQUE,
@@ -19,14 +20,18 @@ export const dynamic = "force-dynamic";
 /**
  * Punto de entrada del toque NFC. El chip abre esta URL en el celular del cliente.
  *   Modo prueba: /n?t=<token>
+ *   QR de respaldo del mozo: /n?q=<token firmado, un solo uso>
  *   Producción (fase 3): /n?p=<PICCData>&m=<CMAC>
  */
 export async function GET(req: NextRequest) {
   const ir = (ruta: string) => NextResponse.redirect(new URL(ruta, req.url), 303);
 
   const t = req.nextUrl.searchParams.get("t");
+  const q = req.nextUrl.searchParams.get("q");
   let chip: ResultadoChip;
-  if (t) {
+  if (q) {
+    chip = await validarQR(q);
+  } else if (t) {
     if (!env.permitirModoPrueba) return ir("/aviso?m=modo_prueba_off");
     chip = await validarChipPrueba(t);
   } else {

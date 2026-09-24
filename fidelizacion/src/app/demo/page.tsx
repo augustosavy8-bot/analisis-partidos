@@ -86,12 +86,14 @@ export default async function Demo() {
             <p className="mt-1 text-sm opacity-80">
               1 punto cada {local.minutos_entre_puntos} min
             </p>
-            <Link
-              href={`/t/${local.slug}`}
-              className="mt-4 inline-block rounded-full bg-white/15 px-4 py-2 text-sm font-medium"
-            >
-              Ver mi tarjeta →
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={`/t/${local.slug}`} className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium">
+                Ver mi tarjeta →
+              </Link>
+              <Link href={`/mozo/${local.slug}`} className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium">
+                Modo mozo (QR) →
+              </Link>
+            </div>
           </div>
           <div className="grid gap-5 p-5 text-sm">
             <div>

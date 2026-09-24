@@ -11,8 +11,9 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 
 - [x] **Fase 1**: setup, esquema SQL con migraciones, RLS y seed demo
 - [x] **Fase 2**: flujo del cliente completo con chips en modo prueba
+- [x] **QR de respaldo**: el mozo entra con PIN y muestra un QR que rota cada 30 s y sirve una sola vez
 - [ ] Fase 3: verificación SUN (NTAG 424 DNA, AN12196)
-- [ ] Siguientes: QR de respaldo, panel del dueño, panel superadmin
+- [ ] Siguientes: panel del dueño, panel superadmin
 
 ## Puesta en marcha (local)
 
@@ -54,6 +55,7 @@ psql "<connection string>" -f supabase/seed.sql   # opcional: datos demo
 | `/registro` | Nombre + WhatsApp + consentimiento obligatorio. Crea cliente, tarjeta y dispositivo, y aplica el toque |
 | `/recuperar?l=<local>` | Vincula este celular a una tarjeta existente con el WhatsApp (sin OTP en el MVP; el hook está en `src/lib/verificacion`) |
 | `/t/<local>` | La tarjeta: puntos, sellos, premios, canje, historial. Instalable como PWA (manifest e ícono por local) |
+| `/mozo/<local>` | QR de respaldo: el mozo elige su nombre, pone su PIN (5 intentos fallidos = 15 min bloqueado) y muestra un QR firmado (HMAC) que rota cada 30 s. Al escanearlo se abre `/n?q=…`, se marca usado y la pantalla del mozo muestra ✓ y genera otro |
 | `/privacidad` | Política de privacidad (texto base para revisar con un abogado) |
 | `/demo` | Botones para simular toques y “olvidar este celular” (sólo con `PERMITIR_MODO_PRUEBA=true`) |
 

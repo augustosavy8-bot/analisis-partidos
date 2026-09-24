@@ -27,6 +27,18 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
     titulo: "El canje venció",
     texto: "Volvé a tocar “Canjear” en tu tarjeta y pedile al mozo que apoye el llavero.",
   },
+  qr_vencido: {
+    titulo: "Este QR ya no sirve",
+    texto: "Venció o está incompleto. Los códigos cambian cada 30 segundos. Pedile al mozo que te muestre uno nuevo y escanealo de nuevo.",
+  },
+  qr_usado: {
+    titulo: "Este QR ya se usó",
+    texto: "Cada código sirve una sola vez. Pedile al mozo que te muestre el siguiente.",
+  },
+  qr_invalido: {
+    titulo: "QR no válido",
+    texto: "Este código no corresponde a un mozo activo del local.",
+  },
   puntos_insuficientes: {
     titulo: "No te alcanzan los puntos",
     texto: "Todavía te faltan puntos para ese premio.",

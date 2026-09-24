@@ -78,6 +78,25 @@ select pg_temp.check((public.confirmar_canje(:'canje_id', '00000000-0000-4000-80
 select pg_temp.check((select count(*) from public.movimientos where tipo = 'canje' and puntos = -8) = 1,
   'el canje quedó en movimientos');
 
+
+-- ---------------------------------------------------------------- alta de clientes
+select (public.alta_cliente('Beto', '+5493410000002', '00000000-0000-4000-8000-000000000001',
+  repeat('a', 64), 'test')) as alta \gset
+select pg_temp.check(not (:'alta'::jsonb->>'cliente_existia')::boolean, 'alta_cliente crea cliente nuevo');
+select pg_temp.check((select count(*) from public.tarjetas t join public.clientes c on c.id = t.cliente_id where c.whatsapp = '+5493410000002') = 1,
+  'alta_cliente crea la tarjeta');
+select (public.alta_cliente('Otro nombre', '+5493410000002', '00000000-0000-4000-8000-00000000000f',
+  repeat('b', 64), 'test')) as alta2 \gset
+select pg_temp.check((:'alta2'::jsonb->>'cliente_existia')::boolean
+  and (:'alta2'::jsonb->>'cliente_id') = (:'alta'::jsonb->>'cliente_id'),
+  'alta_cliente reutiliza el cliente por WhatsApp');
+select pg_temp.check((select nombre from public.clientes where whatsapp = '+5493410000002') = 'Beto',
+  'alta_cliente no pisa el nombre existente');
+select pg_temp.check((select count(*) from public.tarjetas t join public.clientes c on c.id = t.cliente_id where c.whatsapp = '+5493410000002') = 2,
+  'alta_cliente crea tarjeta en el segundo local');
+select pg_temp.check(public.asegurar_tarjeta((:'alta'::jsonb->>'cliente_id')::uuid, '00000000-0000-4000-8000-000000000001')
+  = (:'alta'::jsonb->>'tarjeta_id')::uuid, 'asegurar_tarjeta es idempotente');
+
 -- ---------------------------------------------------------------- RLS
 set role anon;
 do $$ begin
@@ -98,7 +117,7 @@ reset role;
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
 select pg_temp.check((select count(*) from public.locales) = 1, 'dueño ve sólo su local');
-select pg_temp.check((select count(*) from public.clientes) = 1, 'dueño ve sus clientes');
+select pg_temp.check((select count(*) from public.clientes) = 2, 'dueño ve sus clientes');
 select pg_temp.check((select count(*) from public.movimientos) = 2, 'dueño ve movimientos de su local');
 select pg_temp.check((select count(*) from public.mozos) = 2, 'dueño ve sus mozos');
 do $$ begin
@@ -134,14 +153,14 @@ select pg_temp.check((select nombre from public.locales where slug = 'otro-bar')
 -- Dueño de otro local
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000003"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000003', false);
-select pg_temp.check((select count(*) from public.clientes) = 0, 'otro dueño no ve clientes ajenos');
-select pg_temp.check((select count(*) from public.tarjetas) = 0, 'otro dueño no ve tarjetas ajenas');
+select pg_temp.check((select count(*) from public.clientes) = 1, 'otro dueño ve sólo sus clientes (Beto), no a Ana');
+select pg_temp.check((select count(*) from public.tarjetas) = 1, 'otro dueño ve sólo las tarjetas de su local');
 select pg_temp.check((select count(*) from public.chips) = 0, 'otro dueño no ve chips ajenos');
 
 -- Superadmin
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 select pg_temp.check((select count(*) from public.locales) = 2, 'superadmin ve todos los locales');
-select pg_temp.check((select count(*) from public.clientes) = 1, 'superadmin ve todos los clientes');
+select pg_temp.check((select count(*) from public.clientes) = 2, 'superadmin ve todos los clientes');
 reset role;
 
 \echo 'TODOS LOS TESTS DE BASE PASARON'

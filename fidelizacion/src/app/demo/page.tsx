@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+import Link from "next/link";
 import { env } from "@/lib/env";
+import { clienteActual } from "@/lib/sesion-cliente";
+import { olvidarCelular } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Demo" };
@@ -19,6 +22,7 @@ export default async function Demo() {
   if (!env.permitirModoPrueba) notFound();
 
   const db = crearClienteAdmin();
+  const cliente = await clienteActual();
   const { data: locales, error } = await db
     .from("locales")
     .select(
@@ -49,8 +53,30 @@ export default async function Demo() {
     <main className="mx-auto w-full max-w-2xl space-y-6 p-6">
       <header>
         <p className="text-xs font-medium uppercase tracking-widest text-stone-500">Fase 1 · verificación</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Datos de demo</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Demo</h1>
+        <p className="mt-1 text-sm text-stone-600">
+          Tocá “Simular toque” para hacer de cuenta que el mozo apoyó su llavero en tu celular.
+        </p>
       </header>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-5 text-sm shadow-sm">
+        <h2 className="font-medium">Este celular</h2>
+        {cliente ? (
+          <p className="mt-1 text-stone-600">
+            Registrado como <strong className="text-stone-900">{cliente.nombre}</strong>.
+          </p>
+        ) : (
+          <p className="mt-1 text-stone-600">Sin tarjeta todavía: el primer toque te va a pedir tus datos.</p>
+        )}
+        {cliente && (
+          <form action={olvidarCelular} className="mt-3">
+            <button className="rounded-lg border border-stone-300 px-3 py-2 font-medium text-stone-700">
+              Olvidar este celular
+            </button>
+            <p className="mt-1 text-xs text-stone-500">Para volver a probar el registro. Tu tarjeta no se borra: la podés recuperar con tu WhatsApp.</p>
+          </form>
+        )}
+      </section>
 
       {(locales as unknown as Fila[]).map((local) => (
         <section key={local.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
@@ -58,8 +84,14 @@ export default async function Demo() {
             <p className="text-sm opacity-80">{local.rubro}</p>
             <h2 className="text-xl font-semibold">{local.nombre}</h2>
             <p className="mt-1 text-sm opacity-80">
-              /t/{local.slug} · 1 punto cada {local.minutos_entre_puntos} min
+              1 punto cada {local.minutos_entre_puntos} min
             </p>
+            <Link
+              href={`/t/${local.slug}`}
+              className="mt-4 inline-block rounded-full bg-white/15 px-4 py-2 text-sm font-medium"
+            >
+              Ver mi tarjeta →
+            </Link>
           </div>
           <div className="grid gap-5 p-5 text-sm">
             <div>
@@ -89,9 +121,18 @@ export default async function Demo() {
                       </div>
                       <p className="text-stone-500">UID {c.uid} · {mozo?.nombre ?? "sin mozo"}</p>
                       {c.modo === "prueba" && token && (
-                        <p className="mt-1 break-all font-mono text-xs text-stone-700">
-                          {env.appUrl}/n?t={token}
-                        </p>
+                        <>
+                          <a
+                            href={`/n?t=${token}`}
+                            className="mt-3 block rounded-xl px-4 py-3 text-center font-semibold"
+                            style={{ background: local.color_primario, color: "#fff" }}
+                          >
+                            Simular toque de {mozo?.nombre ?? "este chip"}
+                          </a>
+                          <p className="mt-2 break-all font-mono text-xs text-stone-500">
+                            {env.appUrl}/n?t={token}
+                          </p>
+                        </>
                       )}
                     </li>
                   );

@@ -10,7 +10,7 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 ## Estado por fases
 
 - [x] **Fase 1**: setup, esquema SQL con migraciones, RLS y seed demo
-- [ ] Fase 2: flujo del cliente completo con chips en modo prueba
+- [x] **Fase 2**: flujo del cliente completo con chips en modo prueba
 - [ ] Fase 3: verificación SUN (NTAG 424 DNA, AN12196)
 - [ ] Siguientes: QR de respaldo, panel del dueño, panel superadmin
 
@@ -45,6 +45,23 @@ npx supabase link --project-ref <ref>
 npm run db:push                                   # aplica migraciones
 psql "<connection string>" -f supabase/seed.sql   # opcional: datos demo
 ```
+
+## Flujo del cliente (Fase 2)
+
+| Ruta | Qué hace |
+|---|---|
+| `/n?t=<token>` | El toque. Valida el chip; si el celular no tiene tarjeta guarda el toque firmado (cookie de 15 min) y manda a `/registro`; si tiene, suma 1 punto (o confirma un canje pendiente) |
+| `/registro` | Nombre + WhatsApp + consentimiento obligatorio. Crea cliente, tarjeta y dispositivo, y aplica el toque |
+| `/recuperar?l=<local>` | Vincula este celular a una tarjeta existente con el WhatsApp (sin OTP en el MVP; el hook está en `src/lib/verificacion`) |
+| `/t/<local>` | La tarjeta: puntos, sellos, premios, canje, historial. Instalable como PWA (manifest e ícono por local) |
+| `/privacidad` | Política de privacidad (texto base para revisar con un abogado) |
+| `/demo` | Botones para simular toques y “olvidar este celular” (sólo con `PERMITIR_MODO_PRUEBA=true`) |
+
+Reglas:
+- El celular se identifica con una cookie httpOnly (`fid_disp`, 400 días); en la base sólo queda su SHA-256.
+- La animación de “+1” sólo aparece si el movimiento es de esa tarjeta y de los últimos 5 minutos.
+- El canje queda pendiente 15 minutos; el próximo toque de un mozo lo confirma en vez de sumar.
+- En iPhone, la tarjeta instalada en inicio puede no compartir la cookie con Safari: si pasa, se recupera con el WhatsApp.
 
 ## Tests
 

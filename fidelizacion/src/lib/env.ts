@@ -19,6 +19,15 @@ export const env = {
   get appUrl() {
     return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   },
+  /** Secreto para firmar tokens (toque pendiente, QR). Generar: openssl rand -base64 32 */
+  get hmacSecret() {
+    const v = requerida("HMAC_SECRET");
+    if (v.length < 32) throw new Error("HMAC_SECRET debe tener al menos 32 caracteres");
+    return v;
+  },
+  get esProduccion() {
+    return process.env.NODE_ENV === "production";
+  },
   /**
    * Interruptor global del modo prueba (tags NTAG213 con token estático).
    * En producción debe estar en "false": aunque un chip tenga modo=prueba, se rechaza.

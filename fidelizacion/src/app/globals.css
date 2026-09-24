@@ -23,3 +23,42 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* --- Animaciones de la tarjeta --------------------------------------------- */
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes subir {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  55% { transform: scale(1.15); opacity: 1; }
+  75% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+@keyframes onda {
+  from { transform: scale(0.6); opacity: 0.55; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+@keyframes chispa {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; }
+}
+@keyframes sello {
+  0% { transform: scale(2); opacity: 0; }
+  60% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.anim-aparecer { animation: aparecer 0.3s ease-out both; }
+.anim-subir { animation: subir 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-pop { animation: pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-onda { animation: onda 1.4s ease-out infinite; }
+.anim-chispa { animation: chispa 0.9s ease-out both; }
+.anim-sello { animation: sello 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-aparecer, .anim-subir, .anim-pop, .anim-onda, .anim-chispa, .anim-sello { animation: none; }
+}

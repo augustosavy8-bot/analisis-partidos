@@ -187,4 +187,23 @@ do $$ begin
 end $$;
 reset role;
 
+
+-- ---------------------------------------------------------------- superadmin
+insert into public.rechazos (local_id, motivo, origen) values ('00000000-0000-4000-8000-000000000001', 'qr_usado', 'qr'), (null, 'chip_invalido', 'nfc');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select pg_temp.check((public.admin_resumen()->'totales'->>'locales')::int = 2, 'admin_resumen cuenta locales');
+select pg_temp.check(jsonb_array_length(public.admin_resumen()->'rechazos_recientes') = 2, 'admin_resumen lista rechazos');
+select pg_temp.check((select count(*) from public.rechazos) = 2, 'superadmin ve todos los rechazos');
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((select count(*) from public.rechazos) = 1, 'dueño ve sólo los rechazos de su local');
+do $$ begin
+  begin
+    perform public.admin_resumen();
+    raise exception 'FALLÓ: dueño ve el resumen de superadmin';
+  exception when insufficient_privilege then raise notice 'ok - admin_resumen sólo para superadmin';
+  end;
+end $$;
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

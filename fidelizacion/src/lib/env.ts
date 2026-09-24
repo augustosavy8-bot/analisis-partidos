@@ -25,6 +25,12 @@ export const env = {
     if (v.length < 32) throw new Error("HMAC_SECRET debe tener al menos 32 caracteres");
     return v;
   },
+  /** Clave maestra AES-256 (64 hex) para cifrar las claves de los chips. */
+  get chipsMasterKey() {
+    const v = requerida("CHIPS_MASTER_KEY");
+    if (!/^[0-9a-f]{64}$/i.test(v)) throw new Error("CHIPS_MASTER_KEY debe ser 64 caracteres hex");
+    return v;
+  },
   get esProduccion() {
     return process.env.NODE_ENV === "production";
   },

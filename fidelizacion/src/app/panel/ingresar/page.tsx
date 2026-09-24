@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FormIngreso } from "./FormIngreso";
 
 export const metadata = { title: "Ingresar al panel", robots: { index: false } };
@@ -16,6 +17,9 @@ export default function Ingresar() {
       <div className="mt-8">
         <FormIngreso />
       </div>
+      <Link href="/panel/olvide" className="mt-6 text-center text-sm text-stone-500 underline underline-offset-4">
+        ¿Olvidaste tu contraseña?
+      </Link>
     </main>
   );
 }

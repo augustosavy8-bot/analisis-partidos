@@ -14,7 +14,7 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 - [x] **QR de respaldo**: el mozo entra con PIN y muestra un QR que rota cada 30 s y sirve una sola vez
 - [ ] Fase 3: verificación SUN (NTAG 424 DNA, AN12196)
 - [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
-- [ ] Siguientes: panel superadmin
+- [x] **Panel superadmin**: locales, dueños, chips (prueba y producción con clave cifrada) y estado general
 
 ## Puesta en marcha (local)
 
@@ -78,6 +78,19 @@ Ingreso con email y contraseña (Supabase Auth; el registro público está desac
 | Premios | Alta, edición, ocultar/mostrar y borrar (si ya se canjeó, se oculta para no perder historial) |
 | Mozos | Alta con PIN, cambio de PIN, activar/desactivar, llaveros asignados |
 | Ajustes | Regla de puntos (horas entre puntos), nombre, rubro, colores y logo, con vista previa |
+
+## Panel superadmin (`/admin`)
+
+Sólo para usuarios en la tabla `superadmins` (para cualquier otro, `/admin` da 404).
+
+- **Estado general**: totales, actividad por local y toques rechazados (tabla `rechazos`: chip desconocido, QR reusado o vencido, toque antes de tiempo…).
+- **Nuevo local**: nombre, dirección `/t/…`, rubro, colores, regla y email del dueño. Si el dueño no tiene usuario se crea con una contraseña temporal que se muestra una sola vez (con botón para mandarla por WhatsApp).
+- **Local**: activar/desactivar, dueños (agregar, quitar, generar contraseña nueva) y chips:
+  - *Prueba (NTAG213)*: se genera un token y se muestra la URL para grabar en el tag (en la base sólo queda el hash).
+  - *Producción (NTAG 424 DNA)*: UID + clave AES-128, que se guarda cifrada con AES-256-GCM usando `CHIPS_MASTER_KEY`.
+- Dueños: “¿Olvidaste tu contraseña?” (link por email vía Supabase Auth → `/auth/callback` → `/panel/nueva-contrasena`) y “Cambiar mi contraseña”.
+
+> ⚠️ `CHIPS_MASTER_KEY` no se puede perder ni cambiar sin volver a cargar las claves de todos los chips.
 
 ## Tests
 

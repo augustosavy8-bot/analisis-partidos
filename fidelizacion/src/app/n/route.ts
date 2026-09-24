@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { validarChipPrueba, type ResultadoChip } from "@/lib/chips";
 import { validarQR } from "@/lib/qr";
+import { registrarRechazo } from "@/lib/rechazos";
 import {
   COOKIE_DISPOSITIVO,
   COOKIE_TOQUE,
@@ -37,7 +38,11 @@ export async function GET(req: NextRequest) {
   } else {
     chip = { ok: false, motivo: "chip_invalido" };
   }
-  if (!chip.ok) return ir(`/aviso?m=${chip.motivo}`);
+  const origen = q ? "qr" : "nfc";
+  if (!chip.ok) {
+    await registrarRechazo({ motivo: chip.motivo, origen });
+    return ir(`/aviso?m=${chip.motivo}`);
+  }
 
   const cliente = await clienteDesdeToken(req.cookies.get(COOKIE_DISPOSITIVO)?.value);
 
@@ -49,5 +54,13 @@ export async function GET(req: NextRequest) {
   }
 
   const resultado = await aplicarToque(cliente.clienteId, chip.toque);
+  if (resultado.tipo === "limite" || resultado.tipo === "error") {
+    await registrarRechazo({
+      motivo: resultado.tipo === "limite" ? "limite" : resultado.motivo,
+      origen,
+      localId: chip.toque.localId,
+      chipId: chip.toque.chipId,
+    });
+  }
   return ir(urlResultado(chip.toque.localSlug, resultado));
 }

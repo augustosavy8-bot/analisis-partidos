@@ -12,7 +12,7 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 - [x] **Fase 1**: setup, esquema SQL con migraciones, RLS y seed demo
 - [x] **Fase 2**: flujo del cliente completo con chips en modo prueba
 - [x] **QR de respaldo**: el mozo entra con PIN y muestra un QR que rota cada 30 s y sirve una sola vez
-- [ ] Fase 3: verificación SUN (NTAG 424 DNA, AN12196)
+- [x] **Fase 3**: verificación SUN de NTAG 424 DNA (AN12196), con simulador de toques y guía de programación
 - [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
 - [x] **Panel superadmin**: locales, dueños, chips (prueba y producción con clave cifrada) y estado general
 
@@ -135,10 +135,14 @@ npm run db:test   # Postgres temporal: migraciones + seed + tests de RLS y funci
 
 - Modo prueba (NTAG213): `https://<dominio>/n?t=<token>`. La base guarda sólo el
   SHA-256 del token. Se desactiva para toda la instalación con `PERMITIR_MODO_PRUEBA=false`.
-- Producción (NTAG 424 DNA, fase 3): SUN con PICCData cifrado + CMAC en la misma
-  ruta `/n`. La clave para descifrar PICCData (SDMMetaRead) va a ser una sola por
-  instalación, porque antes de descifrar no se sabe qué chip es. La clave del CMAC
-  (SDMFileRead) es por chip y se guarda cifrada con `CHIPS_MASTER_KEY`.
+- Producción (NTAG 424 DNA): `https://<dominio>/n?p=<PICCData>&m=<CMAC>` (SUN, NXP AN12196).
+  1. `p` se descifra con AES-128-CBC y la clave SDMMetaRead **común** (`NFC_SDM_META_KEY`),
+     porque antes de descifrar no se sabe qué chip es → UID + contador.
+  2. Se busca el chip por UID y se descifra su clave SDMFileRead (guardada con `CHIPS_MASTER_KEY`).
+  3. Clave de sesión = CMAC(clave, `3CC300010080` ‖ UID ‖ contador) y se compara el MAC truncado (bytes impares).
+  4. El contador tiene que ser mayor al último aceptado (`consumir_contador_chip`, atómico): un toque copiado no sirve.
+  - Tests con los vectores de RFC 4493 (AES-CMAC) y de AN12196 (`src/lib/sun.test.ts`).
+  - En `/admin/locales/<local>` hay “Simular toque” (genera la URL que produciría el chip) y una guía para programarlo.
 
 ### Datos demo (seed)
 

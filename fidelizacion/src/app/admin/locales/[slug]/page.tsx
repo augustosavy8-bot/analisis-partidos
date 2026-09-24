@@ -6,6 +6,7 @@ import { fechaHora } from "@/lib/panel";
 import { env } from "@/lib/env";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { AccionesChip, AccionesDueno, FormChip, FormDueno, InterruptorLocal } from "./Componentes";
+import { GuiaChip } from "./GuiaChip";
 
 export const metadata = { title: "Local" };
 
@@ -124,6 +125,9 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
         <h3 className="mb-3 font-medium">Alta de chip</h3>
         <FormChip localId={local.id} mozos={mozos ?? []} />
       </Tarjeta>
+      <div className="mt-4">
+        <GuiaChip appUrl={env.appUrl} metaKey={process.env.NFC_SDM_META_KEY ?? null} />
+      </div>
     </>
   );
 }

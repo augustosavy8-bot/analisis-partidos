@@ -31,6 +31,15 @@ export const env = {
     if (!/^[0-9a-f]{64}$/i.test(v)) throw new Error("CHIPS_MASTER_KEY debe ser 64 caracteres hex");
     return v;
   },
+  /**
+   * Clave AES-128 (32 hex) SDMMetaRead, común a todos los chips de producción.
+   * Descifra el PICCData (UID + contador) antes de saber de qué chip se trata.
+   */
+  get sdmMetaKey() {
+    const v = requerida("NFC_SDM_META_KEY");
+    if (!/^[0-9a-f]{32}$/i.test(v)) throw new Error("NFC_SDM_META_KEY debe ser 32 caracteres hex (AES-128)");
+    return Buffer.from(v, "hex");
+  },
   get esProduccion() {
     return process.env.NODE_ENV === "production";
   },

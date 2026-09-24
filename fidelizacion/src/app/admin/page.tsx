@@ -23,6 +23,10 @@ const MOTIVOS: Record<string, string> = {
   qr_invalido: "QR de mozo inactivo",
   local_inactivo: "Local inactivo",
   mozo_invalido: "Mozo inválido",
+  sun_invalido: "Llavero 424: datos ilegibles",
+  sun_cmac: "Llavero 424: firma inválida",
+  sun_repetido: "Llavero 424: toque repetido",
+  sun_sin_configurar: "Llavero 424: servidor sin claves",
 };
 const TZ = "America/Argentina/Buenos_Aires";
 

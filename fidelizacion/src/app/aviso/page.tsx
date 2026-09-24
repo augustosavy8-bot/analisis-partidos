@@ -27,6 +27,22 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
     titulo: "El canje venció",
     texto: "Volvé a tocar “Canjear” en tu tarjeta y pedile al mozo que apoye el llavero.",
   },
+  sun_invalido: {
+    titulo: "No pudimos leer el llavero",
+    texto: "Pedile al mozo que lo vuelva a apoyar en tu celular.",
+  },
+  sun_cmac: {
+    titulo: "Llavero no válido",
+    texto: "La firma del llavero no coincide. Avisale al mozo.",
+  },
+  sun_repetido: {
+    titulo: "Este toque ya se usó",
+    texto: "Cada toque del llavero sirve una sola vez. Pedile al mozo que lo apoye de nuevo.",
+  },
+  sun_sin_configurar: {
+    titulo: "Llavero no configurado",
+    texto: "El sistema todavía no está listo para estos llaveros. Avisale al local.",
+  },
   qr_vencido: {
     titulo: "Este QR ya no sirve",
     texto: "Venció o está incompleto. Los códigos cambian cada 30 segundos. Pedile al mozo que te muestre uno nuevo y escanealo de nuevo.",

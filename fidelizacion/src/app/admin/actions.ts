@@ -4,7 +4,8 @@ import { randomBytes } from "node:crypto";
 import { refresh } from "next/cache";
 import { contraseñaTemporal, requerirSuperadmin, slugDesde } from "@/lib/admin";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
-import { cifrarClaveChip, esClaveChipValida } from "@/lib/cifrado";
+import { cifrarClaveChip, descifrarClaveChip, esClaveChipValida } from "@/lib/cifrado";
+import { generarSun } from "@/lib/sun";
 import { hashToken } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
 
@@ -193,4 +194,26 @@ export async function borrarChip(chipId: string) {
   await requerirSuperadmin();
   await crearClienteAdmin().from("chips").delete().eq("id", chipId);
   refresh();
+}
+
+/**
+ * Chips de producción: genera la URL que produciría el chip en su próxima lectura
+ * (contador = último + 1), para probar el flujo SUN sin tener el chip a mano.
+ * Abrirla consume ese contador, igual que un toque real.
+ */
+export async function simularToqueSun(chipId: string): Promise<{ url?: string; error?: string }> {
+  await requerirSuperadmin();
+  const { data: chip } = await crearClienteAdmin()
+    .from("chips")
+    .select("uid, modo, clave_aes_cifrada, ultimo_contador")
+    .eq("id", chipId)
+    .maybeSingle();
+  if (!chip || chip.modo !== "produccion" || !chip.clave_aes_cifrada) return { error: "Sólo para chips de producción." };
+  try {
+    const clave = descifrarClaveChip(chip.clave_aes_cifrada, env.chipsMasterKey);
+    const { p, m } = generarSun(chip.uid, chip.ultimo_contador + 1, env.sdmMetaKey, clave);
+    return { url: `${env.appUrl}/n?p=${p}&m=${m}` };
+  } catch {
+    return { error: "Faltan NFC_SDM_META_KEY o CHIPS_MASTER_KEY en el servidor, o el UID no es de 7 bytes." };
+  }
 }

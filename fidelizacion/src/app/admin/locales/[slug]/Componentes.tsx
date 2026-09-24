@@ -11,6 +11,7 @@ import {
   nuevaContraseña,
   quitarDueno,
   regenerarTokenChip,
+  simularToqueSun,
   type EstadoChip,
   type EstadoDueno,
 } from "../../actions";
@@ -167,6 +168,7 @@ export function AccionesChip({
 }) {
   const [p, start] = useTransition();
   const [url, setUrl] = useState<string | null>(null);
+  const [simulada, setSimulada] = useState<string | null>(null);
   return (
     <div className="w-full space-y-2 sm:w-auto">
       <div className="flex flex-wrap items-center gap-2">
@@ -182,6 +184,20 @@ export function AccionesChip({
             <option key={m.id} value={m.id}>{m.nombre}{m.activo ? "" : " (inactivo)"}</option>
           ))}
         </select>
+        {chip.modo === "produccion" && (
+          <BotonSecundario
+            disabled={p}
+            onClick={() =>
+              start(async () => {
+                const r = await simularToqueSun(chip.id);
+                if (r.url) setSimulada(r.url);
+                else alert(r.error ?? "No se pudo");
+              })
+            }
+          >
+            Simular toque
+          </BotonSecundario>
+        )}
         {chip.modo === "prueba" && (
           <BotonSecundario
             disabled={p}
@@ -207,6 +223,16 @@ export function AccionesChip({
         </BotonSecundario>
       </div>
       {url && <UrlChip url={url} />}
+      {simulada && (
+        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm">
+          <p className="font-semibold text-emerald-900">Toque simulado (próximo contador del chip)</p>
+          <p className="mt-1 text-emerald-900">Abrilo en el celular del cliente: es la misma URL que genera el chip. Sirve una sola vez.</p>
+          <p className="mt-2 break-all rounded-lg bg-white p-2 font-mono text-xs ring-1 ring-emerald-200">{simulada}</p>
+          <a href={simulada} target="_blank" className="mt-2 inline-block rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white">
+            Abrir
+          </a>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
-import { validarChipPrueba, type ResultadoChip } from "@/lib/chips";
+import { validarChipPrueba, validarChipSun, type ResultadoChip } from "@/lib/chips";
 import { validarQR } from "@/lib/qr";
 import { registrarRechazo } from "@/lib/rechazos";
 import {
@@ -22,15 +22,20 @@ export const dynamic = "force-dynamic";
  * Punto de entrada del toque NFC. El chip abre esta URL en el celular del cliente.
  *   Modo prueba: /n?t=<token>
  *   QR de respaldo del mozo: /n?q=<token firmado, un solo uso>
- *   Producción (fase 3): /n?p=<PICCData>&m=<CMAC>
+ *   Producción (NTAG 424 DNA, SUN): /n?p=<PICCData>&m=<CMAC>  (también picc_data/cmac)
  */
 export async function GET(req: NextRequest) {
   const ir = (ruta: string) => NextResponse.redirect(new URL(ruta, req.url), 303);
 
   const t = req.nextUrl.searchParams.get("t");
   const q = req.nextUrl.searchParams.get("q");
+  const sp = req.nextUrl.searchParams;
+  const picc = sp.get("p") ?? sp.get("picc_data");
+  const mac = sp.get("m") ?? sp.get("cmac");
   let chip: ResultadoChip;
-  if (q) {
+  if (picc && mac) {
+    chip = await validarChipSun(picc, mac);
+  } else if (q) {
     chip = await validarQR(q);
   } else if (t) {
     if (!env.permitirModoPrueba) return ir("/aviso?m=modo_prueba_off");
@@ -40,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
   const origen = q ? "qr" : "nfc";
   if (!chip.ok) {
-    await registrarRechazo({ motivo: chip.motivo, origen });
+    await registrarRechazo({ motivo: chip.motivo, origen, localId: chip.localId, chipId: chip.chipId });
     return ir(`/aviso?m=${chip.motivo}`);
   }
 

@@ -28,7 +28,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const db = crearClienteAdmin();
   const { data: tarjeta } = await db
     .from("tarjetas")
-    .select("id, puntos, serial, created_at")
+    .select("id, puntos, serial, wallet_auth_token, created_at")
     .eq("cliente_id", clienteId)
     .eq("local_id", localId)
     .maybeSingle();

@@ -163,4 +163,28 @@ select pg_temp.check((select count(*) from public.locales) = 2, 'superadmin ve t
 select pg_temp.check((select count(*) from public.clientes) = 2, 'superadmin ve todos los clientes');
 reset role;
 
+
+-- ---------------------------------------------------------------- panel
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((public.panel_metricas('00000000-0000-4000-8000-000000000001')->>'clientes_total')::int = 2, 'panel_metricas cuenta clientes');
+select pg_temp.check((public.panel_metricas('00000000-0000-4000-8000-000000000001')->>'canjes')::int = 1, 'panel_metricas cuenta canjes');
+select pg_temp.check(jsonb_array_length(public.panel_metricas('00000000-0000-4000-8000-000000000001')->'visitas_por_dia') = 14, 'panel_metricas trae 14 días');
+select pg_temp.check((select count(*) from public.panel_clientes('00000000-0000-4000-8000-000000000001')) = 2, 'panel_clientes lista los clientes del local');
+select pg_temp.check((select nombre from public.panel_clientes('00000000-0000-4000-8000-000000000001', 'bet')) = 'Beto', 'panel_clientes busca por nombre');
+select pg_temp.check((select nombre from public.panel_clientes('00000000-0000-4000-8000-000000000001', '0000001')) = 'Ana', 'panel_clientes busca por WhatsApp');
+do $$ begin
+  begin
+    perform public.panel_metricas('00000000-0000-4000-8000-00000000000f');
+    raise exception 'FALLÓ: dueño ve métricas de otro local';
+  exception when insufficient_privilege then raise notice 'ok - panel_metricas rechaza otro local';
+  end;
+  begin
+    perform * from public.panel_clientes('00000000-0000-4000-8000-00000000000f');
+    raise exception 'FALLÓ: dueño ve clientes de otro local';
+  exception when insufficient_privilege then raise notice 'ok - panel_clientes rechaza otro local';
+  end;
+end $$;
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

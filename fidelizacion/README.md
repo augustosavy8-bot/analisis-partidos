@@ -13,7 +13,8 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 - [x] **Fase 2**: flujo del cliente completo con chips en modo prueba
 - [x] **QR de respaldo**: el mozo entra con PIN y muestra un QR que rota cada 30 s y sirve una sola vez
 - [ ] Fase 3: verificación SUN (NTAG 424 DNA, AN12196)
-- [ ] Siguientes: panel del dueño, panel superadmin
+- [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
+- [ ] Siguientes: panel superadmin
 
 ## Puesta en marcha (local)
 
@@ -64,6 +65,19 @@ Reglas:
 - La animación de “+1” sólo aparece si el movimiento es de esa tarjeta y de los últimos 5 minutos.
 - El canje queda pendiente 15 minutos; el próximo toque de un mozo lo confirma en vez de sumar.
 - En iPhone, la tarjeta instalada en inicio puede no compartir la cookie con Safari: si pasa, se recupera con el WhatsApp.
+
+## Panel del dueño (`/panel`)
+
+Ingreso con email y contraseña (Supabase Auth; el registro público está desactivado y los usuarios se crean con `npm run usuario:crear` o, más adelante, desde el panel superadmin). Todo pasa por RLS con la sesión del usuario: un dueño sólo ve sus locales.
+
+| Sección | Qué tiene |
+|---|---|
+| Resumen | Clientes, visitas, % que vuelven, canjes (30 días), visitas por día (14 días) y ranking de mozos |
+| Clientes | Búsqueda por nombre o WhatsApp, puntos, visitas, última visita; exportar CSV (Excel en español: `;` + BOM) |
+| Movimientos | Últimos 150, filtros por tipo y por mozo, origen llavero/QR |
+| Premios | Alta, edición, ocultar/mostrar y borrar (si ya se canjeó, se oculta para no perder historial) |
+| Mozos | Alta con PIN, cambio de PIN, activar/desactivar, llaveros asignados |
+| Ajustes | Regla de puntos (horas entre puntos), nombre, rubro, colores y logo, con vista previa |
 
 ## Tests
 

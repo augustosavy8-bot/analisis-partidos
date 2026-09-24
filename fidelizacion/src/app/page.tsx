@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Inicio() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-6 py-16">
@@ -13,12 +15,12 @@ export default function Inicio() {
         </p>
       </div>
       <div className="flex flex-col gap-3 text-sm">
-        <a
+        <Link
           href="/panel"
           className="rounded-xl bg-stone-900 px-4 py-3 text-center font-medium text-white transition hover:bg-stone-800"
         >
           Soy dueño de un local
-        </a>
+        </Link>
         <p className="text-center text-stone-500">
           ¿Sos cliente? Pedile al mozo que apoye su llavero en tu celular.
         </p>

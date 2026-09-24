@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizarWhatsapp } from "./whatsapp";
+import { formatearWhatsapp, normalizarWhatsapp } from "./whatsapp";
 
 describe("normalizarWhatsapp", () => {
   it.each([
@@ -21,5 +21,13 @@ describe("normalizarWhatsapp", () => {
 
   it.each(["", "abc", "1234", "341 123", "+0 123"])("rechaza %s", (entrada) => {
     expect(normalizarWhatsapp(entrada)).toBeNull();
+  });
+});
+
+describe("formatearWhatsapp", () => {
+  it("formatea Buenos Aires y el interior", () => {
+    expect(formatearWhatsapp("+5491155550003")).toBe("11 5555-0003");
+    expect(formatearWhatsapp("+5493411234567")).toBe("341 123-4567");
+    expect(formatearWhatsapp("+34612345678")).toBe("+34612345678");
   });
 });

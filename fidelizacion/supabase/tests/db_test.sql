@@ -206,4 +206,32 @@ do $$ begin
 end $$;
 reset role;
 
+
+-- ---------------------------------------------------------------- eliminar cliente
+insert into public.dispositivos (cliente_id, token_hash) values ('cccccccc-0000-4000-8000-000000000001', repeat('c', 64));
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+do $$ begin
+  begin
+    perform public.eliminar_cliente_de_local('00000000-0000-4000-8000-00000000000f',
+      (select id from public.clientes where whatsapp = '+5493410000002'));
+    raise exception 'FALLÓ: dueño elimina cliente de otro local';
+  exception when insufficient_privilege then raise notice 'ok - no puede eliminar clientes de otro local';
+  end;
+end $$;
+select pg_temp.check(not (public.eliminar_cliente_de_local('00000000-0000-4000-8000-000000000001',
+  (select id from public.clientes where whatsapp = '+5493410000002'))->>'cliente_borrado')::boolean,
+  'cliente con tarjeta en otro local: se borra sólo la tarjeta de este local');
+select pg_temp.check((public.eliminar_cliente_de_local('00000000-0000-4000-8000-000000000001',
+  'cccccccc-0000-4000-8000-000000000001')->>'cliente_borrado')::boolean,
+  'cliente sin otras tarjetas: se borra entero');
+reset role;
+select pg_temp.check((select count(*) from public.clientes where whatsapp = '+5493410000002') = 1
+  and (select count(*) from public.tarjetas t join public.clientes c on c.id = t.cliente_id where c.whatsapp = '+5493410000002') = 1,
+  'Beto sigue existiendo con su tarjeta del otro local');
+select pg_temp.check((select count(*) from public.clientes where id = 'cccccccc-0000-4000-8000-000000000001') = 0
+  and (select count(*) from public.dispositivos where cliente_id = 'cccccccc-0000-4000-8000-000000000001') = 0
+  and (select count(*) from public.movimientos where tarjeta_id = 'dddddddd-0000-4000-8000-000000000001') = 0,
+  'Ana: se borraron datos, celulares y movimientos');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

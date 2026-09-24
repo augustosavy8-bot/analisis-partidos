@@ -45,7 +45,9 @@ function quitarCeroY15(d: string): string {
 
 /** Para mostrar: +54 9 341 123-4567 → "341 123-4567". */
 export function formatearWhatsapp(e164: string): string {
-  const m = e164.match(/^\+549(\d{3,4})(\d{2,3})(\d{4})$/);
+  const caba = e164.match(/^\+54911(\d{4})(\d{4})$/);
+  if (caba) return `11 ${caba[1]}-${caba[2]}`;
+  const m = e164.match(/^\+549(\d{3})(\d{3})(\d{4})$/);
   if (!m) return e164;
   return `${m[1]} ${m[2]}-${m[3]}`;
 }

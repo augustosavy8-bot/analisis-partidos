@@ -2,6 +2,7 @@ import Link from "next/link";
 import { fecha, fechaHora, requerirLocal } from "@/lib/panel";
 import { formatearWhatsapp } from "@/lib/whatsapp";
 import { Tarjeta, Titulo, Vacio, inputPanel } from "@/components/Panel";
+import { BotonEliminar } from "./BotonEliminar";
 
 export const metadata = { title: "Clientes" };
 
@@ -69,6 +70,7 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                   <p className="text-lg font-semibold tabular-nums">{c.puntos}</p>
                   <p className="text-xs text-stone-500">puntos</p>
                 </div>
+                <BotonEliminar slug={slug} clienteId={c.cliente_id} nombre={c.nombre} />
               </li>
             ))}
           </ul>
@@ -82,6 +84,7 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                 <th className="px-4 py-3 text-right font-medium">Canjes</th>
                 <th className="px-4 py-3 font-medium">Última visita</th>
                 <th className="px-4 py-3 font-medium">Alta</th>
+                <th className="px-4 py-3"><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -102,6 +105,9 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                   <td className="px-4 py-3 text-right tabular-nums">{c.canjes}</td>
                   <td className="px-4 py-3 text-stone-600">{fechaHora(c.ultima_visita, local.zona_horaria)}</td>
                   <td className="px-4 py-3 text-stone-600">{fecha(c.alta, local.zona_horaria)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <BotonEliminar slug={slug} clienteId={c.cliente_id} nombre={c.nombre} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -111,6 +117,9 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
       {filas.length === 200 && (
         <p className="mt-3 text-center text-sm text-stone-500">Mostrando los 200 más recientes. Usá la búsqueda o exportá el CSV para ver todos.</p>
       )}
+      <p className="mt-3 text-sm text-stone-500">
+        Si un cliente te pide que borres sus datos, usá “Eliminar”: se borra su tarjeta de este local y, si no tiene tarjeta en otro local, todos sus datos.
+      </p>
     </>
   );
 }

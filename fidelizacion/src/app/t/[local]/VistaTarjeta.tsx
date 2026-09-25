@@ -17,6 +17,7 @@ export type DatosCelebracion = {
   tipo: "suma" | "canje";
   sumados: number;
   promo: string | null;
+  premio: string | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   mensaje: string;
 };
@@ -35,6 +36,8 @@ type Props = {
   promos: Promo[];
   promoAhora: Promo | null;
   objetivo: Premio | null;
+  /** Hubo un toque hace instantes: se puede canjear sin otro toque. */
+  alToque: boolean;
   pedirCumple: boolean;
   limite: string | null;
   urlPase: string;
@@ -110,7 +113,14 @@ export function VistaTarjeta(p: Props) {
         {p.pedirCumple && <FormCumple slug={local.slug} puntos={local.puntos_cumple} />}
 
         {p.premios.length > 0 && (
-          <ListaPremios slug={local.slug} premios={p.premios} puntos={tarjeta.puntos} hayCanjePendiente={!!tarjeta.canjePendiente} />
+          <ListaPremios
+            slug={local.slug}
+            premios={p.premios}
+            puntos={tarjeta.puntos}
+            hayCanjePendiente={!!tarjeta.canjePendiente}
+            alToque={p.alToque}
+            termino={termino}
+          />
         )}
 
         {p.promos.length > 0 && (

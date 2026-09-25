@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
 import {
+  canjeAlToqueHasta,
   cumpleDelCliente,
   esReciente,
   premiosDelLocal,
@@ -76,6 +77,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
       promos={promos}
       promoAhora={promoAhora}
       objetivo={objetivo}
+      alToque={!!canjeAlToqueHasta(tarjeta.ultimo_toque_en)}
       pedirCumple={local.puntos_cumple > 0 && !cumple}
       limite={limite}
       urlPase={urlPase}
@@ -86,6 +88,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
               tipo: movCelebrado.tipo === "canje" ? "canje" : "suma",
               sumados: movCelebrado.puntos,
               promo: movCelebrado.detalle,
+              premio: movCelebrado.premio,
               regalos: regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos })),
               mensaje: mensajeCelebracion,
             }

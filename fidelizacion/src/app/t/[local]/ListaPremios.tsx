@@ -2,10 +2,35 @@ import type { Premio } from "@/lib/tarjeta";
 import { BotonCanjear } from "./BotonCanjear";
 
 /** Premios del local con un anillo de progreso cada uno. */
-export function ListaPremios({ slug, premios, puntos, hayCanjePendiente }: { slug: string; premios: Premio[]; puntos: number; hayCanjePendiente: boolean }) {
+type Props = {
+  slug: string;
+  premios: Premio[];
+  puntos: number;
+  hayCanjePendiente: boolean;
+  alToque: boolean;
+  termino: string;
+};
+
+export function ListaPremios({ slug, premios, puntos, hayCanjePendiente, alToque, termino }: Props) {
+  const alcanzaAlguno = premios.some((p) => puntos >= p.puntos_necesarios);
   return (
     <section className="mt-8">
       <h2 className="titulo-seccion">Premios</h2>
+      {alcanzaAlguno && !hayCanjePendiente && (
+        alToque ? (
+          <p className="mt-3 flex items-center gap-2.5 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-sm">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+            </span>
+            Estás en el local: tocá Canjear y listo.
+          </p>
+        ) : (
+          <p className="mt-3 rounded-2xl bg-stone-900/[0.05] px-4 py-3 text-sm text-stone-600">
+            Para canjear, pedile al {termino} que apoye su llavero y después tocá <strong className="text-stone-900">Canjear</strong> en esta misma pantalla.
+          </p>
+        )
+      )}
       <ul className="superficie mt-3 divide-y divide-stone-900/[0.06] overflow-hidden">
         {premios.map((p) => {
           const alcanza = puntos >= p.puntos_necesarios;

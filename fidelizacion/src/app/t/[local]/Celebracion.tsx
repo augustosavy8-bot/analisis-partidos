@@ -7,6 +7,8 @@ type Props = {
   /** Puntos que sumó este toque (más de 1 si había promo). */
   sumados: number;
   promo: string | null;
+  /** Nombre del premio (canje). */
+  premio?: string | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   puntos: number;
   mensaje: string;
@@ -18,7 +20,7 @@ const CHISPAS = Array.from({ length: 14 }, (_, i) => {
   return { dx: Math.cos(ang) * r, dy: Math.sin(ang) * r, retardo: (i % 4) * 40 };
 });
 
-export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: Props) {
+export function Celebracion({ tipo, sumados, promo, premio, regalos, puntos, mensaje }: Props) {
   const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
   const cumple = regalos.some((r) => r.motivo === "cumple");
   const [visible, setVisible] = useState(true);
@@ -43,7 +45,8 @@ export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: 
           "radial-gradient(80% 50% at 50% 35%, color-mix(in oklab, var(--marca-acento) 22%, var(--marca)), var(--marca) 70%), var(--marca)",
         color: "var(--marca-texto)",
       }}
-      onClick={() => setVisible(false)}
+      // El canje no se cierra tocando el fondo: el personal tiene que poder verlo.
+      onClick={() => tipo === "suma" && setVisible(false)}
       role="dialog"
       aria-live="polite"
     >
@@ -88,6 +91,18 @@ export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: 
           ))}
         </ul>
       )}
+      {tipo === "canje" && premio && (
+        <div className="anim-subir mt-5 rounded-3xl px-6 py-4" style={{ background: "var(--marca-acento)", color: "var(--marca)", animationDelay: "400ms" }}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] opacity-70">Premio</p>
+          <p className="mt-0.5 text-2xl font-semibold tracking-tight">{premio}</p>
+          <Reloj />
+        </div>
+      )}
+      {tipo === "canje" && (
+        <p className="anim-subir mt-4 text-base font-medium" style={{ animationDelay: "450ms" }}>
+          Mostrale esta pantalla a quien te atiende.
+        </p>
+      )}
       <p className="anim-subir mt-3 text-lg opacity-85" style={{ animationDelay: "450ms" }}>
         {mensaje}
       </p>
@@ -122,4 +137,26 @@ function Contador({ desde, hasta }: { desde: number; hasta: number }) {
     return () => cancelAnimationFrame(id);
   }, [desde, hasta]);
   return <strong className="font-semibold tabular-nums">{valor}</strong>;
+}
+
+/** Hora en vivo con segundos: muestra que la pantalla no es una captura. */
+function Reloj() {
+  const [ahora, setAhora] = useState<Date | null>(null);
+  useEffect(() => {
+    const tic = () => setAhora(new Date());
+    const primero = setTimeout(tic, 0);
+    const id = setInterval(tic, 1000);
+    return () => {
+      clearTimeout(primero);
+      clearInterval(id);
+    };
+  }, []);
+  if (!ahora) return <p className="mt-2 h-5" />;
+  return (
+    <p className="mt-2 flex items-center justify-center gap-2 text-sm font-semibold tabular-nums">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-current" aria-hidden />
+      {ahora.toLocaleDateString("es-AR", { day: "numeric", month: "short" })} ·{" "}
+      {ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })}
+    </p>
+  );
 }

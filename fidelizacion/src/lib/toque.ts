@@ -50,6 +50,11 @@ export async function aplicarToque(clienteId: string, toque: Toque): Promise<Res
     : await db.rpc("registrar_suma", { p_tarjeta_id: tarjetaId, ...args });
   if (error || !r) return { tipo: "error", motivo: "error" };
 
+  // Un toque válido (sumó o sólo chocó con el límite de tiempo) habilita el canje al toque.
+  if (!canje && (r.ok || r.motivo === "limite")) {
+    await db.rpc("marcar_toque", { p_tarjeta_id: tarjetaId, ...args });
+  }
+
   if (r.ok) {
     const { data: t } = await db.from("tarjetas").select("serial").eq("id", tarjetaId).single();
     if (t) await notificarCambioTarjeta(t.serial);

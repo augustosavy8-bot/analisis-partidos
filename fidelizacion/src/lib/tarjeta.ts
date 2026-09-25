@@ -10,6 +10,8 @@ export type Movimiento = {
   puntos: number;
   motivo: MotivoMovimiento;
   detalle: string | null;
+  /** Nombre del premio, si es un canje. */
+  premio: string | null;
   origen: "nfc" | "qr";
   created_at: string;
   mozo: string | null;
@@ -50,7 +52,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const db = crearClienteAdmin();
   const { data: tarjeta } = await db
     .from("tarjetas")
-    .select("id, puntos, serial, wallet_auth_token, created_at")
+    .select("id, puntos, serial, wallet_auth_token, created_at, ultimo_toque_en")
     .eq("cliente_id", clienteId)
     .eq("local_id", localId)
     .maybeSingle();
@@ -59,7 +61,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const [{ data: movs }, { data: canje }] = await Promise.all([
     db
       .from("movimientos")
-      .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre)")
+      .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre))")
       .eq("tarjeta_id", tarjeta.id)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -78,6 +80,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
     puntos: m.puntos,
     motivo: m.motivo,
     detalle: m.detalle,
+    premio: (m.canjes as unknown as { premios: { nombre: string } | null } | null)?.premios?.nombre ?? null,
     origen: m.origen,
     created_at: m.created_at,
     mozo: (m.mozos as unknown as { nombre: string } | null)?.nombre ?? null,
@@ -107,6 +110,16 @@ export function formatearFecha(iso: string, zona: string) {
   const ayer = new Date(hoy.getTime() - 86400000);
   const dia = fmt(d) === fmt(hoy) ? "Hoy" : fmt(d) === fmt(ayer) ? "Ayer" : new Intl.DateTimeFormat("es-AR", { timeZone: zona, day: "numeric", month: "short" }).format(d);
   return `${dia}, ${formatearHora(iso, zona)}`;
+}
+
+/** Minutos después de un toque en los que se puede canjear sin otro toque. */
+export const MINUTOS_CANJE_AL_TOQUE = 5;
+
+/** Hasta cuándo se puede canjear sin otro toque (ISO), o null si no hubo toque reciente. */
+export function canjeAlToqueHasta(ultimoToque: string | null): string | null {
+  if (!ultimoToque) return null;
+  const hasta = new Date(ultimoToque).getTime() + MINUTOS_CANJE_AL_TOQUE * 60_000;
+  return hasta > Date.now() ? new Date(hasta).toISOString() : null;
 }
 
 /** ¿El movimiento ocurrió en los últimos `minutos`? */

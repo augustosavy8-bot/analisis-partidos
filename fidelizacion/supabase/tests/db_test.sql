@@ -327,4 +327,28 @@ end $$;
 select pg_temp.check((select count(*) from public.promos) = 1, 'el dueño ve las promos de su local');
 reset role;
 
+-- ---------------------------------------------------------------- canje al toque
+update public.tarjetas set puntos = 10 where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'sin_toque',
+  'canje al toque: sin toque reciente no canjea');
+select public.marcar_toque('dddddddd-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000101', null, 'nfc');
+select public.canjear_con_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis')) as r \gset
+select pg_temp.check((:'r'::jsonb->>'ok')::boolean and (:'r'::jsonb->>'puntos')::int = 2,
+  'canje al toque: con toque reciente canjea y descuenta (10 -> 2)');
+select pg_temp.check((select count(*) from public.movimientos m join public.canjes c on c.id = m.canje_id
+  where m.tarjeta_id = 'dddddddd-0000-4000-8000-000000000006' and c.estado = 'confirmado'
+    and m.mozo_id = '00000000-0000-4000-8000-000000000101') = 1,
+  'canje al toque: queda el canje confirmado con el mozo del toque');
+update public.tarjetas set puntos = 10 where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'sin_toque',
+  'canje al toque: un toque sirve para un solo canje');
+select public.marcar_toque('dddddddd-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000101', null, 'nfc');
+update public.tarjetas set ultimo_toque_en = now() - interval '6 minutes' where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'sin_toque',
+  'canje al toque: un toque de hace más de 5 minutos no sirve');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

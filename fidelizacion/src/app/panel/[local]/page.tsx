@@ -2,6 +2,7 @@ import { requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo } from "@/components/Panel";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { formasTermino } from "@/lib/terminos";
+import { Icono, type NombreIcono } from "@/components/Icono";
 
 type Metricas = {
   clientes_total: number;
@@ -33,14 +34,15 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
       <p className="-mt-3 mb-5 text-sm text-stone-500">Últimos 30 días, salvo que diga otra cosa.</p>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Numero etiqueta="Clientes" valor={m.clientes_total} detalle={`+${m.clientes_nuevos} nuevos`} />
-        <Numero etiqueta="Visitas" valor={m.visitas} detalle={`${m.clientes_activos} clientes distintos`} />
+        <Numero icono="cliente" etiqueta="Clientes" valor={m.clientes_total} detalle={`+${m.clientes_nuevos} nuevos`} />
+        <Numero icono="sumar-punto" etiqueta="Visitas" valor={m.visitas} detalle={`${m.clientes_activos} clientes distintos`} />
         <Numero
+          icono="historial"
           etiqueta="Vuelven"
           valor={`${pctRecurrentes}%`}
           detalle={`${m.clientes_recurrentes} vinieron 2 veces o más`}
         />
-        <Numero etiqueta="Canjes" valor={m.canjes} detalle="premios entregados" />
+        <Numero icono="canjear" etiqueta="Canjes" valor={m.canjes} detalle="premios entregados" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -84,10 +86,18 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
   );
 }
 
-function Numero({ etiqueta, valor, detalle }: { etiqueta: string; valor: number | string; detalle: string }) {
+function Numero({ icono, etiqueta, valor, detalle }: { icono: NombreIcono; etiqueta: string; valor: number | string; detalle: string }) {
   return (
     <Tarjeta className="!p-4">
-      <p className="text-sm text-stone-500">{etiqueta}</p>
+      <p className="flex items-center gap-2 text-sm text-stone-500">
+        <span
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{ background: "color-mix(in oklab, var(--marca) 8%, white)", color: "var(--marca)" }}
+        >
+          <Icono nombre={icono} tamaño={16} />
+        </span>
+        {etiqueta}
+      </p>
       <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">{valor}</p>
       <p className="mt-1 text-xs text-stone-500">{detalle}</p>
     </Tarjeta>

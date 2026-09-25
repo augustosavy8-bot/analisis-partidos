@@ -1,5 +1,6 @@
 import type { Premio } from "@/lib/tarjeta";
 import { BotonCanjear } from "./BotonCanjear";
+import { Icono } from "@/components/Icono";
 
 /** Premios del local con un anillo de progreso cada uno. */
 type Props = {
@@ -75,7 +76,7 @@ function Anillo({ progreso, alcanza }: { progreso: number; alcanza: boolean }) {
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-base" aria-hidden>
-        {alcanza ? "🎁" : ""}
+        {alcanza ? <Icono nombre="premio" tamaño={18} /> : null}
       </span>
       {!alcanza && (
         <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums text-stone-600">

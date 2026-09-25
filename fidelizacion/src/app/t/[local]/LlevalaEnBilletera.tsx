@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icono } from "@/components/Icono";
 
 /** QR + link personal para guardar la tarjeta en una app de billetera (p. ej. Pass2U). */
 export function LlevalaEnBilletera({ url, qrSvg, franja }: { url: string; qrSvg: string; franja: string }) {
@@ -8,7 +9,7 @@ export function LlevalaEnBilletera({ url, qrSvg, franja }: { url: string; qrSvg:
   return (
     <details className="superficie group mt-8 overflow-hidden">
       <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 font-medium">
-        <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-900/5" aria-hidden>📲</span>Llevala en tu billetera</span>
+        <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-900/5"><Icono nombre="wallet" tamaño={18} /></span>Llevala en tu billetera</span>
         <span className="text-stone-400 transition group-open:rotate-180">⌄</span>
       </summary>
       <div className="space-y-4 px-4 pb-5">

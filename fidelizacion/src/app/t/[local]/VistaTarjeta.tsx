@@ -13,6 +13,7 @@ import { LlevalaEnBilletera } from "./LlevalaEnBilletera";
 import { FormCumple } from "./FormCumple";
 import { ListaPremios } from "./ListaPremios";
 import { Historial } from "./Historial";
+import { Icono, type NombreIcono } from "@/components/Icono";
 
 export type DatosCelebracion = {
   tipo: "suma" | "canje";
@@ -72,7 +73,7 @@ export function VistaTarjeta(p: Props) {
         </header>
 
         {p.limite && (
-          <Aviso icono="⏳">
+          <Aviso icono="historial">
             Ya sumaste hace poco. Vas a poder sumar de nuevo a las <strong>{formatearHora(p.limite, local.zona_horaria)}</strong>.
           </Aviso>
         )}
@@ -167,10 +168,10 @@ export function VistaTarjeta(p: Props) {
   );
 }
 
-function Aviso({ icono, children }: { icono: string; children: React.ReactNode }) {
+function Aviso({ icono, children }: { icono: NombreIcono; children: React.ReactNode }) {
   return (
     <div className="anim-subir mt-5 flex items-center gap-3 rounded-2xl bg-stone-900 px-4 py-3 text-sm text-white shadow-lg">
-      <span className="text-lg" aria-hidden>{icono}</span>
+      <Icono nombre={icono} tamaño={20} className="shrink-0" />
       <p>{children}</p>
     </div>
   );
@@ -189,7 +190,7 @@ export function SinTarjeta({ local }: { local: Local }) {
           Todavía no tenés tarjeta en este celular. Pedile al {termino} que apoye su llavero en tu teléfono y sumás tu primer punto.
         </p>
         <div className="anim-subir superficie mx-auto mt-8 flex items-center gap-3 px-5 py-4 text-left text-sm text-stone-700" style={{ animationDelay: "160ms" }}>
-          <span className="text-2xl" aria-hidden>📲</span>
+          <Icono nombre="nfc" tamaño={28} className="shrink-0" />
           <p>En iPhone, cuando aparezca el aviso arriba de la pantalla, tocalo para abrir tu tarjeta.</p>
         </div>
         <Link

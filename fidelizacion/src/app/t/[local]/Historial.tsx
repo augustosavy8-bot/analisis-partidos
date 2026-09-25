@@ -1,5 +1,6 @@
 import { formatearFecha, type Movimiento } from "@/lib/tarjeta";
-import { iconoMovimiento, tituloMovimiento } from "@/lib/movimientos";
+import { nombreIconoMovimiento, tituloMovimiento } from "@/lib/movimientos";
+import { Icono } from "@/components/Icono";
 
 export function Historial({ movimientos, zona }: { movimientos: Movimiento[]; zona: string }) {
   return (
@@ -22,7 +23,7 @@ export function Historial({ movimientos, zona }: { movimientos: Movimiento[]; zo
                   }
                   aria-hidden
                 >
-                  {m.tipo === "suma" ? "★" : iconoMovimiento(m)}
+                  <Icono nombre={nombreIconoMovimiento(m)} tamaño={18} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-stone-900">{tituloMovimiento(m)}</p>

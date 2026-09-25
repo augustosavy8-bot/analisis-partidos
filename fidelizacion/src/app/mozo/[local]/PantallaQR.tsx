@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { salir } from "./actions";
+import { Icono } from "@/components/Icono";
 
 type QR = { jti: string; url: string; svg: string; renovarEn: string };
 const ROTACION_MS = 30_000;
@@ -95,7 +96,8 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
 
   return (
     <div className="flex flex-1 flex-col items-center">
-      <p className="text-sm text-stone-500">
+      <p className="flex items-center gap-1.5 text-sm text-stone-500">
+        <Icono nombre="mozo" tamaño={16} />
         Turno de <strong className="text-stone-900">{nombre}</strong>
         {escaneos > 0 && ` · ${escaneos} ${escaneos === 1 ? "escaneo" : "escaneos"}`}
       </p>
@@ -128,7 +130,8 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
         </div>
       </div>
 
-      <p className="mt-6 max-w-xs text-center text-stone-600">
+      <p className="mt-6 flex max-w-xs gap-2.5 text-left text-stone-600">
+        <Icono nombre="qr" tamaño={20} className="mt-0.5 shrink-0" />
         {usado
           ? "El cliente ya lo escaneó. Generando uno nuevo…"
           : "Pedile al cliente que lo escanee con la cámara del celular. Cambia cada 30 segundos y sirve una sola vez."}

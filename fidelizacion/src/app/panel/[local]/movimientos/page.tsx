@@ -2,7 +2,8 @@ import Link from "next/link";
 import { fechaHora, requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { formasTermino } from "@/lib/terminos";
-import { iconoMovimiento, textoMovimientoPanel, type MotivoMovimiento, type TipoMovimiento } from "@/lib/movimientos";
+import { nombreIconoMovimiento, textoMovimientoPanel, type MotivoMovimiento, type TipoMovimiento } from "@/lib/movimientos";
+import { Icono } from "@/components/Icono";
 
 export const metadata = { title: "Movimientos" };
 
@@ -86,7 +87,7 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
                   }
                   aria-hidden
                 >
-                  {iconoMovimiento(m)}
+                  <Icono nombre={nombreIconoMovimiento(m)} tamaño={18} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">

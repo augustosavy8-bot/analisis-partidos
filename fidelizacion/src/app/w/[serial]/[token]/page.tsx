@@ -6,6 +6,7 @@ import { tarjetaPorPase } from "@/lib/billetera";
 import { formatearFecha, premiosDelLocal, proximoPremio, tarjetaDelCliente } from "@/lib/tarjeta";
 import { TarjetaVisual } from "@/components/TarjetaVisual";
 import { textoMovimiento } from "@/lib/movimientos";
+import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
@@ -30,7 +31,7 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
 
       {canjeables.length > 0 && (
         <p className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--marca-acento)", color: "var(--marca)" }}>
-          🎁 Ya podés canjear: <strong>{canjeables.map((p) => p.nombre).join(", ")}</strong>. Pedíselo al{" "}
+          <Icono nombre="premio" tamaño={16} className="mr-1 inline -mt-0.5" /> Ya podés canjear: <strong>{canjeables.map((p) => p.nombre).join(", ")}</strong>. Pedíselo al{" "}
           {local.nombre} y canjealo desde tu tarjeta.
         </p>
       )}

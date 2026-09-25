@@ -4,10 +4,9 @@ export type MotivoMovimiento = "promo" | "bienvenida" | "cumple" | null;
 
 type Mov = { tipo: TipoMovimiento; puntos: number; motivo: MotivoMovimiento; detalle: string | null };
 
-export function iconoMovimiento(m: Mov): string {
-  if (m.tipo === "canje") return "🎁";
-  if (m.tipo === "regalo") return m.motivo === "cumple" ? "🎂" : "👋";
-  return `+${m.puntos}`;
+/** Ícono de Point para el movimiento. */
+export function nombreIconoMovimiento(m: Pick<Mov, "tipo">): "sumar-punto" | "premio" | "canjear" {
+  return m.tipo === "canje" ? "canjear" : m.tipo === "regalo" ? "premio" : "sumar-punto";
 }
 
 /** Para el cliente: "Sumaste 2 puntos · Happy hour". */

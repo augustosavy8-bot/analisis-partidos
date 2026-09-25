@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icono } from "@/components/Icono";
 
 type Props = {
   tipo: "suma" | "canje";
@@ -68,7 +69,7 @@ export function Celebracion({ tipo, sumados, promo, premio, regalos, puntos, men
           className="anim-pop relative flex h-40 w-40 items-center justify-center rounded-full text-6xl font-bold shadow-2xl"
           style={{ background: "var(--marca-acento)", color: "var(--marca)" }}
         >
-          {tipo === "suma" ? `+${total}` : "🎁"}
+          {tipo === "suma" ? `+${total}` : <Icono nombre="premio" tamaño={72} trazo={1.6} />}
         </div>
       </div>
 

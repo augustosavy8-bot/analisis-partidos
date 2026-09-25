@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { Local } from "@/lib/locales";
 import type { Premio } from "@/lib/tarjeta";
 import { LogoLocal } from "@/components/CabeceraLocal";
+import { Icono } from "@/components/Icono";
 
 type Props = {
   local: Local;
@@ -109,7 +110,7 @@ function TarjetaFisica({ local, puntos, titular, desde, serial, etiquetaPuntos }
               <LogoLocal local={local} tamaño={34} />
               <p className="truncate text-[15px] font-semibold tracking-tight">{local.nombre}</p>
             </div>
-            <IconoSinContacto />
+            <Icono nombre="nfc" tamaño={24} className="shrink-0 opacity-80" />
           </div>
 
           <div>
@@ -137,16 +138,6 @@ function TarjetaFisica({ local, puntos, titular, desde, serial, etiquetaPuntos }
   );
 }
 
-function IconoSinContacto() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 opacity-80" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-      <path d="M8.5 7.5a6.5 6.5 0 0 1 0 9" />
-      <path d="M12 5a10 10 0 0 1 0 14" />
-      <path d="M15.5 2.5a13.5 13.5 0 0 1 0 19" />
-      <path d="M5 10a3 3 0 0 1 0 4" />
-    </svg>
-  );
-}
 
 /** Sellos (hasta 12) o barra, hacia el próximo premio. */
 function Progreso({ puntos, objetivo }: { puntos: number; objetivo: Premio }) {

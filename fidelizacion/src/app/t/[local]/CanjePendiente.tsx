@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cancelarCanje } from "./actions";
+import { Icono } from "@/components/Icono";
 
 type Props = { slug: string; canjeId: string; premio: string; expiraEn: string; termino: string };
 
@@ -40,7 +41,7 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn, termino }: Pro
     >
       <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
         <span className="anim-onda absolute inset-0 rounded-full bg-white/60" />
-        <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl shadow">📲</span>
+        <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow"><Icono nombre="nfc" tamaño={30} /></span>
       </div>
       <p className="mt-4 text-sm font-semibold uppercase tracking-widest opacity-80">Canje pendiente</p>
       <h2 className="mt-1 text-2xl font-semibold">{premio}</h2>

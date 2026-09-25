@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Icono, type NombreIcono } from "@/components/Icono";
 
-function secciones(personal: string) {
+function secciones(personal: string): { ruta: string; nombre: string; icono: NombreIcono }[] {
   return [
-  { ruta: "", nombre: "Resumen" },
-  { ruta: "/clientes", nombre: "Clientes" },
-  { ruta: "/whatsapp", nombre: "WhatsApp" },
-  { ruta: "/movimientos", nombre: "Movimientos" },
-  { ruta: "/premios", nombre: "Premios" },
-  { ruta: "/promos", nombre: "Promos" },
-  { ruta: "/mozos", nombre: personal },
-  { ruta: "/ajustes", nombre: "Ajustes" },
+    { ruta: "", nombre: "Resumen", icono: "estadisticas" },
+    { ruta: "/clientes", nombre: "Clientes", icono: "cliente" },
+    { ruta: "/whatsapp", nombre: "WhatsApp", icono: "whatsapp" },
+    { ruta: "/movimientos", nombre: "Movimientos", icono: "historial" },
+    { ruta: "/premios", nombre: "Premios", icono: "premio" },
+    { ruta: "/promos", nombre: "Promos", icono: "sumar-punto" },
+    { ruta: "/mozos", nombre: personal, icono: "mozo" },
+    { ruta: "/ajustes", nombre: "Ajustes", icono: "configuracion" },
   ];
 }
 
@@ -29,10 +30,11 @@ export function NavPanel({ slug, personal }: { slug: string; personal: string })
               <Link
                 href={href}
                 aria-current={activa ? "page" : undefined}
-                className={`block rounded-full px-4 py-2 text-sm font-medium transition ${
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition ${
                   activa ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-200/60"
                 }`}
               >
+                <Icono nombre={s.icono} tamaño={16} />
                 {s.nombre}
               </Link>
             </li>

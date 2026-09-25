@@ -167,34 +167,9 @@ function Progreso({ puntos, objetivo }: { puntos: number; objetivo: Premio }) {
 
       {usarSellos ? (
         <div className="mt-4 grid justify-between gap-2" style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 2.75rem))` }}>
-          {Array.from({ length: meta }, (_, i) => {
-            const lleno = i < puntos;
-            const ultimo = i === meta - 1;
-            return (
-              <div
-                key={i}
-                className={`flex aspect-square items-center justify-center rounded-full ${lleno ? "anim-sello" : ""}`}
-                style={
-                  lleno
-                    ? {
-                        background: "linear-gradient(145deg, color-mix(in oklab, var(--marca-acento), white 18%), var(--marca-acento))",
-                        color: "var(--marca)",
-                        boxShadow: "0 1px 0 rgb(255 255 255 / 0.5) inset, 0 4px 10px -4px var(--marca-acento)",
-                        animationDelay: `${i * 45}ms`,
-                      }
-                    : { background: "rgb(0 0 0 / 0.035)", boxShadow: "0 0 0 1.5px rgb(0 0 0 / 0.08) inset" }
-                }
-              >
-                {lleno ? (
-                  <svg viewBox="0 0 24 24" className="h-[45%] w-[45%]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="m5 12.5 4.5 4.5L19 7.5" />
-                  </svg>
-                ) : ultimo ? (
-                  <span className="text-[15px] opacity-60" aria-hidden>🎁</span>
-                ) : null}
-              </div>
-            );
-          })}
+          {Array.from({ length: meta }, (_, i) => (
+            <Sello key={i} lleno={i < puntos} retardo={i * 45} />
+          ))}
         </div>
       ) : (
         <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-stone-900/[0.06]">
@@ -230,4 +205,23 @@ function formatearMesAnio(iso: string, zona: string) {
   const partes = new Intl.DateTimeFormat("en-US", { month: "2-digit", year: "2-digit", timeZone: zona }).formatToParts(new Date(iso));
   const v = (t: string) => partes.find((x) => x.type === t)?.value ?? "";
   return `${v("month")}/${v("year")}`;
+}
+
+/** Sello de Point: aro del color del local, punto y ondas del acento. Vacío en gris. */
+function Sello({ lleno, retardo }: { lleno: boolean; retardo: number }) {
+  const aro = lleno ? "var(--marca)" : "#D6D1CC";
+  const punto = lleno ? "var(--marca-acento)" : "#D6D1CC";
+  return (
+    <svg
+      viewBox="4 6 96 96"
+      className={`aspect-square w-full ${lleno ? "anim-sello" : "opacity-70"}`}
+      style={lleno ? { animationDelay: `${retardo}ms`, filter: "drop-shadow(0 3px 4px rgb(0 0 0 / 0.12))" } : undefined}
+      aria-hidden
+    >
+      <circle cx="46" cy="56" r="33" stroke={aro} strokeWidth="10" fill="none" />
+      <circle cx="46" cy="56" r="13" fill={punto} />
+      <path d="M 64 30 A 23 23 0 0 1 77 52" stroke={punto} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <path d="M 76 20 A 33 33 0 0 1 91 58" stroke={punto} strokeWidth="6" strokeLinecap="round" fill="none" />
+    </svg>
+  );
 }

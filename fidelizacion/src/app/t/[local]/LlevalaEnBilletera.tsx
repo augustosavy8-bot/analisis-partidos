@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 /** QR + link personal para guardar la tarjeta en una app de billetera (p. ej. Pass2U). */
-export function LlevalaEnBilletera({ url, qrSvg }: { url: string; qrSvg: string }) {
+export function LlevalaEnBilletera({ url, qrSvg, franja }: { url: string; qrSvg: string; franja: string }) {
   const [copiado, setCopiado] = useState(false);
   return (
     <details className="superficie group mt-8 overflow-hidden">
@@ -15,6 +15,11 @@ export function LlevalaEnBilletera({ url, qrSvg }: { url: string; qrSvg: string 
         <p className="text-sm text-stone-600">
           Este es el código de <strong>tu</strong> tarjeta. Guardalo en una app de billetera (como Pass2U) y abrila desde ahí cuando quieras.
         </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={franja} alt="Tu tarjeta con tus sellos" className="w-full rounded-xl ring-1 ring-stone-900/5" loading="lazy" />
+        <a href={franja} download="mi-tarjeta-sellos.png" className="block text-center text-sm font-medium underline underline-offset-2">
+          Guardar la imagen con mis sellos
+        </a>
         <div
           className="mx-auto w-48 rounded-xl bg-white p-2 ring-1 ring-stone-200 [&>svg]:h-full [&>svg]:w-full"
           aria-label="Código QR de tu tarjeta"

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1032" height="336" viewBox="0 0 1032 336" fill="none">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0D3B93"/><stop offset="1" stop-color="#226AE0"/></linearGradient></defs>
+<rect width="1032" height="336" rx="24" fill="url(#g)"/>
+<circle cx="160" cy="168" r="64" stroke="#FFFFFF" stroke-width="16" fill="none"/>
+<circle cx="160" cy="168" r="24" fill="#FFFFFF"/>
+<path d="M 195 118 A 45 45 0 0 1 220 160" stroke="#3B82F6" stroke-width="11" stroke-linecap="round" fill="none"/>
+<path d="M 218 100 A 64 64 0 0 1 248 171" stroke="#3B82F6" stroke-width="11" stroke-linecap="round" fill="none"/>
+<text x="290" y="155" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="700" fill="#FFFFFF">Club deportivo</text>
+<text x="290" y="210" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="500" fill="#FFFFFF" opacity="0.88">Un toque y sumás</text>
+<path d="M0 280 C180 240 260 270 380 336 H0 Z" fill="#5A95FF" opacity="0.65"/>
+<path d="M1032 78 C940 40 920 14 900 0 H1032 Z" fill="#5A95FF" opacity="0.35"/>
+</svg>

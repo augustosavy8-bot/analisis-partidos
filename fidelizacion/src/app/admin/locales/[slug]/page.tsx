@@ -130,6 +130,33 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
       <div className="mt-4">
         <GuiaChip appUrl={env.appUrl} metaKey={process.env.NFC_SDM_META_KEY ?? null} />
       </div>
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-widest text-stone-500">Diseño de billetera</h2>
+      <Tarjeta>
+        <p className="text-sm text-stone-600">
+          Se generan con los colores del local. Sirven para armar el pase en Pass2U (franja) y, más adelante, Apple y Google Wallet.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {[
+            { titulo: "Franja con sellos (1125×432)", src: `/t/${local.slug}/franja?p=7`, archivo: `${local.slug}-franja.png` },
+            { titulo: "Cabecera Google Wallet (1032×336)", src: `/t/${local.slug}/cabecera`, archivo: `${local.slug}-cabecera.png` },
+          ].map((img) => (
+            <figure key={img.src}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.src} alt={img.titulo} className="w-full rounded-xl ring-1 ring-stone-200" />
+              <figcaption className="mt-2 flex items-center justify-between text-sm">
+                <span className="text-stone-600">{img.titulo}</span>
+                <a href={img.src} download={img.archivo} className="font-medium underline underline-offset-2">
+                  Descargar
+                </a>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-stone-500">
+          La franja acepta <code>?p=</code> (sellos llenos) y <code>?m=</code> (total, hasta 15). Por defecto el total es el primer premio.
+        </p>
+      </Tarjeta>
     </>
   );
 }

@@ -148,7 +148,11 @@ export function VistaTarjeta(p: Props) {
 
         <Historial movimientos={tarjeta.movimientos} zona={local.zona_horaria} />
 
-        <LlevalaEnBilletera url={p.urlPase} qrSvg={p.qrPase} />
+        <LlevalaEnBilletera
+          url={p.urlPase}
+          qrSvg={p.qrPase}
+          franja={`/t/${local.slug}/franja?p=${tarjeta.puntos}${p.objetivo ? `&m=${p.objetivo.puntos_necesarios}` : ""}`}
+        />
 
         <div className="mt-10 flex flex-col items-center gap-1.5 text-xs text-stone-400">
           <span className="inline-flex items-center gap-1.5 opacity-70 grayscale">

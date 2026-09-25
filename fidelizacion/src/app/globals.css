@@ -4,8 +4,8 @@
   --background: #fafaf9;
   --foreground: #1c1917;
   /* Colores del local: se sobreescriben por página con style={{ "--marca": ... }} */
-  --marca: #1f2937;
-  --marca-acento: #f59e0b;
+  --marca: #0f172a;
+  --marca-acento: #e6633a;
 }
 
 @theme inline {

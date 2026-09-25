@@ -7,6 +7,12 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 > El proyecto está en la carpeta `fidelizacion/` del repo. En Vercel configurá
 > **Root Directory = `fidelizacion`**.
 
+## Marca
+
+Point: naranja `#E6633A`, azul marino `#0F172A`, tipografía Poppins Bold. Los SVG están en
+`public/marca/` y el componente `src/components/MarcaPoint.tsx` dibuja el isotipo y el logo.
+Cada local usa su propia marca en la tarjeta; Point aparece sólo como plataforma.
+
 ## Estado por fases
 
 - [x] **Fase 1**: setup, esquema SQL con migraciones, RLS y seed demo

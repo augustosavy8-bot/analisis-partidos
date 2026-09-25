@@ -1,3 +1,4 @@
+import { LogoPoint } from "@/components/MarcaPoint";
 import Link from "next/link";
 import { requerirSuperadmin } from "@/lib/admin";
 import { salir } from "../panel/ingresar/actions";
@@ -14,8 +15,8 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
       <header className="border-b border-stone-200 bg-white">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
           <Link href="/admin" className="flex items-center gap-2 font-semibold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 text-sm text-white">+1</span>
-            Administración
+            <LogoPoint alto={26} />
+            <span className="ml-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">Admin</span>
           </Link>
           <nav className="flex gap-4 text-sm text-stone-600">
             <Link href="/admin" className="hover:text-stone-900">Estado</Link>

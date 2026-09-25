@@ -5,6 +5,7 @@ import { describirPromo, horaCorta, nombreMultiplicador, type Promo } from "@/li
 import { formasTermino } from "@/lib/terminos";
 import { LogoLocal } from "@/components/CabeceraLocal";
 import { TarjetaVisual } from "@/components/TarjetaVisual";
+import { LogoPoint } from "@/components/MarcaPoint";
 import { Celebracion } from "./Celebracion";
 import { CanjePendiente } from "./CanjePendiente";
 import { InstalarTarjeta } from "./InstalarTarjeta";
@@ -149,10 +150,12 @@ export function VistaTarjeta(p: Props) {
 
         <LlevalaEnBilletera url={p.urlPase} qrSvg={p.qrPase} />
 
-        <p className="mt-10 text-center text-xs text-stone-400">
-          Tarjeta de {local.nombre} con <span className="font-semibold text-stone-500">Point</span> ·{" "}
+        <div className="mt-10 flex flex-col items-center gap-1.5 text-xs text-stone-400">
+          <span className="inline-flex items-center gap-1.5 opacity-70 grayscale">
+            con <LogoPoint alto={14} />
+          </span>
           <Link href="/privacidad" className="underline underline-offset-2">Privacidad</Link>
-        </p>
+        </div>
 
         <InstalarTarjeta />
       </main>

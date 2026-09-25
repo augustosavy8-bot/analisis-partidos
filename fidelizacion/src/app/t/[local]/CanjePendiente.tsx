@@ -47,6 +47,7 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn, termino }: Pro
       <p className="mt-3 text-base">
         Mostrale esta pantalla al {termino} y pedile que <strong>apoye su llavero</strong> en tu celular.
       </p>
+      <p className="mt-2 text-sm opacity-75">Tocá el aviso que aparece arriba: la confirmación se abre en una pestaña nueva.</p>
       <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-black/10 px-3.5 py-1.5 text-sm font-semibold tabular-nums">
         <span className="h-2 w-2 animate-pulse rounded-full bg-current" aria-hidden />
         Vence en {mm}:{ss}

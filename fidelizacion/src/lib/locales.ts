@@ -15,6 +15,7 @@ export type Local = {
   termino_personal: string;
   puntos_bienvenida: number;
   puntos_cumple: number;
+  animacion_canje: "check" | "cafe";
 };
 
 export const buscarLocal = cache(async (slug: string): Promise<Local | null> => {
@@ -22,7 +23,7 @@ export const buscarLocal = cache(async (slug: string): Promise<Local | null> => 
   const db = crearClienteAdmin();
   const { data } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple")
+    .select("id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, animacion_canje")
     .eq("slug", slug)
     .eq("activo", true)
     .maybeSingle();

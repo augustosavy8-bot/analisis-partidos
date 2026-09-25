@@ -25,7 +25,7 @@ export const requerirLocal = cache(async (slug: string) => {
   const { db, userId, email } = await requerirUsuario();
   const { data: local } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, plantillas_whatsapp")
+    .select("id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, animacion_canje, plantillas_whatsapp")
     .eq("slug", slug)
     .maybeSingle();
   if (!local) notFound();

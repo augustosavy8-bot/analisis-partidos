@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCanje, SelloAnimado, TarjetaCompleta } from "@/components/Animaciones";
+import { CafeCanje } from "@/components/CafeCanje";
 
 type Props = {
   tipo: "suma" | "canje";
@@ -10,6 +11,8 @@ type Props = {
   promo: string | null;
   /** Si con este toque completó un premio: se muestra la tarjeta completa. */
   completo?: { meta: number; premio: string } | null;
+  /** Animación del canje elegida por el local. */
+  animacion?: "check" | "cafe";
   /** Nombre del premio (canje). */
   premio?: string | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
@@ -17,7 +20,7 @@ type Props = {
   mensaje: string;
 };
 
-export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje }: Props) {
+export function Celebracion({ tipo, sumados, promo, premio, completo, animacion = "check", regalos, puntos, mensaje }: Props) {
   const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
   const cumple = regalos.some((r) => r.motivo === "cumple");
   const [visible, setVisible] = useState(true);
@@ -48,7 +51,9 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
       aria-live="polite"
     >
       <div className="relative flex min-h-44 items-center justify-center">
-        {tipo === "canje" ? (
+        {tipo === "canje" && animacion === "cafe" ? (
+          <CafeCanje tamaño={200} />
+        ) : tipo === "canje" ? (
           <div className="anim-pop flex h-44 w-44 items-center justify-center rounded-full bg-white shadow-2xl">
             <CheckCanje tamaño={140} />
           </div>

@@ -15,6 +15,7 @@ type Local = {
   color_secundario: string;
   minutos_entre_puntos: number;
   termino_personal: string;
+  animacion_canje: "check" | "cafe";
 };
 
 function textoSobre(hex: string) {
@@ -98,6 +99,14 @@ export function FormAjustes({ local }: { local: Local }) {
                 ))}
               </select>
               <span className="mt-1 block text-xs text-stone-500">Se usa en la tarjeta: “Pedile al vendedor que apoye su llavero”.</span>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-stone-600">Animación al canjear un premio</span>
+              <select name="animacion_canje" defaultValue={local.animacion_canje} className={inputPanel}>
+                <option value="check">Check (sirve para cualquier rubro)</option>
+                <option value="cafe">Café sirviéndose (bares y cafeterías)</option>
+              </select>
+              <span className="mt-1 block text-xs text-stone-500">Es lo que ve el cliente cuando canjea.</span>
             </label>
             <label className="block sm:col-span-2">
               <span className="text-xs font-medium text-stone-600">Logo (link https a una imagen cuadrada, opcional)</span>

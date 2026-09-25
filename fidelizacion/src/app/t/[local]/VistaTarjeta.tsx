@@ -58,7 +58,7 @@ export function VistaTarjeta(p: Props) {
   return (
     <div style={estiloMarca(local)} className="fondo-marca flex flex-1 flex-col">
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))]">
-        {p.celebracion && <Celebracion {...p.celebracion} puntos={tarjeta.puntos} />}
+        {p.celebracion && <Celebracion {...p.celebracion} animacion={local.animacion_canje} puntos={tarjeta.puntos} />}
 
         <header className="flex items-center justify-between px-1 pt-1">
           <div>

@@ -6,9 +6,9 @@ import { useState } from "react";
 export function LlevalaEnBilletera({ url, qrSvg }: { url: string; qrSvg: string }) {
   const [copiado, setCopiado] = useState(false);
   return (
-    <details className="group mt-8 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
+    <details className="superficie group mt-8 overflow-hidden">
       <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-4 font-medium">
-        <span>📲 Llevala en tu billetera</span>
+        <span className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-900/5" aria-hidden>📲</span>Llevala en tu billetera</span>
         <span className="text-stone-400 transition group-open:rotate-180">⌄</span>
       </summary>
       <div className="space-y-4 px-4 pb-5">

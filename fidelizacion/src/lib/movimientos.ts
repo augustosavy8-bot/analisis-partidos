@@ -27,3 +27,10 @@ export function textoMovimientoPanel(m: Mov, premio?: string | null): string {
   const base = m.puntos === 1 ? "sumó 1 punto" : `sumó ${m.puntos} puntos`;
   return m.detalle ? `${base} (${m.detalle})` : base;
 }
+
+/** Título corto para el historial (los puntos van aparte): "Visita", "Happy hour", "Regalo de cumple". */
+export function tituloMovimiento(m: Mov): string {
+  if (m.tipo === "canje") return "Canjeaste un premio";
+  if (m.tipo === "regalo") return m.motivo === "cumple" ? "Regalo de cumple" : "Regalo de bienvenida";
+  return m.detalle ?? "Visita";
+}

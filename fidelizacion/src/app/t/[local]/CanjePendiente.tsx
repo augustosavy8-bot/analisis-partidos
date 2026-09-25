@@ -31,8 +31,12 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn, termino }: Pro
 
   return (
     <section
-      className="anim-subir relative overflow-hidden rounded-3xl p-6 text-center shadow-lg"
-      style={{ background: "var(--marca-acento)", color: "var(--marca)" }}
+      className="anim-subir relative overflow-hidden rounded-[28px] p-6 text-center"
+      style={{
+        background: "linear-gradient(160deg, color-mix(in oklab, var(--marca-acento), white 15%), var(--marca-acento))",
+        color: "var(--marca)",
+        boxShadow: "0 20px 40px -20px var(--marca-acento), 0 0 0 1px rgb(0 0 0 / 0.04)",
+      }}
     >
       <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
         <span className="anim-onda absolute inset-0 rounded-full bg-white/60" />
@@ -43,9 +47,11 @@ export function CanjePendiente({ slug, canjeId, premio, expiraEn, termino }: Pro
       <p className="mt-3 text-base">
         Mostrale esta pantalla al {termino} y pedile que <strong>apoye su llavero</strong> en tu celular.
       </p>
-      <p className="mt-3 font-mono text-sm opacity-80">
+      <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-black/10 px-3.5 py-1.5 text-sm font-semibold tabular-nums">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-current" aria-hidden />
         Vence en {mm}:{ss}
       </p>
+      <br />
       <button
         onClick={() => startTransition(() => cancelarCanje(slug, canjeId))}
         disabled={cancelando}

@@ -1,16 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { registrarse, type EstadoForm } from "./actions";
 import { BotonMarca, Campo, ErrorForm } from "@/components/Campo";
 import { SelectorCumple } from "@/components/SelectorCumple";
+import { TarjetaVisual } from "@/components/TarjetaVisual";
+import type { Local } from "@/lib/locales";
 
-export function FormRegistro({ slug, puntosCumple }: { slug: string; puntosCumple: number }) {
+export function FormRegistro({ local, puntosIniciales }: { local: Local; puntosIniciales: number }) {
+  const slug = local.slug;
+  const puntosCumple = local.puntos_cumple;
   const [estado, accion, pendiente] = useActionState<EstadoForm, FormData>(registrarse, {});
+  const [nombre, setNombre] = useState(estado.valores?.nombre ?? "");
   return (
-    <form action={accion} className="space-y-5">
+    <form action={accion}>
+      {/* La tarjeta se completa con el nombre mientras lo escribís */}
+      <TarjetaVisual
+        local={local}
+        puntos={puntosIniciales}
+        objetivo={null}
+        titular={nombre}
+        etiquetaPuntos={puntosIniciales === 1 ? "punto al crearla" : "puntos al crearla"}
+      />
+      <div className="superficie mt-5 space-y-5 p-5">
       <Campo
+        onChange={(e) => setNombre(e.target.value)}
         etiqueta="Tu nombre"
         name="nombre"
         autoComplete="given-name"
@@ -61,7 +76,8 @@ export function FormRegistro({ slug, puntosCumple }: { slug: string; puntosCumpl
       <BotonMarca type="submit" pendiente={pendiente}>
         Crear mi tarjeta y sumar
       </BotonMarca>
-      <p className="text-center text-sm text-stone-500">
+      </div>
+      <p className="mt-5 text-center text-sm text-stone-500">
         ¿Ya tenías tarjeta?{" "}
         <Link href={`/recuperar?l=${slug}`} className="font-medium text-stone-800 underline underline-offset-2">
           Recuperala con tu WhatsApp

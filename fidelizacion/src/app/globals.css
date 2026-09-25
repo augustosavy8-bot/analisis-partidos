@@ -59,6 +59,45 @@ body {
 .anim-chispa { animation: chispa 0.9s ease-out both; }
 .anim-sello { animation: sello 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+@keyframes brillo {
+  from { transform: translateX(-130%) skewX(-20deg); }
+  to { transform: translateX(260%) skewX(-20deg); }
+}
+@keyframes entrar-tarjeta {
+  from { opacity: 0; transform: translateY(24px) rotateX(18deg) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+}
+.anim-brillo { animation: brillo 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both; }
+.anim-entrar-tarjeta { animation: entrar-tarjeta 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .anim-aparecer, .anim-subir, .anim-pop, .anim-onda, .anim-chispa, .anim-sello { animation: none; }
+  .anim-aparecer, .anim-subir, .anim-pop, .anim-onda, .anim-chispa, .anim-sello,
+  .anim-brillo, .anim-entrar-tarjeta { animation: none; }
+}
+
+/* --- Superficies de la tarjeta del cliente --------------------------------- */
+/* Fondo de página con un toque del color del local. */
+@utility fondo-marca {
+  background:
+    radial-gradient(120% 60% at 50% -10%, color-mix(in oklab, var(--marca) 14%, transparent), transparent 70%),
+    color-mix(in oklab, var(--marca) 4%, #f6f5f3);
+}
+/* Panel blanco con sombra suave, tipo pase de billetera. */
+@utility superficie {
+  background: rgb(255 255 255 / 0.88);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.05),
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 12px 32px -16px rgb(0 0 0 / 0.18);
+  backdrop-filter: blur(12px);
+}
+/* Título de sección en versalitas. */
+@utility titulo-seccion {
+  padding-inline: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(120 113 108);
 }

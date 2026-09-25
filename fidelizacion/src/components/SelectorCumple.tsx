@@ -1,7 +1,7 @@
 import { MESES } from "@/lib/promos";
 
 const clase =
-  "block w-full rounded-xl border border-stone-300 bg-white px-3 py-3 text-base text-stone-900 shadow-sm outline-none focus:border-[var(--marca)] focus:ring-2 focus:ring-[var(--marca)]/20";
+  "block h-[52px] w-full rounded-2xl border-0 bg-stone-900/[0.04] px-3 text-base text-stone-900 outline-none ring-1 ring-inset ring-stone-900/10 focus:bg-white focus:ring-2 focus:ring-[var(--marca)]";
 
 /** Día y mes del cumple (sin año). */
 export function SelectorCumple({ dia, mes, requerido }: { dia?: string; mes?: string; requerido?: boolean }) {

@@ -9,8 +9,8 @@ export function BotonCanjear({ slug, premioId, deshabilitado }: { slug: string; 
     <button
       onClick={() => startTransition(() => solicitarCanje(slug, premioId))}
       disabled={pendiente || deshabilitado}
-      className="rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-95 disabled:opacity-50"
-      style={{ background: "var(--marca)", color: "var(--marca-texto)" }}
+      className="rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 disabled:opacity-50"
+      style={{ background: "var(--marca)", color: "var(--marca-texto)", boxShadow: "0 6px 16px -6px var(--marca)" }}
     >
       {pendiente ? "…" : "Canjear"}
     </button>

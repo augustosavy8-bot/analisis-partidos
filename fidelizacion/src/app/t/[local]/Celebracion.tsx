@@ -38,7 +38,11 @@ export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: 
   return (
     <div
       className="anim-aparecer fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center"
-      style={{ background: "var(--marca)", color: "var(--marca-texto)" }}
+      style={{
+        background:
+          "radial-gradient(80% 50% at 50% 35%, color-mix(in oklab, var(--marca-acento) 22%, var(--marca)), var(--marca) 70%), var(--marca)",
+        color: "var(--marca-texto)",
+      }}
       onClick={() => setVisible(false)}
       role="dialog"
       aria-live="polite"
@@ -88,7 +92,7 @@ export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: 
         {mensaje}
       </p>
       <p className="anim-subir mt-1 text-sm opacity-70" style={{ animationDelay: "500ms" }}>
-        Tenés {puntos} {puntos === 1 ? "punto" : "puntos"}
+        Tenés <Contador hasta={puntos} desde={Math.max(0, puntos - (tipo === "suma" ? total : 0))} /> {puntos === 1 ? "punto" : "puntos"}
       </p>
 
       <button
@@ -100,4 +104,22 @@ export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: 
       </button>
     </div>
   );
+}
+
+/** Número que sube de "desde" a "hasta" (animación corta). */
+function Contador({ desde, hasta }: { desde: number; hasta: number }) {
+  const [valor, setValor] = useState(desde);
+  useEffect(() => {
+    if (desde === hasta) return;
+    const inicio = performance.now();
+    let id = 0;
+    const paso = (t: number) => {
+      const k = Math.min(1, (t - inicio - 600) / 700);
+      if (k > 0) setValor(Math.round(desde + (hasta - desde) * (1 - (1 - k) ** 3)));
+      if (k < 1) id = requestAnimationFrame(paso);
+    };
+    id = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(id);
+  }, [desde, hasta]);
+  return <strong className="font-semibold tabular-nums">{valor}</strong>;
 }

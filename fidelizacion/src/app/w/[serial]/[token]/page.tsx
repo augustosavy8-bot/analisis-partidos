@@ -26,7 +26,7 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
       <p className="px-2 text-stone-600">
         Hola, <span className="font-semibold text-stone-900">{pase.nombre.split(" ")[0]}</span>
       </p>
-      <TarjetaVisual local={local} puntos={tarjeta.puntos} objetivo={objetivo} />
+      <TarjetaVisual local={local} puntos={tarjeta.puntos} objetivo={objetivo} titular={pase.nombre} desde={tarjeta.created_at} serial={tarjeta.serial} />
 
       {canjeables.length > 0 && (
         <p className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--marca-acento)", color: "var(--marca)" }}>

@@ -57,6 +57,13 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
     ? tarjeta.movimientos.filter((m) => m.tipo === "regalo" && m.created_at === movCelebrado.created_at)
     : [];
 
+  // ¿Con este toque llegó justo a un premio? (para la animación de tarjeta completa)
+  const sumadosAhora = movCelebrado?.tipo === "suma" ? movCelebrado.puntos + regalos.reduce((a, r) => a + r.puntos, 0) : 0;
+  const puntosAntes = tarjeta.puntos - sumadosAhora;
+  const completado = sumadosAhora
+    ? premios.find((pr) => puntosAntes < pr.puntos_necesarios && tarjeta.puntos >= pr.puntos_necesarios)
+    : undefined;
+
   let mensajeCelebracion = "";
   if (movCelebrado?.tipo === "suma" && objetivo) {
     const faltan = objetivo.puntos_necesarios - tarjeta.puntos;
@@ -64,6 +71,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
       faltan > 0
         ? `Te ${faltan === 1 ? "falta 1 punto" : `faltan ${faltan} puntos`} para ${objetivo.nombre.toLowerCase()}.`
         : `¡Ya podés canjear ${objetivo.nombre.toLowerCase()}!`;
+    if (completado) mensajeCelebracion = `Ya podés canjear ${completado.nombre.toLowerCase()}. Tocá Canjear en tu tarjeta.`;
   } else if (movCelebrado?.tipo === "canje") {
     mensajeCelebracion = "Disfrutalo. ¡Gracias por venir!";
   }
@@ -89,6 +97,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
               sumados: movCelebrado.puntos,
               promo: movCelebrado.detalle,
               premio: movCelebrado.premio,
+              completo: completado ? { meta: completado.puntos_necesarios, premio: completado.nombre } : null,
               regalos: regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos })),
               mensaje: mensajeCelebracion,
             }

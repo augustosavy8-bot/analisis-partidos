@@ -1,0 +1,6 @@
+<svg class="nfc-wave" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="112" cy="150" r="30" fill="#FF6A1A"/>
+  <path class="nfc-wave__arc nfc-wave__arc--1" d="M145 112a54 54 0 0 1 0 76" fill="none" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/>
+  <path class="nfc-wave__arc nfc-wave__arc--2" d="M171 88a88 88 0 0 1 0 124" fill="none" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/>
+  <path class="nfc-wave__arc nfc-wave__arc--3" d="M198 63a124 124 0 0 1 0 174" fill="none" stroke="#0F172A" stroke-width="14" stroke-linecap="round"/>
+</svg>

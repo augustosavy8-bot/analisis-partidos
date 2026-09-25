@@ -1,0 +1,61 @@
+.point-stamp { width: 180px; height: 180px; overflow: visible; }
+.point-stamp__mark { transform-origin: 150px 150px; animation: pointStamp .6s cubic-bezier(.2,.9,.3,1.15) both; }
+.point-stamp__pulse { transform-origin: 150px 150px; animation: pointStampPulse .6s ease-out both; }
+@keyframes pointStamp {
+  0% { transform: scale(.58) rotate(-7deg); opacity: 0; }
+  58% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  78% { transform: scale(.97) rotate(0deg); }
+  100% { transform: scale(1); }
+}
+@keyframes pointStampPulse {
+  0%, 30% { transform: scale(.78); opacity: 0; }
+  45% { opacity: .25; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .point-stamp__mark, .point-stamp__pulse { animation: none; }
+}
+.reward-card { width: min(100%, 620px); overflow: visible; }
+.reward-card__last { transform-origin: 565px 225px; animation: rewardLast .75s cubic-bezier(.22,.9,.3,1.08) both; }
+.reward-card__reward { transform-origin: 565px 215px; animation: rewardReveal .9s cubic-bezier(.2,.8,.2,1) .45s both; }
+.reward-card__sparkles { animation: rewardSpark .75s ease-out .75s both; }
+@keyframes rewardLast {
+  0% { transform: scale(.25); opacity: 0; }
+  55% { transform: scale(1.14); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes rewardReveal {
+  0% { transform: translateY(12px) scale(.9); opacity: 0; }
+  70% { transform: translateY(-2px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes rewardSpark {
+  0% { opacity: 0; transform: translateY(5px); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-card__last, .reward-card__reward, .reward-card__sparkles { animation: none; opacity: 1; }
+}
+.nfc-wave { width: 170px; height: 170px; overflow: visible; }
+.nfc-wave__arc { transform-origin: 112px 150px; opacity: .18; animation: nfcWave 1.5s ease-in-out infinite; }
+.nfc-wave__arc--2 { animation-delay: .18s; }
+.nfc-wave__arc--3 { animation-delay: .36s; }
+@keyframes nfcWave {
+  0%, 100% { opacity: .15; transform: scale(.96); }
+  42% { opacity: 1; transform: scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nfc-wave__arc { animation: none; opacity: 1; }
+}
+.redeem-check { width: 160px; height: 160px; overflow: visible; }
+.redeem-check__ring { stroke-dasharray: 590; stroke-dashoffset: 590; animation: redeemRing .52s ease-out forwards; }
+.redeem-check__tick { stroke-dasharray: 150; stroke-dashoffset: 150; animation: redeemTick .38s cubic-bezier(.2,.8,.3,1) .28s forwards; }
+@keyframes redeemRing { to { stroke-dashoffset: 0; } }
+@keyframes redeemTick {
+  0% { stroke-dashoffset: 150; }
+  100% { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .redeem-check__ring, .redeem-check__tick { animation: none; stroke-dashoffset: 0; }
+}

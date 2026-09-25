@@ -1,0 +1,22 @@
+.reward-card { width: min(100%, 620px); overflow: visible; }
+.reward-card__last { transform-origin: 565px 225px; animation: rewardLast .75s cubic-bezier(.22,.9,.3,1.08) both; }
+.reward-card__reward { transform-origin: 565px 215px; animation: rewardReveal .9s cubic-bezier(.2,.8,.2,1) .45s both; }
+.reward-card__sparkles { animation: rewardSpark .75s ease-out .75s both; }
+@keyframes rewardLast {
+  0% { transform: scale(.25); opacity: 0; }
+  55% { transform: scale(1.14); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes rewardReveal {
+  0% { transform: translateY(12px) scale(.9); opacity: 0; }
+  70% { transform: translateY(-2px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes rewardSpark {
+  0% { opacity: 0; transform: translateY(5px); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-card__last, .reward-card__reward, .reward-card__sparkles { animation: none; opacity: 1; }
+}

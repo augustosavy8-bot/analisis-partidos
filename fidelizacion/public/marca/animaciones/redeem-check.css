@@ -1,0 +1,11 @@
+.redeem-check { width: 160px; height: 160px; overflow: visible; }
+.redeem-check__ring { stroke-dasharray: 590; stroke-dashoffset: 590; animation: redeemRing .52s ease-out forwards; }
+.redeem-check__tick { stroke-dasharray: 150; stroke-dashoffset: 150; animation: redeemTick .38s cubic-bezier(.2,.8,.3,1) .28s forwards; }
+@keyframes redeemRing { to { stroke-dashoffset: 0; } }
+@keyframes redeemTick {
+  0% { stroke-dashoffset: 150; }
+  100% { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .redeem-check__ring, .redeem-check__tick { animation: none; stroke-dashoffset: 0; }
+}

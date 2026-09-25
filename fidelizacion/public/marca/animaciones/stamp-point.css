@@ -1,0 +1,17 @@
+.point-stamp { width: 180px; height: 180px; overflow: visible; }
+.point-stamp__mark { transform-origin: 150px 150px; animation: pointStamp .6s cubic-bezier(.2,.9,.3,1.15) both; }
+.point-stamp__pulse { transform-origin: 150px 150px; animation: pointStampPulse .6s ease-out both; }
+@keyframes pointStamp {
+  0% { transform: scale(.58) rotate(-7deg); opacity: 0; }
+  58% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  78% { transform: scale(.97) rotate(0deg); }
+  100% { transform: scale(1); }
+}
+@keyframes pointStampPulse {
+  0%, 30% { transform: scale(.78); opacity: 0; }
+  45% { opacity: .25; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .point-stamp__mark, .point-stamp__pulse { animation: none; }
+}

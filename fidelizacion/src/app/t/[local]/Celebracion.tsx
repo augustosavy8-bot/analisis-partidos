@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icono } from "@/components/Icono";
+import { CheckCanje, SelloAnimado, TarjetaCompleta } from "@/components/Animaciones";
 
 type Props = {
   tipo: "suma" | "canje";
   /** Puntos que sumó este toque (más de 1 si había promo). */
   sumados: number;
   promo: string | null;
+  /** Si con este toque completó un premio: se muestra la tarjeta completa. */
+  completo?: { meta: number; premio: string } | null;
   /** Nombre del premio (canje). */
   premio?: string | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
@@ -15,13 +17,7 @@ type Props = {
   mensaje: string;
 };
 
-const CHISPAS = Array.from({ length: 14 }, (_, i) => {
-  const ang = (i / 14) * Math.PI * 2;
-  const r = 110 + (i % 3) * 30;
-  return { dx: Math.cos(ang) * r, dy: Math.sin(ang) * r, retardo: (i % 4) * 40 };
-});
-
-export function Celebracion({ tipo, sumados, promo, premio, regalos, puntos, mensaje }: Props) {
+export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje }: Props) {
   const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
   const cumple = regalos.some((r) => r.motivo === "cumple");
   const [visible, setVisible] = useState(true);
@@ -51,32 +47,32 @@ export function Celebracion({ tipo, sumados, promo, premio, regalos, puntos, men
       role="dialog"
       aria-live="polite"
     >
-      <div className="relative flex h-44 w-44 items-center justify-center">
-        <span className="anim-onda absolute inset-0 rounded-full" style={{ background: "var(--marca-acento)" }} />
-        {CHISPAS.map((c, i) => (
-          <span
-            key={i}
-            className="anim-chispa absolute h-2.5 w-2.5 rounded-full"
-            style={{
-              background: "var(--marca-acento)",
-              ["--dx" as string]: `${c.dx}px`,
-              ["--dy" as string]: `${c.dy}px`,
-              animationDelay: `${250 + c.retardo}ms`,
-            }}
-          />
-        ))}
-        <div
-          className="anim-pop relative flex h-40 w-40 items-center justify-center rounded-full text-6xl font-bold shadow-2xl"
-          style={{ background: "var(--marca-acento)", color: "var(--marca)" }}
-        >
-          {tipo === "suma" ? `+${total}` : <Icono nombre="premio" tamaño={72} trazo={1.6} />}
-        </div>
+      <div className="relative flex min-h-44 items-center justify-center">
+        {tipo === "canje" ? (
+          <div className="anim-pop flex h-44 w-44 items-center justify-center rounded-full bg-white shadow-2xl">
+            <CheckCanje tamaño={140} />
+          </div>
+        ) : completo ? (
+          <TarjetaCompleta meta={completo.meta} sello="var(--marca-acento)" fondo="#FAF7F2" caja="var(--marca)" />
+        ) : (
+          <div className="relative">
+            <SelloAnimado aro="var(--marca-acento)" ondas="var(--marca-texto)" tamaño={176} />
+            <span
+              className="anim-subir absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-4 py-1.5 text-2xl font-bold tabular-nums shadow-lg"
+              style={{ background: "var(--marca-texto)", color: "var(--marca)", animationDelay: "450ms" }}
+            >
+              +{total}
+            </span>
+          </div>
+        )}
       </div>
 
       <h1 className="anim-subir mt-10 text-3xl font-semibold tracking-tight" style={{ animationDelay: "350ms" }}>
         {tipo === "canje"
           ? "¡Premio canjeado!"
-          : cumple
+          : completo
+            ? "¡Completaste tu tarjeta!"
+            : cumple
             ? "¡Feliz cumple! 🎂"
             : total === 1
               ? "¡Sumaste un punto!"

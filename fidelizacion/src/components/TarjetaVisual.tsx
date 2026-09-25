@@ -205,14 +205,16 @@ function Sello({ lleno, retardo }: { lleno: boolean; retardo: number }) {
   return (
     <svg
       viewBox="4 6 96 96"
-      className={`aspect-square w-full ${lleno ? "anim-sello" : "opacity-70"}`}
-      style={lleno ? { animationDelay: `${retardo}ms`, filter: "drop-shadow(0 3px 4px rgb(0 0 0 / 0.12))" } : undefined}
+      className={`aspect-square w-full overflow-visible ${lleno ? "" : "opacity-70"}`}
+      style={lleno ? { filter: "drop-shadow(0 3px 4px rgb(0 0 0 / 0.12))" } : undefined}
       aria-hidden
     >
-      <circle cx="46" cy="56" r="33" stroke={aro} strokeWidth="10" fill="none" />
-      <circle cx="46" cy="56" r="13" fill={punto} />
-      <path d="M 64 30 A 23 23 0 0 1 77 52" stroke={punto} strokeWidth="6" strokeLinecap="round" fill="none" />
-      <path d="M 76 20 A 33 33 0 0 1 91 58" stroke={punto} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <g className={lleno ? "pt-sello" : ""} style={lleno ? { transformOrigin: "46px 56px", animationDelay: `${retardo}ms` } : undefined}>
+        <circle cx="46" cy="56" r="33" style={{ stroke: aro }} strokeWidth="10" fill="none" />
+        <circle cx="46" cy="56" r="13" style={{ fill: punto }} />
+        <path d="M 64 30 A 23 23 0 0 1 77 52" style={{ stroke: punto }} strokeWidth="6" strokeLinecap="round" fill="none" />
+        <path d="M 76 20 A 33 33 0 0 1 91 58" style={{ stroke: punto }} strokeWidth="6" strokeLinecap="round" fill="none" />
+      </g>
     </svg>
   );
 }

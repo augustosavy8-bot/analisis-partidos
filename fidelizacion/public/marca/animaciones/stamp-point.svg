@@ -1,0 +1,9 @@
+<svg class="point-stamp" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <g class="point-stamp__mark">
+    <circle cx="150" cy="150" r="92" fill="none" stroke="#FF6A1A" stroke-width="24"/>
+    <circle cx="150" cy="150" r="42" fill="#FF6A1A"/>
+    <path d="M202 92a65 65 0 0 1 33 48" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>
+    <path d="M221 72a91 91 0 0 1 45 70" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>
+  </g>
+  <circle class="point-stamp__pulse" cx="150" cy="150" r="112" fill="none" stroke="#FF6A1A" stroke-width="8" opacity="0"/>
+</svg>

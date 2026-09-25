@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { salir } from "./actions";
 import { Icono } from "@/components/Icono";
+import { CheckCanje } from "@/components/Animaciones";
 
 type QR = { jti: string; url: string; svg: string; renovarEn: string };
 const ROTACION_MS = 30_000;
@@ -112,7 +113,7 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
             />
           ) : usado ? (
             <div className="anim-pop flex h-full w-full flex-col items-center justify-center rounded-2xl bg-emerald-500 text-white">
-              <span className="text-7xl">✓</span>
+              <CheckCanje color="#ffffff" tamaño={120} />
               <span className="mt-2 text-lg font-semibold">¡Listo!</span>
             </div>
           ) : (

@@ -6,6 +6,7 @@ import { formasTermino } from "@/lib/terminos";
 import { LogoLocal } from "@/components/CabeceraLocal";
 import { TarjetaVisual } from "@/components/TarjetaVisual";
 import { LogoPoint } from "@/components/MarcaPoint";
+import { OndasNfc } from "@/components/Animaciones";
 import { Celebracion } from "./Celebracion";
 import { CanjePendiente } from "./CanjePendiente";
 import { InstalarTarjeta } from "./InstalarTarjeta";
@@ -20,6 +21,7 @@ export type DatosCelebracion = {
   sumados: number;
   promo: string | null;
   premio: string | null;
+  completo: { meta: number; premio: string } | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   mensaje: string;
 };
@@ -190,7 +192,9 @@ export function SinTarjeta({ local }: { local: Local }) {
           Todavía no tenés tarjeta en este celular. Pedile al {termino} que apoye su llavero en tu teléfono y sumás tu primer punto.
         </p>
         <div className="anim-subir superficie mx-auto mt-8 flex items-center gap-3 px-5 py-4 text-left text-sm text-stone-700" style={{ animationDelay: "160ms" }}>
-          <Icono nombre="nfc" tamaño={28} className="shrink-0" />
+          <span className="shrink-0">
+            <OndasNfc punto="var(--marca-acento)" ondas="var(--marca)" tamaño={44} />
+          </span>
           <p>En iPhone, cuando aparezca el aviso arriba de la pantalla, tocalo para abrir tu tarjeta.</p>
         </div>
         <Link

@@ -1,0 +1,11 @@
+.nfc-wave { width: 170px; height: 170px; overflow: visible; }
+.nfc-wave__arc { transform-origin: 112px 150px; opacity: .18; animation: nfcWave 1.5s ease-in-out infinite; }
+.nfc-wave__arc--2 { animation-delay: .18s; }
+.nfc-wave__arc--3 { animation-delay: .36s; }
+@keyframes nfcWave {
+  0%, 100% { opacity: .15; transform: scale(.96); }
+  42% { opacity: 1; transform: scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nfc-wave__arc { animation: none; opacity: 1; }
+}

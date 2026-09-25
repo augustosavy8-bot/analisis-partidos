@@ -150,7 +150,8 @@ export function VistaTarjeta(p: Props) {
         <LlevalaEnBilletera url={p.urlPase} qrSvg={p.qrPase} />
 
         <p className="mt-10 text-center text-xs text-stone-400">
-          Tarjeta de {local.nombre} · <Link href="/privacidad" className="underline underline-offset-2">Privacidad</Link>
+          Tarjeta de {local.nombre} con <span className="font-semibold text-stone-500">Point</span> ·{" "}
+          <Link href="/privacidad" className="underline underline-offset-2">Privacidad</Link>
         </p>
 
         <InstalarTarjeta />

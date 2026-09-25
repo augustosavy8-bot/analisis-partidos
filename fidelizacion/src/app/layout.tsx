@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sumá — Fidelización para tu local",
-    template: "%s · Sumá",
+    default: "Point — Fidelización para tu local",
+    template: "%s · Point",
   },
   description: "Tarjeta de puntos digital con chip NFC para cafeterías, bares y comercios.",
 };

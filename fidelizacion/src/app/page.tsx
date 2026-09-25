@@ -3,8 +3,11 @@ import Link from "next/link";
 export default function Inicio() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-6 py-16">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-900 text-xl font-semibold text-white">
-        +1
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-stone-900 text-white">
+          <span className="h-3 w-3 rounded-full bg-lime-300" aria-hidden />
+        </div>
+        <span className="text-2xl font-semibold tracking-tight text-stone-900">Point</span>
       </div>
       <div className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">

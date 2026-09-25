@@ -1,4 +1,4 @@
-# Sumá: fidelización con chip NFC
+# Point: fidelización con chip NFC
 
 MVP de tarjeta de puntos para cafeterías, bares y comercios. El mozo apoya su
 llavero NFC en el celular del cliente y se suma 1 punto. Next.js (App Router) +

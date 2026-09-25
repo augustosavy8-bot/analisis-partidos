@@ -35,7 +35,7 @@ export async function vincularCelular(opts: {
   nombre: string;
   whatsapp: string;
   localId: string;
-}): Promise<{ clienteExistia: boolean; resultado: ResultadoToque | null }> {
+}): Promise<{ clienteId: string; clienteExistia: boolean; resultado: ResultadoToque | null }> {
   const store = await cookies();
   const ua = (await headers()).get("user-agent") ?? "";
   const { token, hash } = nuevoTokenDispositivo();
@@ -59,5 +59,5 @@ export async function vincularCelular(opts: {
   }
   store.delete(COOKIE_TOQUE);
 
-  return { clienteExistia: data.cliente_existia, resultado };
+  return { clienteId: data.cliente_id, clienteExistia: data.cliente_existia, resultado };
 }

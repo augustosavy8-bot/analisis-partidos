@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 type Props = {
   tipo: "suma" | "canje";
+  /** Puntos que sumó este toque (más de 1 si había promo). */
+  sumados: number;
+  promo: string | null;
+  regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   puntos: number;
   mensaje: string;
 };
@@ -14,7 +18,9 @@ const CHISPAS = Array.from({ length: 14 }, (_, i) => {
   return { dx: Math.cos(ang) * r, dy: Math.sin(ang) * r, retardo: (i % 4) * 40 };
 });
 
-export function Celebracion({ tipo, puntos, mensaje }: Props) {
+export function Celebracion({ tipo, sumados, promo, regalos, puntos, mensaje }: Props) {
+  const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
+  const cumple = regalos.some((r) => r.motivo === "cumple");
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -55,13 +61,29 @@ export function Celebracion({ tipo, puntos, mensaje }: Props) {
           className="anim-pop relative flex h-40 w-40 items-center justify-center rounded-full text-6xl font-bold shadow-2xl"
           style={{ background: "var(--marca-acento)", color: "var(--marca)" }}
         >
-          {tipo === "suma" ? "+1" : "🎁"}
+          {tipo === "suma" ? `+${total}` : "🎁"}
         </div>
       </div>
 
       <h1 className="anim-subir mt-10 text-3xl font-semibold tracking-tight" style={{ animationDelay: "350ms" }}>
-        {tipo === "suma" ? "¡Sumaste un punto!" : "¡Premio canjeado!"}
+        {tipo === "canje"
+          ? "¡Premio canjeado!"
+          : cumple
+            ? "¡Feliz cumple! 🎂"
+            : total === 1
+              ? "¡Sumaste un punto!"
+              : `¡Sumaste ${total} puntos!`}
       </h1>
+      {tipo === "suma" && (promo || regalos.length > 0) && (
+        <ul className="anim-subir mt-3 space-y-1 text-base opacity-90" style={{ animationDelay: "400ms" }}>
+          {promo && <li>🔥 {promo}: +{sumados}</li>}
+          {regalos.map((r) => (
+            <li key={r.motivo}>
+              {r.motivo === "cumple" ? "🎂 Regalo de cumple" : "👋 Regalo de bienvenida"}: +{r.puntos}
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="anim-subir mt-3 text-lg opacity-85" style={{ animationDelay: "450ms" }}>
         {mensaje}
       </p>

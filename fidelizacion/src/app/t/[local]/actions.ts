@@ -5,6 +5,8 @@ import { refresh } from "next/cache";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
+import { guardarCumpleCliente } from "@/lib/tarjeta";
+import { leerCumple } from "@/lib/promos";
 
 async function tarjetaActual(slug: string) {
   const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
@@ -39,4 +41,18 @@ export async function cancelarCanje(slug: string, canjeId: string) {
     .eq("tarjeta_id", tarjeta.id)
     .eq("estado", "pendiente");
   refresh();
+}
+
+export type EstadoCumple = { error?: string; ok?: boolean };
+
+export async function guardarCumple(slug: string, _prev: EstadoCumple, form: FormData): Promise<EstadoCumple> {
+  const cliente = await clienteActual();
+  if (!cliente) redirect(`/t/${slug}`);
+  const cumple = leerCumple(form);
+  if (!cumple || cumple === "invalido") return { error: "Elegí un día y un mes válidos." };
+  if (!(await guardarCumpleCliente(cliente.clienteId, cumple.dia, cumple.mes))) {
+    return { error: "Tu cumple ya estaba cargado." };
+  }
+  refresh();
+  return { ok: true };
 }

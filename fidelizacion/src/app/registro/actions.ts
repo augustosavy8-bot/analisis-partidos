@@ -6,17 +6,27 @@ import { buscarLocal } from "@/lib/locales";
 import { toquePendienteActual, vincularCelular } from "@/lib/sesion-cliente";
 import { urlResultado } from "@/lib/toque";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { leerCumple } from "@/lib/promos";
+import { guardarCumpleCliente } from "@/lib/tarjeta";
 
 export type EstadoForm = { error?: string; valores?: Record<string, string> };
 
 export async function registrarse(_prev: EstadoForm, form: FormData): Promise<EstadoForm> {
   const nombre = String(form.get("nombre") ?? "").trim().replace(/\s+/g, " ");
   const whatsappCrudo = String(form.get("whatsapp") ?? "");
-  const valores = { nombre, whatsapp: whatsappCrudo, consentimiento: String(form.get("consentimiento") ?? "") };
+  const valores = {
+    nombre,
+    whatsapp: whatsappCrudo,
+    consentimiento: String(form.get("consentimiento") ?? ""),
+    cumple_dia: String(form.get("cumple_dia") ?? ""),
+    cumple_mes: String(form.get("cumple_mes") ?? ""),
+  };
 
   if (nombre.length < 2 || nombre.length > 80) return { error: "Poné tu nombre.", valores };
   const whatsapp = normalizarWhatsapp(whatsappCrudo);
   if (!whatsapp) return { error: "Revisá el número de WhatsApp (con código de área).", valores };
+  const cumple = leerCumple(form);
+  if (cumple === "invalido") return { error: "Revisá tu cumple: elegí día y mes, o dejá los dos vacíos.", valores };
   if (form.get("consentimiento") !== "on") {
     return { error: "Para crear tu tarjeta tenés que aceptar la política de privacidad.", valores };
   }
@@ -24,7 +34,8 @@ export async function registrarse(_prev: EstadoForm, form: FormData): Promise<Es
   const toque = await toquePendienteActual();
   if (!toque) redirect("/aviso?m=toque_vencido");
 
-  const { resultado } = await vincularCelular({ nombre, whatsapp, localId: toque.localId });
+  const { resultado, clienteId } = await vincularCelular({ nombre, whatsapp, localId: toque.localId });
+  if (cumple) await guardarCumpleCliente(clienteId, cumple.dia, cumple.mes);
   redirect(resultado ? urlResultado(toque.localSlug, resultado) : `/t/${toque.localSlug}`);
 }
 

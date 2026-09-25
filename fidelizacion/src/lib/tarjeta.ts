@@ -1,11 +1,15 @@
 import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+import type { MotivoMovimiento, TipoMovimiento } from "@/lib/movimientos";
+import type { Promo } from "@/lib/promos";
 
 export type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number };
 export type Movimiento = {
   id: string;
-  tipo: "suma" | "canje";
+  tipo: TipoMovimiento;
   puntos: number;
+  motivo: MotivoMovimiento;
+  detalle: string | null;
   origen: "nfc" | "qr";
   created_at: string;
   mozo: string | null;
@@ -24,6 +28,24 @@ export async function premiosDelLocal(localId: string): Promise<Premio[]> {
   return data ?? [];
 }
 
+export async function promosDelLocal(localId: string): Promise<Promo[]> {
+  const db = crearClienteAdmin();
+  const { data } = await db
+    .from("promos")
+    .select("id, nombre, dias, desde, hasta, puntos, activa")
+    .eq("local_id", localId)
+    .eq("activa", true)
+    .order("created_at");
+  return data ?? [];
+}
+
+/** Cumple del cliente (día y mes), o null si no lo cargó. */
+export async function cumpleDelCliente(clienteId: string): Promise<{ dia: number; mes: number } | null> {
+  const db = crearClienteAdmin();
+  const { data } = await db.from("clientes").select("cumple_dia, cumple_mes").eq("id", clienteId).maybeSingle();
+  return data?.cumple_dia && data.cumple_mes ? { dia: data.cumple_dia, mes: data.cumple_mes } : null;
+}
+
 export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const db = crearClienteAdmin();
   const { data: tarjeta } = await db
@@ -37,7 +59,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const [{ data: movs }, { data: canje }] = await Promise.all([
     db
       .from("movimientos")
-      .select("id, tipo, puntos, origen, created_at, mozos(nombre)")
+      .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre)")
       .eq("tarjeta_id", tarjeta.id)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -54,6 +76,8 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
     id: m.id,
     tipo: m.tipo,
     puntos: m.puntos,
+    motivo: m.motivo,
+    detalle: m.detalle,
     origen: m.origen,
     created_at: m.created_at,
     mozo: (m.mozos as unknown as { nombre: string } | null)?.nombre ?? null,
@@ -88,4 +112,16 @@ export function formatearFecha(iso: string, zona: string) {
 /** ¿El movimiento ocurrió en los últimos `minutos`? */
 export function esReciente(iso: string, minutos = 5) {
   return Date.now() - new Date(iso).getTime() < minutos * 60_000;
+}
+
+/** Guarda el cumple del cliente. Sólo se puede cargar una vez (evita cambiarlo para cobrar el regalo). */
+export async function guardarCumpleCliente(clienteId: string, dia: number, mes: number): Promise<boolean> {
+  const db = crearClienteAdmin();
+  const { data, error } = await db
+    .from("clientes")
+    .update({ cumple_dia: dia, cumple_mes: mes, cumple_cargado_en: new Date().toISOString() })
+    .eq("id", clienteId)
+    .is("cumple_mes", null)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }

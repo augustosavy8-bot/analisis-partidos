@@ -2,13 +2,16 @@ import Link from "next/link";
 import { fechaHora, requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { formasTermino } from "@/lib/terminos";
+import { iconoMovimiento, textoMovimientoPanel, type MotivoMovimiento, type TipoMovimiento } from "@/lib/movimientos";
 
 export const metadata = { title: "Movimientos" };
 
 type Mov = {
   id: string;
-  tipo: "suma" | "canje";
+  tipo: TipoMovimiento;
   puntos: number;
+  motivo: MotivoMovimiento;
+  detalle: string | null;
   origen: "nfc" | "qr";
   created_at: string;
   mozo_id: string;
@@ -20,13 +23,13 @@ type Mov = {
 export default async function Movimientos({ params, searchParams }: PageProps<"/panel/[local]/movimientos">) {
   const { local: slug } = await params;
   const sp = await searchParams;
-  const tipo = sp.tipo === "suma" || sp.tipo === "canje" ? sp.tipo : null;
+  const tipo = sp.tipo === "suma" || sp.tipo === "canje" || sp.tipo === "regalo" ? sp.tipo : null;
   const mozo = typeof sp.mozo === "string" && /^[0-9a-f-]{36}$/.test(sp.mozo) ? sp.mozo : null;
   const { db, local } = await requerirLocal(slug);
 
   let consulta = db
     .from("movimientos")
-    .select("id, tipo, puntos, origen, created_at, mozo_id, mozos(nombre), tarjetas(clientes(nombre)), canjes(premios(nombre))")
+    .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozo_id, mozos(nombre), tarjetas(clientes(nombre)), canjes(premios(nombre))")
     .eq("local_id", local.id)
     .order("created_at", { ascending: false })
     .limit(150);
@@ -56,6 +59,7 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
       <div className="mb-4 flex flex-wrap gap-2">
         <Link href={filtro({ tipo: null })} className={chip(!tipo)}>Todos</Link>
         <Link href={filtro({ tipo: "suma" })} className={chip(tipo === "suma")}>Puntos</Link>
+        <Link href={filtro({ tipo: "regalo" })} className={chip(tipo === "regalo")}>Regalos</Link>
         <Link href={filtro({ tipo: "canje" })} className={chip(tipo === "canje")}>Canjes</Link>
         <span className="mx-1 w-px bg-stone-200" />
         <Link href={filtro({ mozo: null })} className={chip(!mozo)}>Todos los {formasTermino(local.termino_personal).plural}</Link>
@@ -76,19 +80,19 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
                 <div
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
                   style={
-                    m.tipo === "suma"
+                    m.tipo !== "canje"
                       ? { background: "var(--marca-acento)", color: "var(--marca)" }
                       : { background: "var(--marca)", color: "var(--marca-texto)" }
                   }
                   aria-hidden
                 >
-                  {m.tipo === "suma" ? "+1" : "🎁"}
+                  {iconoMovimiento(m)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
                     {m.tarjetas?.clientes?.nombre ?? "Cliente"}{" "}
                     <span className="font-normal text-stone-500">
-                      {m.tipo === "suma" ? "sumó 1 punto" : `canjeó ${m.canjes?.premios?.nombre ?? "un premio"} (${-m.puntos} pts)`}
+                      {textoMovimientoPanel(m, m.canjes?.premios?.nombre)}
                     </span>
                   </p>
                   <p className="text-xs text-stone-500">

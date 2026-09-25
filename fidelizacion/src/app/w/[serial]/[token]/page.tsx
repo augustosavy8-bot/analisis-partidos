@@ -5,6 +5,7 @@ import { estiloMarca } from "@/lib/locales";
 import { tarjetaPorPase } from "@/lib/billetera";
 import { formatearFecha, premiosDelLocal, proximoPremio, tarjetaDelCliente } from "@/lib/tarjeta";
 import { TarjetaVisual } from "@/components/TarjetaVisual";
+import { textoMovimiento } from "@/lib/movimientos";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
@@ -40,7 +41,7 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
           <ul className="mt-3 divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
             {tarjeta.movimientos.slice(0, 8).map((m) => (
               <li key={m.id} className="flex justify-between px-4 py-3 text-sm">
-                <span>{m.tipo === "suma" ? "+1 punto" : `Canje (${-m.puntos} pts)`}</span>
+                <span>{textoMovimiento(m)}</span>
                 <span className="text-stone-500">{formatearFecha(m.created_at, local.zona_horaria)}</span>
               </li>
             ))}

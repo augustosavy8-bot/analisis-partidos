@@ -7,8 +7,10 @@ function secciones(personal: string) {
   return [
   { ruta: "", nombre: "Resumen" },
   { ruta: "/clientes", nombre: "Clientes" },
+  { ruta: "/whatsapp", nombre: "WhatsApp" },
   { ruta: "/movimientos", nombre: "Movimientos" },
   { ruta: "/premios", nombre: "Premios" },
+  { ruta: "/promos", nombre: "Promos" },
   { ruta: "/mozos", nombre: personal },
   { ruta: "/ajustes", nombre: "Ajustes" },
   ];

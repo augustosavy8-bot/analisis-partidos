@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { registrarse, type EstadoForm } from "./actions";
 import { BotonMarca, Campo, ErrorForm } from "@/components/Campo";
+import { SelectorCumple } from "@/components/SelectorCumple";
 
-export function FormRegistro({ slug }: { slug: string }) {
+export function FormRegistro({ slug, puntosCumple }: { slug: string; puntosCumple: number }) {
   const [estado, accion, pendiente] = useActionState<EstadoForm, FormData>(registrarse, {});
   return (
     <form action={accion} className="space-y-5">
@@ -29,6 +30,17 @@ export function FormRegistro({ slug }: { slug: string }) {
         placeholder="Ej: 341 123 4567"
         ayuda="Con código de área. Lo usamos para que recuperes tu tarjeta si cambiás de celular."
       />
+      <div>
+        <span className="text-sm font-medium text-stone-700">Tu cumple (opcional)</span>
+        <div className="mt-1.5">
+          <SelectorCumple dia={estado.valores?.cumple_dia} mes={estado.valores?.cumple_mes} />
+        </div>
+        <span className="mt-1 block text-xs text-stone-500">
+          {puntosCumple > 0
+            ? `La semana de tu cumple te regalamos ${puntosCumple} puntos. No hace falta el año.`
+            : "Para saludarte. No hace falta el año."}
+        </span>
+      </div>
       <label className="flex items-start gap-3 text-sm text-stone-700">
         <input
           type="checkbox"
@@ -42,7 +54,7 @@ export function FormRegistro({ slug }: { slug: string }) {
           <Link href="/privacidad" target="_blank" className="font-medium underline underline-offset-2">
             política de privacidad
           </Link>{" "}
-          y que el local guarde mis datos para mi tarjeta de puntos.
+          y que el local guarde mis datos para mi tarjeta de puntos y me escriba por WhatsApp sobre mis puntos y promos.
         </span>
       </label>
       <ErrorForm mensaje={estado.error} />

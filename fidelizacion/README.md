@@ -15,6 +15,8 @@ TypeScript + Tailwind + Supabase. Deploy en Vercel.
 - [x] **Fase 3**: verificación SUN de NTAG 424 DNA (AN12196), con simulador de toques y guía de programación
 - [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
 - [x] **Panel superadmin**: locales, dueños, chips (prueba y producción con clave cifrada) y estado general
+- [x] **Promos y regalos**: puntos dobles/triples por día y horario, puntos de bienvenida y regalo de cumple
+- [x] **Reactivar por WhatsApp**: listas de clientes (no vienen, les falta poco, premio sin usar, cumpleaños) con mensaje listo vía wa.me
 
 ## Puesta en marcha (local)
 
@@ -77,6 +79,8 @@ Ingreso con email y contraseña (Supabase Auth; el registro público está desac
 | Movimientos | Últimos 150, filtros por tipo y por mozo, origen llavero/QR |
 | Premios | Alta, edición, ocultar/mostrar y borrar (si ya se canjeó, se oculta para no perder historial) |
 | Mozos | Alta con PIN, cambio de PIN, activar/desactivar, llaveros asignados |
+| WhatsApp | Segmentos: no vienen hace N días, les falta poco para un premio, tienen premio sin usar, cumplen años. Mensaje editable con `{nombre}`, `{puntos}`, `{premio}`, `{faltan}`, `{local}`, `{link}`; cada botón abre `wa.me` con el texto listo y queda registrado (`contactos_whatsapp`). “No escribir más” marca la tarjeta con `no_contactar` |
+| Promos | Puntos de bienvenida (primera visita), regalo de cumple (primera visita del día del cumple a 6 días después, una vez por año, si el cumple se cargó hace 30+ días) y promos x2/x3 por días y horario |
 | Ajustes | Regla de puntos (horas entre puntos), nombre, rubro, colores y logo, con vista previa |
 
 ## Panel superadmin (`/admin`)
@@ -113,7 +117,9 @@ npm run db:test   # Postgres temporal: migraciones + seed + tests de RLS y funci
 | `tarjetas` | Una por cliente y local: puntos y `serial` (para Wallet más adelante) |
 | `premios` | Premios del local y puntos necesarios |
 | `canjes` | Pedidos de canje, pendientes hasta que el mozo los valida (vencen a los 15 minutos) |
-| `movimientos` | Registro de puntos: suma/canje, mozo, chip, origen nfc/qr y hora |
+| `movimientos` | Registro de puntos: suma/canje/regalo, motivo (promo, bienvenida, cumple), mozo, chip, origen nfc/qr y hora |
+| `promos` | Promos de puntos por días (0 = domingo) y horario, en la hora del local |
+| `contactos_whatsapp` | Mensajes de WhatsApp que abrió el dueño desde el panel |
 | `dispositivos` | Hash del token de la cookie httpOnly del cliente |
 | `qr_usados` | Anti-replay del QR de respaldo (un solo uso) |
 | `wallet_registros` | Preparada para Apple/Google Wallet (todavía sin uso) |

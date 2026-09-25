@@ -11,7 +11,7 @@ export default function Privacidad() {
         <section>
           <h2 className="font-semibold text-stone-900">Qué datos guardamos</h2>
           <p>
-            Tu nombre, tu número de WhatsApp, la fecha en que aceptaste esta política, los puntos
+            Tu nombre, tu número de WhatsApp, tu cumpleaños si lo cargás (sólo día y mes), la fecha en que aceptaste esta política, los puntos
             que sumás y canjeás en cada local (con fecha, hora y quién te atendió) y un
             identificador anónimo de tu celular para reconocerte sin pedirte contraseña.
           </p>
@@ -21,7 +21,9 @@ export default function Privacidad() {
           <p>
             Para llevar tu tarjeta de puntos, validar tus premios, evitar fraudes y permitirte
             recuperar tu tarjeta si cambiás de celular. El local donde sumás puntos puede ver tu
-            nombre, tu WhatsApp y tu historial en ese local.
+            nombre, tu WhatsApp, tu cumpleaños y tu historial en ese local, y escribirte por
+            WhatsApp para contarte de tus puntos, premios y promos. Si no querés recibir más
+            mensajes, respondele al local y deja de escribirte.
           </p>
         </section>
         <section>

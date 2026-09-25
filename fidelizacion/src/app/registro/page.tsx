@@ -22,13 +22,13 @@ export default async function Registro() {
       <CabeceraLocal local={local} />
       <div className="mt-10 space-y-2">
         <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--marca)" }}>
-          +1 punto te espera
+          {local.puntos_bienvenida > 0 ? `+${local.puntos_bienvenida + 1} puntos te esperan` : "+1 punto te espera"}
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-stone-900">Creá tu tarjeta</h1>
         <p className="text-stone-600">Es una sola vez. La próxima, el {formasTermino(local.termino_personal).singular} apoya el llavero y sumás al toque.</p>
       </div>
       <div className="mt-8">
-        <FormRegistro slug={local.slug} />
+        <FormRegistro slug={local.slug} puntosCumple={local.puntos_cumple} />
       </div>
     </main>
   );

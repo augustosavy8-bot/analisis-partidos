@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import { buscarLocal, estiloMarca, type Local } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
 import {
+  cumpleDelCliente,
   esReciente,
   formatearFecha,
   formatearHora,
   premiosDelLocal,
+  promosDelLocal,
   proximoPremio,
   tarjetaDelCliente,
 } from "@/lib/tarjeta";
@@ -21,6 +23,9 @@ import { LlevalaEnBilletera } from "./LlevalaEnBilletera";
 import QRCode from "qrcode";
 import { urlBilletera } from "@/lib/billetera";
 import { formasTermino } from "@/lib/terminos";
+import { iconoMovimiento, textoMovimiento } from "@/lib/movimientos";
+import { describirPromo, horaCorta, nombreMultiplicador, promoVigente } from "@/lib/promos";
+import { FormCumple } from "./FormCumple";
 
 export async function generateMetadata({ params }: PageProps<"/t/[local]">): Promise<Metadata> {
   const { local: slug } = await params;
@@ -40,15 +45,17 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   const local = await buscarLocal(slug);
   if (!local) notFound();
 
-  const [cliente, premios] = await Promise.all([clienteActual(), premiosDelLocal(local.id)]);
+  const [cliente, premios, promos] = await Promise.all([clienteActual(), premiosDelLocal(local.id), promosDelLocal(local.id)]);
   const tarjeta = cliente ? await tarjetaDelCliente(cliente.clienteId, local.id) : null;
 
   if (!cliente || !tarjeta) return <SinTarjeta local={local} />;
+  const cumple = local.puntos_cumple > 0 ? await cumpleDelCliente(cliente.clienteId) : null;
+  const promoAhora = promoVigente(promos, local.zona_horaria);
 
   // Celebración: sólo si el movimiento es de esta tarjeta y reciente (no se puede falsear).
   const movId = typeof sp.m === "string" ? sp.m : null;
   const movCelebrado = movId
-    ? tarjeta.movimientos.find((m) => m.id === movId && esReciente(m.created_at))
+    ? tarjeta.movimientos.find((m) => m.id === movId && m.tipo !== "regalo" && esReciente(m.created_at))
     : undefined;
   const limite = typeof sp.limite === "string" && !isNaN(Date.parse(sp.limite)) ? sp.limite : null;
 
@@ -56,6 +63,11 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   const urlPase = urlBilletera(tarjeta.serial, tarjeta.wallet_auth_token);
   const qrPase = await QRCode.toString(urlPase, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
   const primerNombre = cliente.nombre.split(" ")[0];
+
+  // Regalos entregados en el mismo toque (misma transacción => misma hora).
+  const regalos = movCelebrado?.tipo === "suma"
+    ? tarjeta.movimientos.filter((m) => m.tipo === "regalo" && m.created_at === movCelebrado.created_at)
+    : [];
 
   let mensajeCelebracion = "";
   if (movCelebrado?.tipo === "suma" && objetivo) {
@@ -71,7 +83,14 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   return (
     <main style={estiloMarca(local)} className="mx-auto w-full max-w-md flex-1 px-4 pb-28 pt-6">
       {movCelebrado && (
-        <Celebracion tipo={movCelebrado.tipo} puntos={tarjeta.puntos} mensaje={mensajeCelebracion} />
+        <Celebracion
+          tipo={movCelebrado.tipo === "canje" ? "canje" : "suma"}
+          sumados={movCelebrado.puntos}
+          promo={movCelebrado.detalle}
+          regalos={regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos }))}
+          puntos={tarjeta.puntos}
+          mensaje={mensajeCelebracion}
+        />
       )}
 
       <header className="flex items-center justify-between px-2">
@@ -99,8 +118,29 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
         </div>
       )}
 
+      {promoAhora && (
+        <div className="anim-subir mt-4 rounded-2xl px-4 py-3 text-sm font-medium" style={{ background: "var(--marca-acento)", color: "var(--marca)" }}>
+          🔥 Ahora hay {nombreMultiplicador(promoAhora.puntos)}: {promoAhora.nombre}, hasta las {horaCorta(promoAhora.hasta)}.
+        </div>
+      )}
+
       <TarjetaVisual local={local} puntos={tarjeta.puntos} objetivo={objetivo} />
 
+      {local.puntos_cumple > 0 && !cumple && <FormCumple slug={local.slug} puntos={local.puntos_cumple} />}
+
+      {promos.length > 0 && (
+        <section className="mt-8">
+          <h2 className="px-2 text-sm font-semibold uppercase tracking-widest text-stone-500">Promos</h2>
+          <ul className="mt-3 divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
+            {promos.map((p) => (
+              <li key={p.id} className="px-4 py-3.5">
+                <p className="font-medium text-stone-900">{p.nombre}</p>
+                <p className="text-sm text-stone-500">{describirPromo(p)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {premios.length > 0 && (
         <section className="mt-8">
@@ -145,17 +185,15 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
                 <div
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
                   style={
-                    m.tipo === "suma"
+                    m.tipo !== "canje"
                       ? { background: "var(--marca-acento)", color: "var(--marca)" }
                       : { background: "var(--marca)", color: "var(--marca-texto)" }
                   }
                 >
-                  {m.tipo === "suma" ? "+1" : "🎁"}
+                  {iconoMovimiento(m)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-stone-900">
-                    {m.tipo === "suma" ? "Sumaste 1 punto" : `Canjeaste ${-m.puntos} puntos`}
-                  </p>
+                  <p className="text-sm font-medium text-stone-900">{textoMovimiento(m)}</p>
                   <p className="text-xs text-stone-500">
                     {formatearFecha(m.created_at, local.zona_horaria)}
                     {m.mozo && ` · ${m.mozo}`}

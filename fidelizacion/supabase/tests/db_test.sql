@@ -234,4 +234,97 @@ select pg_temp.check((select count(*) from public.clientes where id = 'cccccccc-
   and (select count(*) from public.movimientos where tarjeta_id = 'dddddddd-0000-4000-8000-000000000001') = 0,
   'Ana: se borraron datos, celulares y movimientos');
 
+-- ---------------------------------------------------------------- beneficios (bienvenida, cumple, promos)
+update public.locales set puntos_bienvenida = 3, puntos_cumple = 5 where id = '00000000-0000-4000-8000-000000000001';
+insert into public.clientes (id, nombre, whatsapp, consentimiento, cumple_dia, cumple_mes, cumple_cargado_en)
+select 'cccccccc-0000-4000-8000-000000000005', 'Caro', '+5493410000005', true,
+       extract(day from now() at time zone 'America/Argentina/Buenos_Aires'),
+       extract(month from now() at time zone 'America/Argentina/Buenos_Aires'), now() - interval '40 days';
+insert into public.clientes (id, nombre, whatsapp, consentimiento, cumple_dia, cumple_mes, cumple_cargado_en)
+select 'cccccccc-0000-4000-8000-000000000006', 'Dani', '+5493410000006', true,
+       extract(day from now() at time zone 'America/Argentina/Buenos_Aires'),
+       extract(month from now() at time zone 'America/Argentina/Buenos_Aires'), now();
+insert into public.tarjetas (id, cliente_id, local_id) values
+  ('dddddddd-0000-4000-8000-000000000005', 'cccccccc-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000001'),
+  ('dddddddd-0000-4000-8000-000000000006', 'cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001');
+
+do $$ begin
+  begin
+    update public.clientes set cumple_dia = 30, cumple_mes = 2 where id = 'cccccccc-0000-4000-8000-000000000006';
+    raise exception 'FALLÓ: aceptó 30 de febrero';
+  exception when check_violation then raise notice 'ok - cumple inválido rechazado';
+  end;
+end $$;
+select pg_temp.check(public.fecha_cumple(2027, 2, 29) = '2027-02-28' and public.fecha_cumple(2028, 2, 29) = '2028-02-29',
+  'el 29/2 cae el 28/2 en años no bisiestos');
+
+select public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check((:'r'::jsonb->>'puntos')::int = 9 and jsonb_array_length(:'r'::jsonb->'regalos') = 2,
+  'primera visita en la semana del cumple: 1 + 3 de bienvenida + 5 de cumple');
+select pg_temp.check((select count(*) from public.movimientos where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005' and tipo = 'regalo') = 2,
+  'los regalos quedan en movimientos');
+
+update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+select public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check((:'r'::jsonb->>'puntos')::int = 10 and jsonb_array_length(:'r'::jsonb->'regalos') = 0,
+  'segunda visita: sin bienvenida ni cumple repetidos');
+
+select public.registrar_suma('dddddddd-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check((:'r'::jsonb->>'puntos')::int = 4,
+  'cumple cargado recién: no hay regalo de cumple (sí bienvenida)');
+
+insert into public.promos (local_id, nombre, dias, desde, hasta, puntos)
+values ('00000000-0000-4000-8000-000000000001', 'Puntos dobles', array[0,1,2,3,4,5,6], '00:00', '23:59:59.999', 2);
+update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+select public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check((:'r'::jsonb->>'sumados')::int = 2 and :'r'::jsonb->>'promo' = 'Puntos dobles' and (:'r'::jsonb->>'puntos')::int = 12,
+  'promo vigente: el toque suma 2');
+update public.promos set activa = false;
+update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+select pg_temp.check((public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr')->>'sumados')::int = 1,
+  'promo pausada: vuelve a sumar 1');
+
+-- ---------------------------------------------------------------- reactivar por WhatsApp
+update public.movimientos set created_at = created_at - interval '40 days' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((select count(*) from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'inactivos', 30)
+  where nombre = 'Caro') = 1, 'inactivos: Caro no viene hace 40 días');
+select pg_temp.check((select count(*) from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'inactivos', 30)
+  where nombre = 'Dani') = 0, 'inactivos: Dani vino hoy');
+select pg_temp.check((select premio_nombre from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'premio', 0)
+  where nombre = 'Caro') = 'Café + medialuna', 'premio: Caro (13 pts) alcanza Café + medialuna');
+select pg_temp.check((select count(*) from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'cerca', 4)
+  where nombre = 'Dani') = 1, 'cerca: a Dani (4 pts) le faltan 4 para Café gratis');
+select pg_temp.check((select count(*) from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'cumple', 7)) = 2,
+  'cumple: Caro y Dani cumplen esta semana');
+insert into public.contactos_whatsapp (local_id, cliente_id, segmento)
+values ('00000000-0000-4000-8000-000000000001', 'cccccccc-0000-4000-8000-000000000005', 'inactivos');
+select pg_temp.check((select ultimo_contacto from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'inactivos', 30)
+  where nombre = 'Caro') is not null, 'se registra el último mensaje enviado');
+update public.tarjetas set no_contactar = true where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((select no_contactar from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
+  'el dueño marca "no contactar"');
+do $$ begin
+  begin
+    insert into public.contactos_whatsapp (local_id, cliente_id, segmento)
+    values ('00000000-0000-4000-8000-000000000001', 'cccccccc-0000-4000-8000-000000000006', 'cumple');
+    raise exception 'FALLÓ: registró mensaje a quien pidió no ser contactado';
+  exception when insufficient_privilege then raise notice 'ok - no se registran mensajes a "no contactar"';
+  end;
+  begin
+    perform * from public.panel_reactivar('00000000-0000-4000-8000-00000000000f', 'inactivos', 30);
+    raise exception 'FALLÓ: dueño ve segmentos de otro local';
+  exception when insufficient_privilege then raise notice 'ok - panel_reactivar rechaza otro local';
+  end;
+  begin
+    insert into public.promos (local_id, nombre, dias, desde, hasta, puntos)
+    values ('00000000-0000-4000-8000-00000000000f', 'X', array[1], '10:00', '12:00', 2);
+    raise exception 'FALLÓ: dueño crea promo en otro local';
+  exception when insufficient_privilege then raise notice 'ok - no puede crear promos en otro local';
+  end;
+end $$;
+select pg_temp.check((select count(*) from public.promos) = 1, 'el dueño ve las promos de su local');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

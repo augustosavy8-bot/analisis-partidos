@@ -372,4 +372,15 @@ select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006'
   '00000000-0000-4000-8000-000000000101', null, 'nfc')->>'tipo' = 'limite',
   'aplicar_toque respeta el límite de tiempo');
 
+-- ---------------------------------------------------------------- interesados (landing)
+insert into public.interesados (nombre, local, rubro, whatsapp) values ('Juan', 'Bar Juan', 'Bar', '+5493410000099');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((select count(*) from public.interesados) = 0, 'un dueño no ve los interesados');
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select pg_temp.check((select count(*) from public.interesados) = 1, 'el superadmin ve los interesados');
+update public.interesados set estado = 'contactado';
+select pg_temp.check((select estado from public.interesados) = 'contactado', 'el superadmin cambia el estado');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

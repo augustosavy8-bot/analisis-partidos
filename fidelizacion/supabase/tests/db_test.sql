@@ -351,4 +351,25 @@ select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-00000000
   (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'sin_toque',
   'canje al toque: un toque de hace más de 5 minutos no sirve');
 
+-- ---------------------------------------------------------------- aplicar_toque (una sola llamada)
+update public.locales set minutos_entre_puntos = 0 where id = '00000000-0000-4000-8000-000000000001';
+update public.tarjetas set puntos = 0, ultimo_toque_en = null where id = 'dddddddd-0000-4000-8000-000000000006';
+select public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000101', null, 'nfc') as r \gset
+select pg_temp.check(:'r'::jsonb->>'tipo' = 'suma' and :'r'::jsonb->>'serial' is not null
+  and (select ultimo_toque_en is not null from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
+  'aplicar_toque suma, devuelve el serial y marca el toque');
+update public.tarjetas set puntos = 20 where id = 'dddddddd-0000-4000-8000-000000000006';
+select public.solicitar_canje('dddddddd-0000-4000-8000-000000000006', (select id from public.premios where nombre = 'Café gratis'));
+select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000101', null, 'nfc')->>'tipo' = 'canje',
+  'aplicar_toque confirma el canje pendiente');
+select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-0000000001ff', null, 'nfc')->>'motivo' = 'mozo_invalido',
+  'aplicar_toque rechaza mozo de otro local');
+update public.locales set minutos_entre_puntos = 60 where id = '00000000-0000-4000-8000-000000000001';
+select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000101', null, 'nfc')->>'tipo' = 'limite',
+  'aplicar_toque respeta el límite de tiempo');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

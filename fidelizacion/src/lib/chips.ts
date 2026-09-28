@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { hashToken } from "@/lib/dispositivo";
 import type { Toque } from "@/lib/toque";
@@ -24,7 +25,9 @@ export async function validarChipPrueba(token: string): Promise<ResultadoChip> {
   if (!local.activo) return { ok: false, motivo: "local_inactivo" };
   if (!chip.mozo_id || !mozo?.activo) return { ok: false, motivo: "chip_sin_mozo" };
 
-  void db.from("chips").update({ ultimo_uso: new Date().toISOString() }).eq("id", chip.id).then();
+  after(async () => {
+    await db.from("chips").update({ ultimo_uso: new Date().toISOString() }).eq("id", chip.id);
+  });
   return {
     ok: true,
     toque: { localId: local.id, localSlug: local.slug, mozoId: chip.mozo_id, chipId: chip.id, origen: "nfc" },

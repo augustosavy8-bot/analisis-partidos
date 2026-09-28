@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { validarChipPrueba, validarChipSun, type ResultadoChip } from "@/lib/chips";
 import { validarQR } from "@/lib/qr";
@@ -32,24 +32,23 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const picc = sp.get("p") ?? sp.get("picc_data");
   const mac = sp.get("m") ?? sp.get("cmac");
-  let chip: ResultadoChip;
-  if (picc && mac) {
-    chip = await validarChipSun(picc, mac);
-  } else if (q) {
-    chip = await validarQR(q);
-  } else if (t) {
-    if (!env.permitirModoPrueba) return ir("/aviso?m=modo_prueba_off");
-    chip = await validarChipPrueba(t);
-  } else {
-    chip = { ok: false, motivo: "chip_invalido" };
-  }
+  if (!(picc && mac) && !q && t && !env.permitirModoPrueba) return ir("/aviso?m=modo_prueba_off");
+
+  // El chip y el celular se validan en paralelo (son independientes).
+  const validacion: Promise<ResultadoChip> =
+    picc && mac
+      ? validarChipSun(picc, mac)
+      : q
+        ? validarQR(q)
+        : t
+          ? validarChipPrueba(t)
+          : Promise.resolve({ ok: false, motivo: "chip_invalido" });
+  const [chip, cliente] = await Promise.all([validacion, clienteDesdeToken(req.cookies.get(COOKIE_DISPOSITIVO)?.value)]);
   const origen = q ? "qr" : "nfc";
   if (!chip.ok) {
-    await registrarRechazo({ motivo: chip.motivo, origen, localId: chip.localId, chipId: chip.chipId });
+    after(() => registrarRechazo({ motivo: chip.motivo, origen, localId: chip.localId, chipId: chip.chipId }));
     return ir(`/aviso?m=${chip.motivo}`);
   }
-
-  const cliente = await clienteDesdeToken(req.cookies.get(COOKIE_DISPOSITIVO)?.value);
 
   if (!cliente) {
     // Primera vez: guardamos el toque firmado y mandamos al formulario.
@@ -60,12 +59,8 @@ export async function GET(req: NextRequest) {
 
   const resultado = await aplicarToque(cliente.clienteId, chip.toque);
   if (resultado.tipo === "limite" || resultado.tipo === "error") {
-    await registrarRechazo({
-      motivo: resultado.tipo === "limite" ? "limite" : resultado.motivo,
-      origen,
-      localId: chip.toque.localId,
-      chipId: chip.toque.chipId,
-    });
+    const motivo = resultado.tipo === "limite" ? "limite" : resultado.motivo;
+    after(() => registrarRechazo({ motivo, origen, localId: chip.toque.localId, chipId: chip.toque.chipId }));
   }
   return ir(urlResultado(chip.toque.localSlug, resultado));
 }

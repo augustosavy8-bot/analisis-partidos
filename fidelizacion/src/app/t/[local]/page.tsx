@@ -5,7 +5,6 @@ import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
 import {
   canjeAlToqueHasta,
-  cumpleDelCliente,
   esReciente,
   premiosDelLocal,
   promosDelLocal,
@@ -31,14 +30,18 @@ export async function generateMetadata({ params }: PageProps<"/t/[local]">): Pro
 export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[local]">) {
   const { local: slug } = await params;
   const sp = await searchParams;
-  const local = await buscarLocal(slug);
+  // Consultas en paralelo: el local y el celular no dependen entre sí.
+  const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
   if (!local) notFound();
 
-  const [cliente, premios, promos] = await Promise.all([clienteActual(), premiosDelLocal(local.id), promosDelLocal(local.id)]);
-  const tarjeta = cliente ? await tarjetaDelCliente(cliente.clienteId, local.id) : null;
+  const [premios, promos, tarjeta] = await Promise.all([
+    premiosDelLocal(local.id),
+    promosDelLocal(local.id),
+    cliente ? tarjetaDelCliente(cliente.clienteId, local.id) : Promise.resolve(null),
+  ]);
 
   if (!cliente || !tarjeta) return <SinTarjeta local={local} />;
-  const cumple = local.puntos_cumple > 0 ? await cumpleDelCliente(cliente.clienteId) : null;
+  const cumple = cliente.cumple;
   const promoAhora = promoVigente(promos, local.zona_horaria);
 
   // Celebración: sólo si el movimiento es de esta tarjeta y reciente (no se puede falsear).

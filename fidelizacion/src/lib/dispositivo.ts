@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
+import { after } from "next/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 
@@ -30,7 +31,12 @@ export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export type ClienteActual = { clienteId: string; nombre: string };
+export type ClienteActual = {
+  clienteId: string;
+  nombre: string;
+  /** Cumple (día y mes) si lo cargó. */
+  cumple: { dia: number; mes: number } | null;
+};
 
 /** Devuelve el cliente dueño del token de dispositivo, o null. */
 export async function clienteDesdeToken(token: string | undefined): Promise<ClienteActual | null> {
@@ -38,13 +44,19 @@ export async function clienteDesdeToken(token: string | undefined): Promise<Clie
   const db = crearClienteAdmin();
   const { data } = await db
     .from("dispositivos")
-    .select("id, cliente_id, clientes(nombre)")
+    .select("id, cliente_id, clientes(nombre, cumple_dia, cumple_mes)")
     .eq("token_hash", hashToken(token))
     .is("revocado_en", null)
     .maybeSingle();
   if (!data) return null;
-  // Actualización best-effort del último uso.
-  void db.from("dispositivos").update({ ultimo_uso: new Date().toISOString() }).eq("id", data.id).then();
-  const cliente = data.clientes as unknown as { nombre: string } | null;
-  return { clienteId: data.cliente_id, nombre: cliente?.nombre ?? "" };
+  // Último uso: después de responder, para no demorar al cliente.
+  after(async () => {
+    await db.from("dispositivos").update({ ultimo_uso: new Date().toISOString() }).eq("id", data.id);
+  });
+  const c = data.clientes as unknown as { nombre: string; cumple_dia: number | null; cumple_mes: number | null } | null;
+  return {
+    clienteId: data.cliente_id,
+    nombre: c?.nombre ?? "",
+    cumple: c?.cumple_dia && c.cumple_mes ? { dia: c.cumple_dia, mes: c.cumple_mes } : null,
+  };
 }

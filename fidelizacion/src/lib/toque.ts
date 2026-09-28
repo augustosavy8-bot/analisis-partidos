@@ -28,40 +28,23 @@ export type ResultadoToque =
  * pendiente, el toque lo confirma; si no, suma 1 punto.
  */
 export async function aplicarToque(clienteId: string, toque: Toque): Promise<ResultadoToque> {
+  // Todo en una sola llamada (asegura la tarjeta, canje pendiente o suma, y marca el toque).
   const db = crearClienteAdmin();
-
-  const { data: tarjetaId, error: e1 } = await db.rpc("asegurar_tarjeta", {
+  const { data: r, error } = await db.rpc("aplicar_toque", {
     p_cliente_id: clienteId,
     p_local_id: toque.localId,
+    p_mozo_id: toque.mozoId,
+    p_chip_id: toque.chipId,
+    p_origen: toque.origen,
   });
-  if (e1 || !tarjetaId) return { tipo: "error", motivo: "error" };
-
-  const { data: canje } = await db
-    .from("canjes")
-    .select("id")
-    .eq("tarjeta_id", tarjetaId)
-    .eq("estado", "pendiente")
-    .gt("expira_en", new Date().toISOString())
-    .maybeSingle();
-
-  const args = { p_mozo_id: toque.mozoId, p_chip_id: toque.chipId, p_origen: toque.origen };
-  const { data: r, error } = canje
-    ? await db.rpc("confirmar_canje", { p_canje_id: canje.id, ...args })
-    : await db.rpc("registrar_suma", { p_tarjeta_id: tarjetaId, ...args });
   if (error || !r) return { tipo: "error", motivo: "error" };
 
-  // Un toque válido (sumó o sólo chocó con el límite de tiempo) habilita el canje al toque.
-  if (!canje && (r.ok || r.motivo === "limite")) {
-    await db.rpc("marcar_toque", { p_tarjeta_id: tarjetaId, ...args });
+  if (r.tipo === "suma" || r.tipo === "canje") {
+    await notificarCambioTarjeta(r.serial);
+    return { tipo: r.tipo, movimientoId: r.movimiento_id };
   }
-
-  if (r.ok) {
-    const { data: t } = await db.from("tarjetas").select("serial").eq("id", tarjetaId).single();
-    if (t) await notificarCambioTarjeta(t.serial);
-    return { tipo: canje ? "canje" : "suma", movimientoId: r.movimiento_id };
-  }
-  if (r.motivo === "limite") return { tipo: "limite", proximoEn: r.proximo_en };
-  return { tipo: "error", motivo: r.motivo };
+  if (r.tipo === "limite") return { tipo: "limite", proximoEn: r.proximo_en };
+  return { tipo: "error", motivo: r.motivo ?? "error" };
 }
 
 /** URL a la que se redirige al cliente según el resultado. */

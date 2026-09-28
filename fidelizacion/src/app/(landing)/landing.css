@@ -1,0 +1,88 @@
+/* Variables de la dirección de arte de Point (landing). Los tokens de Tailwind
+   (bg-pt-*, text-pt-*, rounded-pt-*, shadow-pt-*, pt-h1…) están en globals.css. */
+.landing {
+  --bg-primary: #f7f8f6;
+  --bg-pure: #ffffff;
+  --surface: #f0f2ee;
+  --surface-hover: #e9ece6;
+  --text-primary: #111311;
+  --text-secondary: #656a65;
+  --text-tertiary: #949994;
+  --border: #e2e5e0;
+  --accent: #36d477;
+  --accent-dark: #20b85e;
+  --accent-soft: #e2f9eb;
+  --success: #36d477;
+  --warning: #f5a623;
+  --error: #e5484d;
+
+  /* Espaciado base 8px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+  --space-40: 160px;
+
+  --container: 1280px;
+  --container-text: 760px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grano microscópico de la tarjeta (2–3%). */
+.pt-grano {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  mix-blend-mode: overlay;
+}
+
+/* Entrada del hero en CSS puro: no espera a JavaScript (mejor LCP). */
+.pt-entrada {
+  animation: pt-entrada 600ms var(--ease) both;
+}
+.pt-entrada-objeto {
+  animation: pt-entrada-objeto 1100ms var(--ease) 240ms both;
+}
+@keyframes pt-entrada {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pt-entrada-objeto {
+  from { opacity: 0; transform: translateY(40px) rotateX(8deg); }
+  to { opacity: 1; transform: none; }
+}
+
+/* El séptimo punto: scale .6 → 1.15 → 1 */
+.pt-pop {
+  animation: pt-pop 400ms var(--ease) both;
+}
+@keyframes pt-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+html:has(.landing) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) {
+    scroll-behavior: auto;
+  }
+  .pt-pop,
+  .pt-entrada,
+  .pt-entrada-objeto {
+    animation: none;
+  }
+}

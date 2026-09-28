@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BotonLink } from "@/components/app/Boton";
 
 export const metadata = { title: "Aviso" };
 
@@ -67,13 +67,17 @@ export default async function Aviso({ searchParams }: PageProps<"/aviso">) {
   const { m } = await searchParams;
   const msg = (typeof m === "string" && MENSAJES[m]) || GENERICO;
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-6 py-16 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">!</div>
-      <h1 className="text-2xl font-semibold tracking-tight">{msg.titulo}</h1>
-      <p className="text-stone-600">{msg.texto}</p>
-      <Link href="/" className="mt-4 text-sm font-medium text-stone-500 underline underline-offset-4">
-        Volver al inicio
-      </Link>
-    </main>
+    <div className="pt-app flex flex-1 flex-col">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-pt-warning-soft font-[family-name:var(--font-pt-display)] text-2xl font-bold text-pt-warning-ink" aria-hidden>
+          !
+        </span>
+        <h1 className="pt-app-titulo mt-5 text-pt-ink">{msg.titulo}</h1>
+        <p className="mt-2 pt-app-texto text-pt-ink-2">{msg.texto}</p>
+        <BotonLink href="/" variante="secundario" className="mt-8">
+          Volver al inicio
+        </BotonLink>
+      </main>
+    </div>
   );
 }

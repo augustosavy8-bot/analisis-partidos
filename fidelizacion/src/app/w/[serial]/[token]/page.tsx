@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { estiloMarca } from "@/lib/locales";
 import { tarjetaPorPase } from "@/lib/billetera";
 import { formatearFecha, premiosDelLocal, proximoPremio, tarjetaDelCliente } from "@/lib/tarjeta";
-import { TarjetaVisual } from "@/components/TarjetaVisual";
+import { PointCard } from "@/components/landing/PointCard";
+import { Aviso, Encabezado, Lista, Seccion } from "@/components/app/Superficie";
+import { BotonLink } from "@/components/app/Boton";
 import { textoMovimiento } from "@/lib/movimientos";
-import { Icono } from "@/components/Icono";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
@@ -23,42 +22,45 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
   const canjeables = premios.filter((p) => tarjeta.puntos >= p.puntos_necesarios);
 
   return (
-    <main style={estiloMarca(local)} className="mx-auto w-full max-w-md flex-1 px-4 pb-16 pt-6">
-      <p className="px-2 text-stone-600">
-        Hola, <span className="font-semibold text-stone-900">{pase.nombre.split(" ")[0]}</span>
-      </p>
-      <TarjetaVisual local={local} puntos={tarjeta.puntos} objetivo={objetivo} titular={pase.nombre} desde={tarjeta.created_at} serial={tarjeta.serial} />
+    <div className="pt-app flex flex-1 flex-col">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-16 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <Encabezado sobre="Hola," titulo={pase.nombre.split(" ")[0]} />
+        <div className="rounded-pt-lg shadow-pt-card-app">
+          <PointCard
+            comercio={local.nombre}
+            inicial={local.nombre.charAt(0).toUpperCase()}
+            logo={local.logo_url}
+            puntos={tarjeta.puntos}
+            meta={objetivo?.puntos_necesarios ?? null}
+            premio={objetivo?.nombre.toLowerCase()}
+            reflejo={false}
+          />
+        </div>
 
-      {canjeables.length > 0 && (
-        <p className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--marca-acento)", color: "var(--marca)" }}>
-          <Icono nombre="premio" tamaño={16} className="mr-1 inline -mt-0.5" /> Ya podés canjear: <strong>{canjeables.map((p) => p.nombre).join(", ")}</strong>. Pedíselo al{" "}
-          {local.nombre} y canjealo desde tu tarjeta.
-        </p>
-      )}
+        {canjeables.length > 0 && (
+          <Aviso tono="acento" icono="premio" className="mt-5">
+            Ya podés canjear: <strong>{canjeables.map((p) => p.nombre).join(", ")}</strong>. Pedíselo al personal de {local.nombre} y canjealo desde tu tarjeta.
+          </Aviso>
+        )}
 
-      {tarjeta.movimientos.length > 0 && (
-        <section className="mt-6">
-          <h2 className="px-2 text-sm font-semibold uppercase tracking-widest text-stone-500">Últimos movimientos</h2>
-          <ul className="mt-3 divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70">
-            {tarjeta.movimientos.slice(0, 8).map((m) => (
-              <li key={m.id} className="flex justify-between px-4 py-3 text-sm">
-                <span>{textoMovimiento(m)}</span>
-                <span className="text-stone-500">{formatearFecha(m.created_at, local.zona_horaria)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        {tarjeta.movimientos.length > 0 && (
+          <Seccion titulo="Últimos movimientos" className="!mt-7">
+            <Lista>
+              {tarjeta.movimientos.slice(0, 8).map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 pt-app-detalle">
+                  <span className="text-pt-ink">{textoMovimiento(m)}</span>
+                  <span className="shrink-0 text-pt-ink-2">{formatearFecha(m.created_at, local.zona_horaria)}</span>
+                </li>
+              ))}
+            </Lista>
+          </Seccion>
+        )}
 
-      <Link
-        href={`/t/${local.slug}`}
-        className="mt-8 block rounded-xl border border-stone-300 bg-white px-4 py-3 text-center text-sm font-medium text-stone-700"
-      >
-        Abrir la tarjeta completa (para canjear)
-      </Link>
-      <p className="mt-2 text-center text-xs text-stone-500">
-        Si te pide tus datos, tocá “Recuperala con tu WhatsApp”.
-      </p>
-    </main>
+        <BotonLink href={`/t/${local.slug}`} variante="primario" tamaño="lg" className="mt-8">
+          Abrir la tarjeta completa (para canjear)
+        </BotonLink>
+        <p className="mt-2 text-center pt-app-detalle text-pt-ink-2">Si te pide tus datos, tocá “Recuperala con tu WhatsApp”.</p>
+      </main>
+    </div>
   );
 }

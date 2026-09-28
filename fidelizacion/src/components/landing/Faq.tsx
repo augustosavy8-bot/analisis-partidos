@@ -23,7 +23,7 @@ const PREGUNTAS = [
   },
   {
     p: "¿Cuánto cuesta?",
-    r: "Depende de la cantidad de locales y llaveros. Escribinos y te armamos una propuesta. [Placeholder: completar con precios]",
+    r: "El precio es personalizado: cada presupuesto es único y se arma según tu local, tu equipo y lo que necesites. Escribinos y te lo preparamos.",
   },
 ];
 

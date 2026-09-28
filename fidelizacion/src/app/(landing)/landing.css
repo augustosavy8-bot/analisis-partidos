@@ -57,6 +57,14 @@
 
 html:has(.landing) {
   scroll-behavior: smooth;
+  /* Nada se puede salir por los costados (en iOS, los elementos con 3D escapan
+     del overflow: hidden de sus contenedores). clip no crea contenedor de scroll:
+     no rompe los position: sticky. hidden queda de respaldo para iOS < 16. */
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+.landing {
+  overflow-x: clip;
 }
 
 @media (prefers-reduced-motion: reduce) {

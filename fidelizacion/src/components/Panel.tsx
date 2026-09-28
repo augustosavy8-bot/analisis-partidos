@@ -1,39 +1,37 @@
-/** Piezas visuales compartidas del panel. */
-export function Titulo({ children, accion }: { children: React.ReactNode; accion?: React.ReactNode }) {
-  return (
-    <div className="mb-5 flex items-end justify-between gap-3">
-      <h1 className="text-2xl font-semibold tracking-tight">{children}</h1>
-      {accion}
-    </div>
-  );
+/** Piezas visuales compartidas del panel (sobre el sistema de la app de Point). */
+import { Encabezado, Superficie } from "./app/Superficie";
+import { EstadoVacio } from "./app/EstadoVacio";
+import { claseBoton } from "./app/Boton";
+import { claseInputSm } from "./app/Campos";
+
+export function Titulo({ children, accion, detalle }: { children: React.ReactNode; accion?: React.ReactNode; detalle?: React.ReactNode }) {
+  return <Encabezado titulo={children} accion={accion} detalle={detalle} />;
 }
 
 export function Tarjeta({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 ${className}`}>{children}</section>;
-}
-
-export function Vacio({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-2xl border border-dashed border-stone-300 p-8 text-center text-stone-500">{children}</p>;
-}
-
-export function BotonSecundario(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      {...props}
-      className={`rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50 disabled:opacity-50 ${props.className ?? ""}`}
-    />
+    <Superficie as="section" className={`p-5 ${className}`}>
+      {children}
+    </Superficie>
   );
 }
 
-export function BotonPrimario(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className={`rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition disabled:opacity-50 ${props.className ?? ""}`}
-      style={{ background: "var(--marca)", color: "var(--marca-texto)" }}
-    />
-  );
+/** Estado vacío: tarjeta en cero + texto + CTA. */
+export function Vacio({ children, titulo, accion, ilustracion }: { children?: React.ReactNode; titulo?: string; accion?: React.ReactNode; ilustracion?: React.ReactNode }) {
+  return <EstadoVacio titulo={titulo ?? "Nada por acá todavía"} texto={children} accion={accion} ilustracion={ilustracion} />;
 }
 
-export const inputPanel =
-  "block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-[var(--marca)] focus:ring-2 focus:ring-[var(--marca)]/20 sm:text-sm";
+export function BotonSecundario({ className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button {...props} className={claseBoton("secundario", "sm", className)} />;
+}
+
+export function BotonPrimario({ className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button {...props} className={claseBoton("primario", "sm", className)} />;
+}
+
+export const inputPanel = claseInputSm;
+
+/** Etiqueta de campo del panel. */
+export function EtiquetaPanel({ children }: { children: React.ReactNode }) {
+  return <span className="mb-1.5 block text-[13px] font-medium text-pt-ink">{children}</span>;
+}

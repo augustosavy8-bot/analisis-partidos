@@ -70,6 +70,46 @@ const ICONOS = {
       <rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><path d="M15 13h6v4h-6a2 2 0 0 1 0-4z"/><circle cx="17" cy="15" r=".6" fill="currentColor" stroke="none"/>
     </>
   ),
+  "tarjeta": (
+    <>
+      <rect x="2.5" y="5.5" width="19" height="13" rx="3"/><circle cx="7.5" cy="10" r="1.6"/><path d="M6 15h6"/>
+    </>
+  ),
+  "check": (
+    <>
+      <path d="m5 12.5 4.5 4.5L19 7.5"/>
+    </>
+  ),
+  "cerrar": (
+    <>
+      <path d="M6 6l12 12M18 6 6 18"/>
+    </>
+  ),
+  "chevron": (
+    <>
+      <path d="m9.5 6 6 6-6 6"/>
+    </>
+  ),
+  "mas": (
+    <>
+      <circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+    </>
+  ),
+  "buscar": (
+    <>
+      <circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>
+    </>
+  ),
+  "descargar": (
+    <>
+      <path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/>
+    </>
+  ),
+  "salir": (
+    <>
+      <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14"/><path d="M10 16.5 5.5 12 10 7.5"/><path d="M5.5 12H15"/>
+    </>
+  ),
 } as const;
 
 export type NombreIcono = keyof typeof ICONOS;

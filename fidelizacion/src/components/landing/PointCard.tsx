@@ -5,7 +5,8 @@
  */
 export type PointCardProps = {
   puntos?: number;
-  meta?: number;
+  /** Puntos del próximo premio. null = el local todavía no tiene premios (sin progreso). */
+  meta?: number | null;
   comercio?: string;
   inicial?: string;
   premio?: string;
@@ -16,6 +17,10 @@ export type PointCardProps = {
   className?: string;
   /** Capa de reflejo: el padre controla --glare-x / --glare-y. */
   reflejo?: boolean;
+  /** Logo del local (reemplaza la inicial). */
+  logo?: string | null;
+  /** Texto debajo del número (reemplaza "N puntos para …"). */
+  leyenda?: string;
 };
 
 export function PointCard({
@@ -28,14 +33,19 @@ export function PointCard({
   variante = "barra",
   className = "",
   reflejo = true,
+  logo,
+  leyenda,
 }: PointCardProps) {
-  const faltan = Math.max(0, meta - puntos);
+  const faltan = meta == null ? 0 : Math.max(0, meta - puntos);
+  const texto =
+    leyenda ??
+    (meta == null ? "Sumá en cada visita" : faltan > 0 ? `${faltan} ${faltan === 1 ? "punto" : "puntos"} para ${premio}` : `¡Ya podés canjear ${premio}!`);
   return (
     <div
       className={`@container relative aspect-[1.586/1] w-full overflow-hidden rounded-pt-lg text-left text-white ${className}`}
       style={{ background: "radial-gradient(circle at 20% 0%, rgba(54,212,119,.16), transparent 42%), #161916" }}
       role="img"
-      aria-label={`Tarjeta POINT de ${comercio}: ${puntos} de ${meta} puntos`}
+      aria-label={`Tarjeta POINT de ${comercio}: ${puntos} ${meta == null ? "puntos" : `de ${meta} puntos`}`}
     >
       {/* 1. Highlight superior muy suave */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.07),transparent_28%)]" />
@@ -57,12 +67,17 @@ export function PointCard({
         {/* Superior: comercio · POINT */}
         <div className="flex items-start justify-between">
           <div className="flex items-center" style={{ gap: "2.2cqw" }}>
-            <span
-              className="flex items-center justify-center rounded-full bg-white/10 font-[family-name:var(--font-manrope)] font-bold ring-1 ring-white/15"
-              style={{ width: "7.4cqw", height: "7.4cqw", fontSize: "3.4cqw" }}
-            >
-              {inicial}
-            </span>
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="" className="rounded-full object-cover ring-1 ring-white/15" style={{ width: "7.4cqw", height: "7.4cqw" }} />
+            ) : (
+              <span
+                className="flex items-center justify-center rounded-full bg-white/10 font-[family-name:var(--font-manrope)] font-bold ring-1 ring-white/15"
+                style={{ width: "7.4cqw", height: "7.4cqw", fontSize: "3.4cqw" }}
+              >
+                {inicial}
+              </span>
+            )}
             <span className="font-medium text-white/85" style={{ fontSize: "3cqw" }}>
               {comercio}
             </span>
@@ -83,16 +98,18 @@ export function PointCard({
               {puntos}
             </span>
             <span className="tracking-[-0.02em] text-white/70" style={{ fontSize: "4.4cqw" }}>
-              puntos
+              {puntos === 1 ? "punto" : "puntos"}
             </span>
           </p>
           <p className="text-white/55" style={{ fontSize: "2.9cqw", marginTop: "1.4cqw" }}>
-            {faltan > 0 ? `${faltan} ${faltan === 1 ? "punto" : "puntos"} para ${premio}` : `¡Ya podés canjear ${premio}!`}
+            {texto}
           </p>
         </div>
 
         {/* Inferior: progreso */}
-        {variante === "barra" ? (
+        {meta == null ? (
+          <span />
+        ) : variante === "barra" ? (
           <div className="flex items-center" style={{ gap: "3cqw" }}>
             <div className="relative flex-1 overflow-hidden rounded-full bg-white/[0.12]" style={{ height: "max(6px, 1.1cqw)" }}>
               <div

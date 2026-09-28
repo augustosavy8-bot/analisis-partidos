@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Manrope, Poppins } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,6 +21,10 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
+// Tipografías de Point (landing y app). Fuentes variables: un archivo por familia.
+const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], display: "swap" });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
+
 export const metadata: Metadata = {
   title: {
     default: "Point — Fidelización para tu local",
@@ -33,12 +37,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fafaf9",
+  themeColor: "#f7f8f6",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-AR" className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${manrope.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

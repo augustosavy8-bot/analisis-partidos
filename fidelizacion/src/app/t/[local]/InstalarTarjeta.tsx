@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icono } from "@/components/Icono";
+import { claseBoton } from "@/components/app/Boton";
 
 type EventoInstalar = Event & { prompt: () => Promise<void> };
 const CLAVE = "fid_instalar_cerrado";
@@ -44,22 +46,27 @@ export function InstalarTarjeta() {
   };
 
   return (
-    <div className="anim-subir fixed inset-x-3 bottom-3 z-40 rounded-2xl bg-stone-900 p-4 text-white shadow-2xl" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+    <div
+      role="dialog"
+      aria-label="Tené tu tarjeta a mano"
+      className="pt-subir fixed inset-x-3 z-30 mx-auto max-w-md rounded-pt-card bg-pt-ink p-4 text-white shadow-pt-flotante bottom-[calc(var(--spacing-pt-tabbar)+env(safe-area-inset-bottom)+0.75rem)]"
+    >
       <div className="flex items-start gap-3">
-        <div className="text-2xl" aria-hidden>📌</div>
-        <div className="flex-1 text-sm">
-          <p className="font-semibold">Tené tu tarjeta a mano</p>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-ink" aria-hidden>
+          <Icono nombre="tarjeta" tamaño={18} />
+        </span>
+        <div className="flex-1 pt-app-detalle">
+          <p className="text-[15px] font-semibold">Tené tu tarjeta a mano</p>
           {modo === "ios" ? (
-            <p className="mt-1 text-stone-300">
-              Tocá <span className="inline-block rounded bg-white/15 px-1.5">Compartir ⬆︎</span> y después{" "}
-              <strong>“Agregar a inicio”</strong>.
+            <p className="mt-0.5 text-white/75">
+              Tocá <span className="inline-block rounded bg-white/15 px-1.5">Compartir ⬆︎</span> y después <strong className="text-white">“Agregar a inicio”</strong>.
             </p>
           ) : (
-            <p className="mt-1 text-stone-300">Instalala en tu pantalla de inicio, como una app.</p>
+            <p className="mt-0.5 text-white/75">Instalala en tu pantalla de inicio, como una app.</p>
           )}
         </div>
-        <button onClick={cerrar} className="text-stone-400" aria-label="Cerrar">
-          ✕
+        <button onClick={cerrar} className="-m-1 rounded-full p-1.5 text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white" aria-label="Cerrar">
+          <Icono nombre="cerrar" tamaño={18} />
         </button>
       </div>
       {modo === "android" && evento && (
@@ -68,7 +75,7 @@ export function InstalarTarjeta() {
             await evento.prompt();
             cerrar();
           }}
-          className="mt-3 w-full rounded-xl bg-white py-2.5 text-sm font-semibold text-stone-900"
+          className={claseBoton("acento", "md", "mt-3 w-full")}
         >
           Instalar
         </button>

@@ -1,29 +1,31 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { guardarCumple, type EstadoCumple } from "./actions";
 import { SelectorCumple } from "@/components/SelectorCumple";
+import { BotonMarca, ErrorForm } from "@/components/Campo";
+import { Superficie } from "@/components/app/Superficie";
+import { avisar } from "@/components/app/Toasts";
 
 export function FormCumple({ slug, puntos }: { slug: string; puntos: number }) {
   const [estado, accion, pendiente] = useActionState<EstadoCumple, FormData>(guardarCumple.bind(null, slug), {});
+  useEffect(() => {
+    if (estado.ok) avisar("¡Listo! Guardamos tu cumple");
+  }, [estado.ok]);
   if (estado.ok) return null;
   return (
-    <form action={accion} className="superficie mt-4 p-5">
-      <p className="font-medium text-stone-900">🎂 ¿Cuándo es tu cumple?</p>
-      <p className="mt-1 text-sm text-stone-600">
-        La semana de tu cumple te regalamos {puntos} puntos en tu visita. Se carga una sola vez.
-      </p>
-      <div className="mt-3">
-        <SelectorCumple requerido />
+    <Superficie as="form" className="mt-5 space-y-3 p-5">
+      <div>
+        <p className="pt-app-seccion text-pt-ink">¿Cuándo es tu cumple?</p>
+        <p className="mt-1 pt-app-detalle text-pt-ink-2">
+          La semana de tu cumple te regalamos {puntos} puntos en tu visita. Se carga una sola vez.
+        </p>
       </div>
-      {estado.error && <p className="mt-2 text-sm text-red-700">{estado.error}</p>}
-      <button
-        disabled={pendiente}
-        className="mt-3 w-full rounded-2xl px-4 py-3 font-semibold shadow-sm transition active:scale-[0.99] disabled:opacity-60"
-        style={{ background: "var(--marca)", color: "var(--marca-texto)" }}
-      >
-        {pendiente ? "Un segundo…" : "Guardar mi cumple"}
-      </button>
-    </form>
+      <SelectorCumple requerido />
+      <ErrorForm mensaje={estado.error} />
+      <BotonMarca formAction={accion} pendiente={pendiente}>
+        Guardar mi cumple
+      </BotonMarca>
+    </Superficie>
   );
 }

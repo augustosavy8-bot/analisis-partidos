@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/tarjeta";
 import { urlBilletera } from "@/lib/billetera";
 import { promoVigente } from "@/lib/promos";
+import { googleWalletActivo } from "@/lib/wallet/google";
 import { SinTarjeta, VistaTarjeta } from "./VistaTarjeta";
 
 export async function generateMetadata({ params }: PageProps<"/t/[local]">): Promise<Metadata> {
@@ -52,6 +54,8 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   const limite = typeof sp.limite === "string" && !isNaN(Date.parse(sp.limite)) ? sp.limite : null;
 
   const objetivo = proximoPremio(premios, tarjeta.puntos);
+  // Google Wallet nativo sólo en Android; en iPhone y el resto sigue Pass2U.
+  const esAndroid = /android/i.test((await headers()).get("user-agent") ?? "");
   const urlPase = urlBilletera(tarjeta.serial, tarjeta.wallet_auth_token);
   const qrPase = await QRCode.toString(urlPase, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
 
@@ -93,6 +97,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
       limite={limite}
       urlPase={urlPase}
       qrPase={qrPase}
+      googleWallet={esAndroid && googleWalletActivo() ? `/t/${local.slug}/google-wallet` : undefined}
       celebracion={
         movCelebrado
           ? {

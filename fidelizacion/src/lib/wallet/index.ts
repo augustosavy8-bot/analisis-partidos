@@ -1,18 +1,26 @@
+import "server-only";
+import { env } from "@/lib/env";
+import { proveedorGoogle } from "./google";
+
 /**
- * Integración con Apple Wallet / Google Wallet — PREPARADA, NO IMPLEMENTADA.
+ * Integración con billeteras nativas.
  *
- * Diseño previsto:
- *  - Cada tarjeta ya tiene `serial` (serialNumber / objectId) y `wallet_auth_token`
- *    (authenticationToken del web service de Apple).
- *  - `tarjetas.actualizada_en` cambia en cada suma/canje (passesUpdatedSince).
- *  - `wallet_registros` guarda los dispositivos que siguen un pase (push tokens).
- *  - Cuando cambian los puntos, el servidor llamará a `notificarCambio` de cada
- *    proveedor registrado (push APNs para Apple, PATCH del objeto para Google).
+ *  - Cada tarjeta tiene `serial` (serialNumber de Apple / id del objeto de Google)
+ *    y `wallet_auth_token` (authenticationToken de Apple; también arma el link /w/…).
+ *  - `tarjetas.actualizada_en` cambia en cada suma/canje (passesUpdatedSince de Apple).
+ *  - `wallet_registros` guarda quién pidió cada pase (plataforma + dispositivo).
+ *  - Después de cada cambio de puntos se llama a `notificarCambioTarjeta` (con after()).
+ *
+ * Google Wallet: implementado (lib/wallet/google.ts), activo si hay credenciales.
+ * Apple Wallet: pendiente (hoy se usa Pass2U).
  */
 export type PlataformaWallet = "apple" | "google";
 
 export interface DatosPase {
   serial: string;
+  /** wallet_auth_token de la tarjeta (arma el link /w/<serial>/<token> del QR). */
+  token: string;
+  localSlug: string;
   localNombre: string;
   clienteNombre: string;
   puntos: number;
@@ -34,10 +42,22 @@ export interface ProveedorWallet {
 const proveedores: ProveedorWallet[] = [];
 
 export function registrarProveedorWallet(p: ProveedorWallet) {
-  proveedores.push(p);
+  if (!proveedores.includes(p)) proveedores.push(p);
 }
 
-/** Punto único a llamar después de cada cambio de puntos. Hoy no hace nada. */
+export function proveedorWallet(plataforma: PlataformaWallet) {
+  return proveedores.find((p) => p.plataforma === plataforma) ?? null;
+}
+
+if (env.googleWallet) registrarProveedorWallet(proveedorGoogle);
+
+/**
+ * Punto único a llamar después de cada cambio de puntos (suma, canje o regalo).
+ * Llamalo dentro de after(): nunca lanza y no demora la respuesta.
+ */
 export async function notificarCambioTarjeta(serial: string) {
-  await Promise.allSettled(proveedores.map((p) => p.notificarCambio(serial)));
+  const resultados = await Promise.allSettled(proveedores.map((p) => p.notificarCambio(serial)));
+  resultados.forEach((r, i) => {
+    if (r.status === "rejected") console.error(`Wallet ${proveedores[i].plataforma}: no se pudo actualizar ${serial}`, r.reason);
+  });
 }

@@ -1,12 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { refresh } from "next/cache";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
 import { guardarCumpleCliente, MINUTOS_CANJE_AL_TOQUE } from "@/lib/tarjeta";
 import { leerCumple } from "@/lib/promos";
+import { notificarCambioTarjeta } from "@/lib/wallet";
 
 async function tarjetaActual(slug: string) {
   const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
@@ -14,7 +16,7 @@ async function tarjetaActual(slug: string) {
   const db = crearClienteAdmin();
   const { data } = await db
     .from("tarjetas")
-    .select("id")
+    .select("id, serial")
     .eq("cliente_id", cliente.clienteId)
     .eq("local_id", local.id)
     .maybeSingle();
@@ -31,7 +33,10 @@ export async function solicitarCanje(slug: string, premioId: string) {
     p_premio_id: premioId,
     p_minutos: MINUTOS_CANJE_AL_TOQUE,
   });
-  if (alToque?.ok) redirect(`/t/${slug}?m=${alToque.movimiento_id}`);
+  if (alToque?.ok) {
+    after(() => notificarCambioTarjeta(tarjeta.serial));
+    redirect(`/t/${slug}?m=${alToque.movimiento_id}`);
+  }
   if (alToque && alToque.motivo !== "sin_toque") redirect(`/aviso?m=${alToque.motivo}`);
 
   // Si no, queda pendiente hasta el próximo toque.

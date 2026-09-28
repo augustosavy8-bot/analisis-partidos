@@ -8,7 +8,8 @@ export async function GET(req: Request, { params }: RouteContext<"/t/[local]/ico
   if (!local) return new Response("No existe", { status: 404 });
 
   const pedido = Number(new URL(req.url).searchParams.get("s")) || 192;
-  const s = Math.min(512, Math.max(64, Math.round(pedido)));
+  // Hasta 660: el logo cuadrado que recomienda Google Wallet.
+  const s = Math.min(660, Math.max(64, Math.round(pedido)));
 
   return new ImageResponse(
     (

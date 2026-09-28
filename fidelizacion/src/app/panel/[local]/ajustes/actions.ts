@@ -1,6 +1,8 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
+import { sincronizarClaseLocal } from "@/lib/wallet/google";
 import { requerirLocal } from "@/lib/panel";
 import { esTermino } from "@/lib/terminos";
 
@@ -38,6 +40,7 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
     })
     .eq("id", local.id);
   if (error) return { error: "No se pudo guardar." };
+  after(() => sincronizarClaseLocal(local.id)); // nombre, logo y colores del pase de Google Wallet
   refresh();
   return { ok: Date.now() };
 }

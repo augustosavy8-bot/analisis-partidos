@@ -52,6 +52,8 @@ type Props = {
   limite: string | null;
   urlPase: string;
   qrPase: string;
+  /** Link "Agregar a Google Wallet" (sólo Android con Google Wallet configurado). */
+  googleWallet?: string;
   celebracion: DatosCelebracion | null;
 };
 
@@ -130,6 +132,7 @@ export function VistaTarjeta(p: Props) {
       <LlevalaEnBilletera
         url={p.urlPase}
         qrSvg={p.qrPase}
+        googleWallet={p.googleWallet}
         franja={`/t/${local.slug}/franja?p=${tarjeta.puntos}${p.objetivo ? `&m=${p.objetivo.puntos_necesarios}` : ""}`}
       />
 

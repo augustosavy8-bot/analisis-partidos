@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { firmar, verificarFirma } from "@/lib/firmas";
 import { env } from "@/lib/env";
@@ -40,7 +41,9 @@ export async function aplicarToque(clienteId: string, toque: Toque): Promise<Res
   if (error || !r) return { tipo: "error", motivo: "error" };
 
   if (r.tipo === "suma" || r.tipo === "canje") {
-    await notificarCambioTarjeta(r.serial);
+    // Billeteras (Google Wallet): después de responder, para no sumar latencia al toque.
+    // La suma incluye los regalos (bienvenida/cumple), que van en la misma transacción.
+    after(() => notificarCambioTarjeta(r.serial));
     return { tipo: r.tipo, movimientoId: r.movimiento_id };
   }
   if (r.tipo === "limite") return { tipo: "limite", proximoEn: r.proximo_en };

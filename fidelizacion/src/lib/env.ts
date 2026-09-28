@@ -1,4 +1,7 @@
 import "server-only";
+import { leerCredenciales, type CredencialesGoogle } from "@/lib/wallet/google-core";
+
+let avisoGoogle = false;
 
 function requerida(nombre: string): string {
   const valor = process.env[nombre];
@@ -39,6 +42,23 @@ export const env = {
     const v = requerida("NFC_SDM_META_KEY");
     if (!/^[0-9a-f]{32}$/i.test(v)) throw new Error("NFC_SDM_META_KEY debe ser 32 caracteres hex (AES-128)");
     return Buffer.from(v, "hex");
+  },
+  /**
+   * Google Wallet (opcional): GOOGLE_WALLET_ISSUER_ID + GOOGLE_SERVICE_ACCOUNT_JSON
+   * (el contenido del JSON de la cuenta de servicio). Si faltan o son inválidas,
+   * devuelve null y el proveedor queda desactivado (no rompe nada).
+   */
+  get googleWallet(): CredencialesGoogle | null {
+    const issuer = process.env.GOOGLE_WALLET_ISSUER_ID?.trim();
+    const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
+    if (!issuer || !json) return null;
+    try {
+      return leerCredenciales(issuer, json);
+    } catch (e) {
+      if (!avisoGoogle) console.error(`Google Wallet desactivado: ${e instanceof Error ? e.message : e}`);
+      avisoGoogle = true;
+      return null;
+    }
   },
   get esProduccion() {
     return process.env.NODE_ENV === "production";

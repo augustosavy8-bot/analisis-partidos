@@ -55,6 +55,10 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
     titulo: "QR no válido",
     texto: "Este código no corresponde a nadie activo del local.",
   },
+  wallet_error: {
+    titulo: "No pudimos crear tu pase",
+    texto: "Google Wallet no respondió. Probá de nuevo en un rato; mientras tanto tu tarjeta sigue funcionando igual.",
+  },
   puntos_insuficientes: {
     titulo: "No te alcanzan los puntos",
     texto: "Todavía te faltan puntos para ese premio.",

@@ -22,6 +22,7 @@ Cada local usa su propia marca en la tarjeta; Point aparece sólo como plataform
 - [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
 - [x] **Panel superadmin**: locales, dueños, chips (prueba y producción con clave cifrada) y estado general
 - [x] **Promos y regalos**: puntos dobles/triples por día y horario, puntos de bienvenida y regalo de cumple
+- [x] **Google Wallet nativo (Android)**: pase de lealtad que se actualiza solo con cada punto (ver abajo)
 - [x] **Reactivar por WhatsApp**: listas de clientes (no vienen, les falta poco, premio sin usar, cumpleaños) con mensaje listo vía wa.me
 
 ## Puesta en marcha (local)
@@ -102,6 +103,31 @@ Sólo para usuarios en la tabla `superadmins` (para cualquier otro, `/admin` da 
 
 > ⚠️ `CHIPS_MASTER_KEY` no se puede perder ni cambiar sin volver a cargar las claves de todos los chips.
 
+## Google Wallet (Android)
+
+Pase de lealtad nativo; en iPhone sigue Pass2U hasta tener Apple Wallet. Todo el código está en
+`src/lib/wallet/` (`google-core.ts` puro y testeado; `google.ts` el proveedor del servidor).
+
+- **Clase por local** `{ISSUER_ID}.local_{slug}`: nombre, logo (o `/t/<local>/icono?s=660`),
+  color principal, cabecera `/t/<local>/cabecera` y la lista de premios. Se crea o actualiza
+  (con `after()`) al crear el local, guardar Ajustes y tocar Premios, y con `npm run wallet:google:sync`.
+- **Objeto por tarjeta** `{ISSUER_ID}.{serial}`: puntos, progreso al próximo premio, nombre del
+  cliente, franja con sellos y un QR con el link `/w/<serial>/<token>`.
+- **Guardar**: en Android la pestaña Tarjeta muestra el botón oficial → `GET /t/<local>/google-wallet`
+  hace upsert de la clase y del objeto por API (insert; si da 409, PATCH), registra el pedido en
+  `wallet_registros` (plataforma `google`, por intención) y redirige a `pay.google.com/gp/v/save/<jwt>`
+  con un JWT *skinny* (sólo el id del objeto, `origins` = `APP_URL`).
+- **Actualización**: después de cada suma, canje o regalo, `notificarCambioTarjeta(serial)` corre en
+  `after()` y hace PATCH del objeto (sólo si la tarjeta tiene registro `google`; un 404 se ignora).
+  El token OAuth de la cuenta de servicio se cachea en memoria hasta 5 min antes de vencer.
+- **Configuración**: `GOOGLE_WALLET_ISSUER_ID` y `GOOGLE_SERVICE_ACCOUNT_JSON` (el contenido del JSON;
+  la cuenta de servicio tiene que tener acceso al issuer en la Google Pay & Wallet Console). Sin ellas,
+  el botón no aparece y todo sigue como antes. `APP_URL` tiene que ser la URL pública https.
+- **Modo demo**: mientras el issuer esté en modo demo, sólo pueden guardar el pase las cuentas de
+  Google agregadas como usuarios de prueba en la consola.
+- Botón oficial: `public/wallet/agregar-a-google-wallet.svg` (asset de Google, sin modificar).
+- Pendiente: callbacks de Google (guardado/borrado confirmado) y Apple Wallet.
+
 ## Tests
 
 ```bash
@@ -128,7 +154,7 @@ npm run db:test   # Postgres temporal: migraciones + seed + tests de RLS y funci
 | `contactos_whatsapp` | Mensajes de WhatsApp que abrió el dueño desde el panel |
 | `dispositivos` | Hash del token de la cookie httpOnly del cliente |
 | `qr_usados` | Anti-replay del QR de respaldo (un solo uso) |
-| `wallet_registros` | Preparada para Apple/Google Wallet (todavía sin uso) |
+| `wallet_registros` | Quién pidió cada pase de billetera (hoy Google Wallet, por intención) |
 
 ### Seguridad
 

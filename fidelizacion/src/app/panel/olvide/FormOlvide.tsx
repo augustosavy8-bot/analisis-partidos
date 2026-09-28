@@ -8,7 +8,7 @@ export function FormOlvide() {
   const [estado, accion, pendiente] = useActionState<EstadoOlvide, FormData>(pedirLink, {});
   if (estado.enviado) {
     return (
-      <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
+      <p role="status" className="rounded-pt-sm bg-pt-accent-soft p-4 pt-app-detalle text-pt-ink">
         Si ese email tiene usuario, te mandamos un link para elegir una contraseña nueva. Revisá también el spam.
       </p>
     );

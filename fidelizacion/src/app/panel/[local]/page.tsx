@@ -1,5 +1,7 @@
 import { requerirLocal } from "@/lib/panel";
-import { Tarjeta, Titulo } from "@/components/Panel";
+import Link from "next/link";
+import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
+import { BotonLink } from "@/components/app/Boton";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { formasTermino } from "@/lib/terminos";
 import { Icono, type NombreIcono } from "@/components/Icono";
@@ -30,8 +32,22 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
 
   return (
     <>
-      <Titulo>Resumen</Titulo>
-      <p className="-mt-3 mb-5 text-sm text-stone-500">Últimos 30 días, salvo que diga otra cosa.</p>
+      <Titulo detalle="Últimos 30 días, salvo que diga otra cosa.">Resumen</Titulo>
+
+      {m.clientes_total === 0 && (
+        <div className="mb-4">
+          <Vacio
+            titulo="Todavía no hay clientes"
+            accion={
+              <BotonLink href={`/panel/${slug}/premios`} variante="primario">
+                Cargar premios
+              </BotonLink>
+            }
+          >
+            Cuando tu equipo apoye el llavero en el celular de un cliente, acá vas a ver visitas, clientes que vuelven y canjes. Antes, cargá los premios para que tengan hacia dónde sumar.
+          </Vacio>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Numero icono="cliente" etiqueta="Clientes" valor={m.clientes_total} detalle={`+${m.clientes_nuevos} nuevos`} />
@@ -51,30 +67,32 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
         </Tarjeta>
 
         <Tarjeta>
-          <h2 className="font-medium">Ranking de {t.plural}</h2>
-          <p className="text-sm text-stone-500">Puntos dados en 30 días</p>
+          <h2 className="pt-app-seccion text-pt-ink">Ranking de {t.plural}</h2>
+          <p className="pt-app-detalle text-pt-ink-2">Puntos dados en 30 días</p>
           {m.ranking_mozos.length === 0 ? (
-            <p className="mt-4 text-sm text-stone-500">Todavía no hay {t.plural}.</p>
+            <div className="mt-4 rounded-pt-sm bg-pt-surface p-4 text-center pt-app-detalle text-pt-ink-2">
+              Todavía no hay {t.plural}.{" "}
+              <Link href={`/panel/${slug}/mozos`} className="font-semibold text-pt-ink underline underline-offset-2">
+                Agregar
+              </Link>
+            </div>
           ) : (
             <ol className="mt-4 space-y-3">
               {m.ranking_mozos.map((r, i) => (
                 <li key={r.id}>
-                  <div className="flex items-baseline justify-between text-sm">
-                    <span className="font-medium">
-                      <span className="mr-2 text-stone-400">{i + 1}</span>
+                  <div className="flex items-baseline justify-between pt-app-detalle">
+                    <span className="font-medium text-pt-ink">
+                      <span className="mr-2 text-pt-ink-2 tabular-nums">{i + 1}</span>
                       {r.nombre}
-                      {!r.activo && <span className="ml-1 text-xs text-stone-400">(inactivo)</span>}
+                      {!r.activo && <span className="ml-1 text-pt-ink-2">(inactivo)</span>}
                     </span>
-                    <span className="tabular-nums text-stone-600">
+                    <span className="tabular-nums text-pt-ink">
                       {r.sumas}
-                      {r.canjes > 0 && <span className="text-stone-400"> · {r.canjes} canjes</span>}
+                      {r.canjes > 0 && <span className="text-pt-ink-2"> · {r.canjes} canjes</span>}
                     </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-stone-100">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${(r.sumas / maxMozo) * 100}%`, background: "var(--marca)" }}
-                    />
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-pt-surface">
+                    <div className="h-full rounded-full bg-pt-accent" style={{ width: `${(r.sumas / maxMozo) * 100}%` }} />
                   </div>
                 </li>
               ))}
@@ -89,17 +107,14 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
 function Numero({ icono, etiqueta, valor, detalle }: { icono: NombreIcono; etiqueta: string; valor: number | string; detalle: string }) {
   return (
     <Tarjeta className="!p-4">
-      <p className="flex items-center gap-2 text-sm text-stone-500">
-        <span
-          className="flex h-7 w-7 items-center justify-center rounded-lg"
-          style={{ background: "color-mix(in oklab, var(--marca) 8%, white)", color: "var(--marca)" }}
-        >
+      <p className="flex items-center gap-2 pt-app-detalle font-medium text-pt-ink-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-pt-accent-soft text-pt-accent-ink">
           <Icono nombre={icono} tamaño={16} />
         </span>
         {etiqueta}
       </p>
-      <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">{valor}</p>
-      <p className="mt-1 text-xs text-stone-500">{detalle}</p>
+      <p className="pt-app-numero mt-2 text-pt-ink">{valor}</p>
+      <p className="mt-1 pt-app-detalle text-pt-ink-2">{detalle}</p>
     </Tarjeta>
   );
 }

@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { localesDelUsuario, requerirUsuario } from "@/lib/panel";
 import { esSuperadmin } from "@/lib/admin";
 import { salir } from "./ingresar/actions";
+import { LogoPoint } from "@/components/landing/LogoPoint";
+import { Encabezado, Lista } from "@/components/app/Superficie";
+import { BotonLink, claseBoton } from "@/components/app/Boton";
+import { Vacio } from "@/components/Panel";
+import { Icono } from "@/components/Icono";
 
 export const metadata = { title: "Panel", robots: { index: false } };
 
@@ -12,35 +17,47 @@ export default async function Panel() {
   if (locales.length === 1 && !superadmin) redirect(`/panel/${locales[0].slug}`);
 
   return (
-    <main className="mx-auto w-full max-w-md flex-1 px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Tus locales</h1>
-      <p className="mt-1 text-sm text-stone-500">{email}</p>
-      {superadmin && (
-        <Link href="/admin" className="mt-6 flex items-center justify-between rounded-2xl bg-stone-900 px-5 py-4 font-medium text-white">
-          Administración (superadmin) <span>→</span>
-        </Link>
-      )}
-      {locales.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-white p-5 text-stone-600 ring-1 ring-stone-200">
-          Tu usuario todavía no tiene ningún local asignado.
-        </p>
-      ) : (
-        <ul className="mt-8 divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200">
-          {locales.map((l) => (
-            <li key={l.id}>
-              <Link href={`/panel/${l.slug}`} className="flex items-center justify-between px-5 py-4 font-medium">
-                {l.nombre} <span className="text-stone-400">→</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      <Link href="/panel/nueva-contrasena" className="mt-8 block text-sm text-stone-500 underline underline-offset-4">
-        Cambiar mi contraseña
-      </Link>
-      <form action={salir} className="mt-3">
-        <button className="text-sm text-stone-500 underline underline-offset-4">Salir</button>
-      </form>
-    </main>
+    <div className="pt-app flex flex-1 flex-col">
+      <main className="mx-auto w-full max-w-md flex-1 px-5 py-12">
+        <LogoPoint alto={24} />
+        <div className="mt-8">
+          <Encabezado titulo="Tus locales" detalle={email} />
+        </div>
+        {superadmin && (
+          <Link href="/admin" className="mb-4 flex items-center justify-between rounded-pt-card bg-pt-ink px-5 py-4 text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-black">
+            Administración (superadmin) <Icono nombre="chevron" tamaño={18} />
+          </Link>
+        )}
+        {locales.length === 0 ? (
+          <Vacio titulo="Todavía no tenés locales" ilustracion={false}>
+            Tu usuario todavía no tiene ningún local asignado. Escribinos y lo dejamos listo.
+          </Vacio>
+        ) : (
+          <Lista>
+            {locales.map((l) => (
+              <li key={l.id}>
+                <Link href={`/panel/${l.slug}`} className="flex items-center gap-3 px-5 py-4 text-[15px] font-medium text-pt-ink transition-colors duration-150 hover:bg-pt-bg">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-pt-sm bg-pt-ink font-[family-name:var(--font-pt-display)] font-bold text-white" aria-hidden>
+                    {l.nombre.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="flex-1">{l.nombre}</span>
+                  <Icono nombre="chevron" tamaño={18} className="text-pt-ink-2" />
+                </Link>
+              </li>
+            ))}
+          </Lista>
+        )}
+        <div className="mt-8 flex flex-wrap gap-2">
+          <BotonLink href="/panel/nueva-contrasena" variante="secundario" tamaño="sm">
+            Cambiar mi contraseña
+          </BotonLink>
+          <form action={salir}>
+            <button className={claseBoton("fantasma", "sm")}>
+              <Icono nombre="salir" tamaño={16} /> Salir
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }

@@ -55,3 +55,10 @@ export function BotonLink({ href, variante, tamaño, className = "", children, e
     </Link>
   );
 }
+
+/** Chip de filtro (link o botón): activo en tinta, inactivo en superficie. */
+export function claseChip(activo: boolean) {
+  return `inline-flex h-pt-control-sm shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pt-accent-dark ${
+    activo ? "bg-pt-ink text-white" : "bg-pt-pure text-pt-ink-2 ring-1 ring-inset ring-pt-border hover:text-pt-ink hover:ring-pt-ink-3"
+  }`;
+}

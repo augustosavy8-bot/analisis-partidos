@@ -3,7 +3,8 @@ import { fechaHora, requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { formasTermino } from "@/lib/terminos";
 import { nombreIconoMovimiento, textoMovimientoPanel, type MotivoMovimiento, type TipoMovimiento } from "@/lib/movimientos";
-import { Icono } from "@/components/Icono";
+import { IconoFila } from "@/components/app/Superficie";
+import { BotonLink, claseChip } from "@/components/app/Boton";
 
 export const metadata = { title: "Movimientos" };
 
@@ -51,18 +52,19 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
     const s = p.toString();
     return `/panel/${slug}/movimientos${s ? `?${s}` : ""}`;
   };
-  const chip = (activo: boolean) =>
-    `rounded-full px-3 py-1.5 text-sm ${activo ? "bg-stone-900 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200"}`;
+  const chip = claseChip;
+  const hayFiltros = !!(tipo || mozo);
 
   return (
     <>
       <Titulo>Movimientos</Titulo>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="-mx-4 mb-2 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
         <Link href={filtro({ tipo: null })} className={chip(!tipo)}>Todos</Link>
         <Link href={filtro({ tipo: "suma" })} className={chip(tipo === "suma")}>Puntos</Link>
         <Link href={filtro({ tipo: "regalo" })} className={chip(tipo === "regalo")}>Regalos</Link>
         <Link href={filtro({ tipo: "canje" })} className={chip(tipo === "canje")}>Canjes</Link>
-        <span className="mx-1 w-px bg-stone-200" />
+      </div>
+      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
         <Link href={filtro({ mozo: null })} className={chip(!mozo)}>Todos los {formasTermino(local.termino_personal).plural}</Link>
         {(mozos ?? []).map((m) => (
           <Link key={m.id} href={filtro({ mozo: m.id })} className={chip(mozo === m.id)}>
@@ -72,31 +74,42 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
       </div>
 
       {movs.length === 0 ? (
-        <Vacio>No hay movimientos con estos filtros.</Vacio>
+        hayFiltros ? (
+          <Vacio
+            titulo="Sin movimientos con estos filtros"
+            ilustracion={false}
+            accion={
+              <BotonLink href={`/panel/${slug}/movimientos`} variante="secundario">
+                Ver todos
+              </BotonLink>
+            }
+          />
+        ) : (
+          <Vacio
+            titulo="Todavía no hay movimientos"
+            accion={
+              <BotonLink href={`/panel/${slug}/mozos`} variante="primario">
+                Preparar a tu equipo
+              </BotonLink>
+            }
+          >
+            Cada punto, regalo y canje queda registrado acá, con quién lo dio y a qué hora.
+          </Vacio>
+        )
       ) : (
-        <Tarjeta className="!p-0 overflow-hidden">
-          <ul className="divide-y divide-stone-100">
+        <Tarjeta className="overflow-hidden !p-0">
+          <ul className="divide-y divide-pt-border">
             {movs.map((m) => (
               <li key={m.id} className="flex items-center gap-3 px-4 py-3">
-                <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-                  style={
-                    m.tipo !== "canje"
-                      ? { background: "var(--marca-acento)", color: "var(--marca)" }
-                      : { background: "var(--marca)", color: "var(--marca-texto)" }
-                  }
-                  aria-hidden
-                >
-                  <Icono nombre={nombreIconoMovimiento(m)} tamaño={18} />
-                </div>
+                <IconoFila icono={nombreIconoMovimiento(m)} tono={m.tipo !== "canje" ? "acento" : "oscuro"} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
+                  <p className="truncate text-[14px] font-medium text-pt-ink">
                     {m.tarjetas?.clientes?.nombre ?? "Cliente"}{" "}
-                    <span className="font-normal text-stone-500">
+                    <span className="font-normal text-pt-ink-2">
                       {textoMovimientoPanel(m, m.canjes?.premios?.nombre)}
                     </span>
                   </p>
-                  <p className="text-xs text-stone-500">
+                  <p className="pt-app-detalle text-pt-ink-2">
                     {fechaHora(m.created_at, local.zona_horaria)} · {m.mozos?.nombre ?? "—"} ·{" "}
                     {m.origen === "nfc" ? "Llavero" : "QR"}
                   </p>
@@ -106,7 +119,7 @@ export default async function Movimientos({ params, searchParams }: PageProps<"/
           </ul>
         </Tarjeta>
       )}
-      {movs.length === 150 && <p className="mt-3 text-center text-sm text-stone-500">Mostrando los últimos 150.</p>}
+      {movs.length === 150 && <p className="mt-3 text-center pt-app-detalle text-pt-ink-2">Mostrando los últimos 150.</p>}
     </>
   );
 }

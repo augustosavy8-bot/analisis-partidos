@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { salir } from "./actions";
 import { Icono } from "@/components/Icono";
+import { claseBoton } from "@/components/app/Boton";
 import { CheckCanje } from "@/components/Animaciones";
 
 type QR = { jti: string; url: string; svg: string; renovarEn: string };
@@ -97,14 +98,14 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
 
   return (
     <div className="flex flex-1 flex-col items-center">
-      <p className="flex items-center gap-1.5 text-sm text-stone-500">
+      <p className="flex items-center gap-1.5 rounded-full bg-pt-pure px-3.5 py-1.5 pt-app-detalle text-pt-ink-2 ring-1 ring-pt-border">
         <Icono nombre="mozo" tamaño={16} />
-        Turno de <strong className="text-stone-900">{nombre}</strong>
+        Turno de <strong className="text-pt-ink">{nombre}</strong>
         {escaneos > 0 && ` · ${escaneos} ${escaneos === 1 ? "escaneo" : "escaneos"}`}
       </p>
 
       <div className="relative mt-6 w-full max-w-xs">
-        <div className="aspect-square overflow-hidden rounded-3xl bg-white p-4 shadow-xl ring-1 ring-stone-200">
+        <div className="aspect-square overflow-hidden rounded-pt-lg bg-white p-4 shadow-pt-product ring-1 ring-pt-border">
           {qr && !usado ? (
             <div
               className="anim-aparecer h-full w-full [&>svg]:h-full [&>svg]:w-full"
@@ -112,26 +113,26 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
               dangerouslySetInnerHTML={{ __html: qr.svg }}
             />
           ) : usado ? (
-            <div className="anim-pop flex h-full w-full flex-col items-center justify-center rounded-2xl bg-emerald-500 text-white">
-              <CheckCanje color="#ffffff" tamaño={120} />
-              <span className="mt-2 text-lg font-semibold">¡Listo!</span>
+            <div className="anim-pop flex h-full w-full flex-col items-center justify-center rounded-pt-card bg-pt-accent text-pt-ink">
+              <CheckCanje color="var(--color-pt-ink)" tamaño={120} />
+              <span className="mt-2 font-[family-name:var(--font-pt-display)] text-lg font-semibold">¡Listo!</span>
             </div>
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-stone-400">
+            <div className="flex h-full w-full items-center justify-center pt-app-detalle text-pt-ink-2">
               {error ? "Sin conexión. Reintentando…" : "Generando…"}
             </div>
           )}
         </div>
         {/* barra de tiempo */}
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-stone-200">
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-pt-border">
           <div
-            className="h-full rounded-full transition-[width] duration-300 ease-linear"
-            style={{ width: `${(usado ? 0 : fraccion) * 100}%`, background: "var(--marca)" }}
+            className="h-full rounded-full bg-pt-accent transition-[width] duration-300 ease-linear"
+            style={{ width: `${(usado ? 0 : fraccion) * 100}%` }}
           />
         </div>
       </div>
 
-      <p className="mt-6 flex max-w-xs gap-2.5 text-left text-stone-600">
+      <p className="mt-6 flex max-w-xs gap-2.5 text-left pt-app-texto text-pt-ink-2">
         <Icono nombre="qr" tamaño={20} className="mt-0.5 shrink-0" />
         {usado
           ? "El cliente ya lo escaneó. Generando uno nuevo…"
@@ -139,13 +140,15 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
       </p>
 
       {error && (
-        <button onClick={() => void nuevo()} className="mt-3 text-sm font-medium underline">
+        <button onClick={() => void nuevo()} className={claseBoton("secundario", "sm", "mt-3")}>
           Reintentar
         </button>
       )}
 
       <form action={salir.bind(null, slug)} className="mt-auto pt-10">
-        <button className="text-sm text-stone-500 underline underline-offset-4">Terminar turno</button>
+        <button className={claseBoton("fantasma", "sm")}>
+          <Icono nombre="salir" tamaño={16} /> Terminar turno
+        </button>
       </form>
     </div>
   );

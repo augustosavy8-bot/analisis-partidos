@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { guardarAjustes, type EstadoAjustes } from "./actions";
-import { BotonPrimario, Tarjeta, inputPanel } from "@/components/Panel";
+import { BotonPrimario, EtiquetaPanel, Tarjeta, inputPanel } from "@/components/Panel";
+import { PointCard } from "@/components/landing/PointCard";
+import { avisar } from "@/components/app/Toasts";
 import { ErrorForm } from "@/components/Campo";
 import { TERMINOS, capitalizar, plural } from "@/lib/terminos";
 
@@ -17,17 +19,14 @@ type Local = {
   termino_personal: string;
 };
 
-function textoSobre(hex: string) {
-  const n = parseInt(hex.slice(1), 16);
-  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum > 0.6 ? "#1c1917" : "#ffffff";
-}
-
 export function FormAjustes({ local }: { local: Local }) {
   const [estado, accion, pendiente] = useActionState<EstadoAjustes, FormData>(guardarAjustes.bind(null, local.slug), {});
   const [nombre, setNombre] = useState(local.nombre);
   const [primario, setPrimario] = useState(local.color_primario);
   const [secundario, setSecundario] = useState(local.color_secundario);
+  useEffect(() => {
+    if (estado.ok) avisar("Cambios guardados");
+  }, [estado.ok]);
   const [horas, setHoras] = useState(String(+(local.minutos_entre_puntos / 60).toFixed(2)));
 
   const h = Number(horas.replace(",", "."));
@@ -44,9 +43,9 @@ export function FormAjustes({ local }: { local: Local }) {
     <form action={accion} className="grid gap-4 lg:grid-cols-[1fr_320px]">
       <div className="space-y-4">
         <Tarjeta>
-          <h2 className="font-medium">Regla de puntos</h2>
+          <h2 className="pt-app-seccion text-pt-ink">Regla de puntos</h2>
           <label className="mt-3 block max-w-xs">
-            <span className="text-xs font-medium text-stone-600">Horas mínimas entre puntos</span>
+            <EtiquetaPanel>Horas mínimas entre puntos</EtiquetaPanel>
             <input
               name="horas"
               type="number"
@@ -59,37 +58,37 @@ export function FormAjustes({ local }: { local: Local }) {
               className={inputPanel}
             />
           </label>
-          <p className="mt-2 text-sm text-stone-600">{reglaTexto}</p>
-          <p className="mt-1 text-xs text-stone-500">Evita que alguien sume varias veces en la misma visita. Para un café, 3 a 4 horas es razonable.</p>
+          <p className="mt-2 pt-app-detalle font-medium text-pt-ink">{reglaTexto}</p>
+          <p className="mt-1 pt-app-detalle text-pt-ink-2">Evita que alguien sume varias veces en la misma visita. Para un café, 3 a 4 horas es razonable.</p>
         </Tarjeta>
 
         <Tarjeta>
-          <h2 className="font-medium">Tu marca</h2>
+          <h2 className="pt-app-seccion text-pt-ink">Tu local</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-stone-600">Nombre del local</span>
+              <EtiquetaPanel>Nombre del local</EtiquetaPanel>
               <input name="nombre" required maxLength={60} value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputPanel} />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-stone-600">Rubro (opcional)</span>
+              <EtiquetaPanel>Rubro (opcional)</EtiquetaPanel>
               <input name="rubro" maxLength={60} defaultValue={local.rubro ?? ""} placeholder="Ej: Cafetería de especialidad" className={inputPanel} />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-stone-600">Color principal</span>
+              <EtiquetaPanel>Color principal (billetera)</EtiquetaPanel>
               <div className="flex gap-2">
-                <input type="color" name="color_primario" value={primario} onChange={(e) => setPrimario(e.target.value)} className="h-[38px] w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1" />
+                <input type="color" name="color_primario" value={primario} onChange={(e) => setPrimario(e.target.value)} className="h-pt-control-sm w-14 shrink-0 cursor-pointer rounded-pt-sm border border-pt-border bg-pt-pure p-1" />
                 <input value={primario} readOnly className={`${inputPanel} font-mono`} aria-label="Código del color principal" />
               </div>
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-stone-600">Color de acento</span>
+              <EtiquetaPanel>Color de acento (billetera)</EtiquetaPanel>
               <div className="flex gap-2">
-                <input type="color" name="color_secundario" value={secundario} onChange={(e) => setSecundario(e.target.value)} className="h-[38px] w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1" />
+                <input type="color" name="color_secundario" value={secundario} onChange={(e) => setSecundario(e.target.value)} className="h-pt-control-sm w-14 shrink-0 cursor-pointer rounded-pt-sm border border-pt-border bg-pt-pure p-1" />
                 <input value={secundario} readOnly className={`${inputPanel} font-mono`} aria-label="Código del color de acento" />
               </div>
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-stone-600">¿Cómo llamás a tu personal?</span>
+              <EtiquetaPanel>¿Cómo llamás a tu personal?</EtiquetaPanel>
               <select name="termino_personal" defaultValue={local.termino_personal} className={inputPanel}>
                 {TERMINOS.map((t) => (
                   <option key={t} value={t}>
@@ -97,46 +96,31 @@ export function FormAjustes({ local }: { local: Local }) {
                   </option>
                 ))}
               </select>
-              <span className="mt-1 block text-xs text-stone-500">Se usa en la tarjeta: “Pedile al vendedor que apoye su llavero”.</span>
+              <span className="mt-1.5 block pt-app-detalle text-pt-ink-2">Se usa en la tarjeta: “Pedile al vendedor que apoye su llavero”.</span>
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs font-medium text-stone-600">Logo (link https a una imagen cuadrada, opcional)</span>
+              <EtiquetaPanel>Logo (link https a una imagen cuadrada, opcional)</EtiquetaPanel>
               <input name="logo_url" type="url" defaultValue={local.logo_url ?? ""} placeholder="https://…/logo.png" className={inputPanel} />
             </label>
           </div>
         </Tarjeta>
 
         <ErrorForm mensaje={estado.error} />
-        <div className="flex items-center gap-3">
-          <BotonPrimario type="submit" disabled={pendiente}>
-            {pendiente ? "Guardando…" : "Guardar cambios"}
-          </BotonPrimario>
-          {estado.ok && !pendiente && <span className="text-sm text-emerald-700">Guardado ✓</span>}
-        </div>
+        <BotonPrimario type="submit" disabled={pendiente} className="!h-11 !rounded-full !px-5 !text-[15px]">
+          {pendiente ? "Guardando…" : "Guardar cambios"}
+        </BotonPrimario>
       </div>
 
       {/* Vista previa de la tarjeta */}
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-widest text-stone-500">Así la ven tus clientes</p>
-        <div className="rounded-[24px] p-5 shadow-lg" style={{ background: primario, color: textoSobre(primario) }}>
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl font-semibold" style={{ background: secundario, color: primario }}>
-              {nombre.charAt(0).toUpperCase() || "?"}
-            </div>
-            <p className="font-semibold">{nombre || "Tu local"}</p>
-          </div>
-          <p className="mt-6 text-4xl font-semibold">
-            5 <span className="text-base font-normal opacity-80">puntos</span>
-          </p>
-          <div className="mt-4 grid grid-cols-8 gap-1.5">
-            {Array.from({ length: 8 }, (_, i) => (
-              <div
-                key={i}
-                className="aspect-square rounded-full"
-                style={i < 5 ? { background: secundario } : { border: "2px dashed currentColor", opacity: 0.35 }}
-              />
-            ))}
-          </div>
+      <div className="lg:sticky lg:top-40 lg:self-start">
+        <p className="pt-label mb-2 uppercase text-pt-ink-2">Así la ven tus clientes</p>
+        <div className="rounded-pt-lg shadow-pt-card-app">
+          <PointCard comercio={nombre || "Tu local"} inicial={(nombre || "T").charAt(0).toUpperCase()} logo={local.logo_url} puntos={5} meta={8} premio="tu premio" reflejo={false} />
+        </div>
+        <div className="mt-3 flex items-center gap-2 pt-app-detalle text-pt-ink-2">
+          <span className="h-4 w-4 rounded-full ring-1 ring-pt-border" style={{ background: primario }} aria-hidden />
+          <span className="h-4 w-4 rounded-full ring-1 ring-pt-border" style={{ background: secundario }} aria-hidden />
+          Tus colores se usan en la imagen para la billetera.
         </div>
       </div>
     </form>

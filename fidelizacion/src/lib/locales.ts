@@ -40,10 +40,3 @@ export function colorTextoSobre(hex: string): string {
   return lum > 0.45 ? "#1c1917" : "#ffffff";
 }
 
-export function estiloMarca(local: Local): React.CSSProperties {
-  return {
-    ["--marca" as string]: local.color_primario,
-    ["--marca-acento" as string]: local.color_secundario,
-    ["--marca-texto" as string]: colorTextoSobre(local.color_primario),
-  };
-}

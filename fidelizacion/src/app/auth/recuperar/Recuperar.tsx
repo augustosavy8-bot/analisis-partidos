@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { BotonLink } from "@/components/app/Boton";
 import { crearClienteNavegador } from "@/lib/supabase/browser";
 
 /**
@@ -43,13 +43,15 @@ export function Recuperar() {
     })();
   }, []);
 
-  if (!error) return <p className="text-stone-600">Validando el link…</p>;
+  if (!error) return <p className="pt-app-texto text-pt-ink-2">Validando el link…</p>;
   return (
     <div className="space-y-4">
-      <p className="rounded-xl bg-red-50 p-4 text-sm text-red-800">{error} Pedí uno nuevo y abrí sólo el último mail que te llegue.</p>
-      <Link href="/panel/olvide" className="block text-center font-medium underline underline-offset-4">
+      <p role="alert" className="rounded-pt-sm bg-pt-error-soft p-4 pt-app-detalle text-pt-error-ink">
+        {error} Pedí uno nuevo y abrí sólo el último mail que te llegue.
+      </p>
+      <BotonLink href="/panel/olvide" variante="primario" tamaño="lg">
         Pedir un link nuevo
-      </Link>
+      </BotonLink>
     </div>
   );
 }

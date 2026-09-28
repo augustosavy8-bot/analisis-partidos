@@ -2,6 +2,7 @@ import { requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { FormPremio } from "./FormPremio";
 import { FilaPremio } from "./FilaPremio";
+import { claseBoton } from "@/components/app/Boton";
 
 export const metadata = { title: "Premios" };
 
@@ -17,23 +18,32 @@ export default async function Premios({ params }: PageProps<"/panel/[local]/prem
 
   return (
     <>
-      <Titulo>Premios</Titulo>
+      <Titulo detalle="Lo que tus clientes pueden canjear con sus puntos.">Premios</Titulo>
       <Tarjeta className="mb-4">
-        <h2 className="mb-3 font-medium">Nuevo premio</h2>
+        <h2 id="nuevo-premio" className="pt-app-seccion mb-3 text-pt-ink">Nuevo premio</h2>
         <FormPremio slug={slug} />
       </Tarjeta>
       {!premios?.length ? (
-        <Vacio>Todavía no hay premios. Sin premios, los clientes no tienen hacia dónde sumar.</Vacio>
+        <Vacio
+          titulo="Todavía no hay premios"
+          accion={
+            <a href="#nuevo-premio" className={claseBoton("primario")}>
+              Crear el primer premio
+            </a>
+          }
+        >
+          Sin premios, los clientes no tienen hacia dónde sumar. Empezá por uno simple, como un café gratis a los 10 puntos.
+        </Vacio>
       ) : (
-        <Tarjeta className="!p-0 overflow-hidden">
-          <ul className="divide-y divide-stone-100">
+        <Tarjeta className="overflow-hidden !p-0">
+          <ul className="divide-y divide-pt-border">
             {premios.map((p) => (
               <FilaPremio key={p.id} slug={slug} premio={{ ...p, canjes: usos.get(p.id) ?? 0 }} />
             ))}
           </ul>
         </Tarjeta>
       )}
-      <p className="mt-3 text-sm text-stone-500">Los premios ocultos no aparecen en la tarjeta del cliente.</p>
+      <p className="mt-3 pt-app-detalle text-pt-ink-2">Los premios ocultos no aparecen en la tarjeta del cliente.</p>
     </>
   );
 }

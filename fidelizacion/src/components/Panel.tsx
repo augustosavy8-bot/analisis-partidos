@@ -17,7 +17,7 @@ export function Tarjeta({ children, className = "" }: { children: React.ReactNod
 }
 
 /** Estado vacío: tarjeta en cero + texto + CTA. */
-export function Vacio({ children, titulo, accion, ilustracion }: { children?: React.ReactNode; titulo?: string; accion?: React.ReactNode; ilustracion?: React.ReactNode }) {
+export function Vacio({ children, titulo, accion, ilustracion }: { children?: React.ReactNode; titulo?: string; accion?: React.ReactNode; ilustracion?: React.ReactNode | false }) {
   return <EstadoVacio titulo={titulo ?? "Nada por acá todavía"} texto={children} accion={accion} ilustracion={ilustracion} />;
 }
 

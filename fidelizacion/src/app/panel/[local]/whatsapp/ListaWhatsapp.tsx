@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { guardarPlantilla, marcarNoContactar, registrarContacto } from "./actions";
-import { BotonSecundario, Tarjeta } from "@/components/Panel";
+import { BotonSecundario, EtiquetaPanel, Tarjeta } from "@/components/Panel";
+import { claseBoton } from "@/components/app/Boton";
+import { claseTextarea } from "@/components/app/Campos";
+import { confirmar } from "@/components/app/Dialogos";
+import { avisar } from "@/components/app/Toasts";
+import { Icono } from "@/components/Icono";
 import { armarMensaje, haceCuanto, linkWhatsapp, SEGMENTOS, type Segmento } from "@/lib/reactivar";
 
 export type FilaReactivar = {
@@ -30,7 +35,6 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
   const original = plantillaGuardada ?? SEGMENTOS[segmento].plantilla;
   const [plantilla, setPlantilla] = useState(original);
   const [error, setError] = useState<string | null>(null);
-  const [guardado, setGuardado] = useState(false);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
   const [pendiente, start] = useTransition();
 
@@ -42,7 +46,7 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
     start(async () => {
       const r = await guardarPlantilla(slug, segmento, plantilla);
       setError(r.error ?? null);
-      setGuardado(!r.error);
+      if (!r.error) avisar("Mensaje guardado");
     });
   }
 
@@ -50,25 +54,24 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
     <>
       <Tarjeta className="mb-4">
         <label className="block">
-          <span className="text-sm font-medium">Mensaje</span>
+          <EtiquetaPanel>Mensaje</EtiquetaPanel>
           <textarea
             value={plantilla}
             onChange={(e) => {
               setPlantilla(e.target.value);
-              setGuardado(false);
             }}
             rows={4}
             maxLength={700}
-            className="mt-1.5 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-[var(--marca)] focus:ring-2 focus:ring-[var(--marca)]/20 sm:text-sm"
+            className={claseTextarea}
           />
         </label>
-        <p className="mt-1.5 text-xs text-stone-500">
+        <p className="mt-1.5 pt-app-detalle text-pt-ink-2">
           Se completan solos: <code>{"{nombre}"}</code> <code>{"{puntos}"}</code> <code>{"{premio}"}</code>{" "}
           <code>{"{faltan}"}</code> <code>{"{local}"}</code> <code>{"{link}"}</code> (link a su tarjeta).
         </p>
         {ejemplo && (
-          <div className="mt-3 rounded-xl bg-[#e7fbe0] px-3.5 py-2.5 text-sm text-stone-800">
-            <p className="mb-1 text-xs font-medium text-stone-500">Así le llega a {ejemplo.nombre.split(" ")[0]}:</p>
+          <div className="mt-3 rounded-pt-sm rounded-tl-[4px] bg-pt-accent-soft px-3.5 py-2.5 pt-app-detalle text-pt-ink">
+            <p className="mb-1 text-[12px] font-semibold text-pt-accent-ink">Así le llega a {ejemplo.nombre.split(" ")[0]}:</p>
             <p className="whitespace-pre-wrap break-words">{mensaje(ejemplo)}</p>
           </div>
         )}
@@ -77,44 +80,50 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
             {pendiente ? "Guardando…" : "Guardar mensaje"}
           </BotonSecundario>
           {plantilla !== SEGMENTOS[segmento].plantilla && (
-            <button onClick={() => setPlantilla(SEGMENTOS[segmento].plantilla)} className="text-sm text-stone-500 underline underline-offset-2">
+            <button onClick={() => setPlantilla(SEGMENTOS[segmento].plantilla)} className={claseBoton("fantasma", "sm")}>
               Volver al mensaje sugerido
             </button>
           )}
-          {guardado && <span className="text-sm text-emerald-700">Guardado ✓</span>}
-          {error && <span className="text-sm text-red-700">{error}</span>}
+          {error && <span className="pt-app-detalle text-pt-error-ink">{error}</span>}
         </div>
       </Tarjeta>
 
-      <Tarjeta className="!p-0 overflow-hidden">
-        <ul className="divide-y divide-stone-100">
+      <Tarjeta className="overflow-hidden !p-0">
+        <ul className="divide-y divide-pt-border">
           {filas.map((f) => {
             const enviado = enviados.has(f.cliente_id);
             return (
-              <li key={f.cliente_id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${f.no_contactar ? "opacity-60" : ""}`}>
+              <li key={f.cliente_id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${f.no_contactar ? "opacity-70" : ""}`}>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{f.nombre}</p>
-                  <p className="text-xs text-stone-500">{f.detalle}</p>
+                  <p className="truncate text-[15px] font-medium text-pt-ink">{f.nombre}</p>
+                  <p className="pt-app-detalle text-pt-ink-2">{f.detalle}</p>
                   {f.no_contactar ? (
-                    <p className="mt-0.5 text-xs text-stone-500">
+                    <p className="mt-0.5 pt-app-detalle text-pt-ink-2">
                       Pidió no recibir mensajes ·{" "}
-                      <button onClick={() => start(() => marcarNoContactar(slug, f.cliente_id, false))} className="underline">
+                      <button onClick={() => start(() => marcarNoContactar(slug, f.cliente_id, false))} className="font-medium text-pt-ink underline">
                         deshacer
                       </button>
                     </p>
                   ) : (
                     (enviado || f.ultimo_contacto) && (
-                      <p className="mt-0.5 text-xs font-medium text-emerald-700">
-                        ✓ Le escribiste {enviado ? "recién" : haceCuanto(f.ultimo_contacto!)}
+                      <p className="mt-0.5 flex items-center gap-1 pt-app-detalle font-medium text-pt-accent-ink">
+                        <Icono nombre="check" tamaño={14} /> Le escribiste {enviado ? "recién" : haceCuanto(f.ultimo_contacto!)}
                       </p>
                     )
                   )}
                 </div>
                 {!f.no_contactar && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                     <button
-                      onClick={() => confirm(`¿${f.nombre} pidió no recibir más mensajes?`) && start(() => marcarNoContactar(slug, f.cliente_id, true))}
-                      className="px-1 text-xs text-stone-400 underline underline-offset-2"
+                      onClick={async () => {
+                        const ok = await confirmar({
+                          titulo: `¿${f.nombre} pidió no recibir más mensajes?`,
+                          texto: "No va a aparecer para enviarle WhatsApp. Lo podés deshacer.",
+                          confirmar: "No escribir más",
+                        });
+                        if (ok) start(() => marcarNoContactar(slug, f.cliente_id, true));
+                      }}
+                      className={claseBoton("fantasma", "sm", "!px-2 !text-[12px]")}
                     >
                       No escribir más
                     </button>
@@ -126,9 +135,10 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
                         setEnviados((s) => new Set(s).add(f.cliente_id));
                         void registrarContacto(slug, f.cliente_id, segmento);
                       }}
-                      className={`rounded-lg px-3.5 py-2 text-sm font-semibold text-white shadow-sm ${enviado || f.ultimo_contacto ? "bg-[#25d366]/70" : "bg-[#1fa855]"}`}
+                      className={claseBoton(enviado || f.ultimo_contacto ? "secundario" : "acento", "sm", "!rounded-full")}
                     >
-                      {enviado || f.ultimo_contacto ? "Reenviar" : "Enviar WhatsApp"}
+                      <Icono nombre="whatsapp" tamaño={16} />
+                      {enviado || f.ultimo_contacto ? "Reenviar" : "Enviar"}
                     </a>
                   </div>
                 )}

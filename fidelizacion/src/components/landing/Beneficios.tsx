@@ -1,6 +1,7 @@
 import { IPhoneMockup } from "./IPhoneMockup";
 import { WalletScreen } from "./WalletScreen";
-import { PointCard, FilaPuntos } from "./PointCard";
+import { PointCard } from "./PointCard";
+import { SellosPoint } from "./SellosPoint";
 import { Etiqueta } from "./Section";
 import { Reveal } from "./Reveal";
 
@@ -53,8 +54,8 @@ export function Beneficios() {
         titulo="Una razón para volver."
         texto="Cada visita suma. Ver cuánto falta para el premio es lo que hace que la próxima compra sea en tu local."
         visual={
-          <div className="flex flex-col items-center gap-6 rounded-pt-lg bg-pt-pure px-8 py-14 shadow-pt-ui md:px-14 md:py-20">
-            <FilaPuntos puntos={9} meta={10} tamaño="clamp(18px, 4.6vw, 30px)" apagado="#E2E5E0" />
+          <div className="flex flex-col items-center gap-8 rounded-pt-lg bg-pt-pure px-8 py-12 shadow-pt-ui md:px-14 md:py-20">
+            <SellosPoint puntos={9} meta={10} />
             <p className="pt-h3 text-pt-ink">Te falta 1 punto</p>
           </div>
         }

@@ -1,22 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { m, useScroll, useTransform } from "motion/react";
-import { PointCard } from "./PointCard";
 import { Boton } from "./Boton";
 import { Reveal } from "./Reveal";
 import { linkWhatsappPoint } from "./contacto";
 
-/** 16 — CTA final: la tarjeta que abrió la landing también la cierra. */
+/** 16 — CTA final. */
 export function CtaFinal() {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
-  const rotateY = useTransform(scrollYProgress, [0, 1], [-10, 0]);
-  const y = useTransform(scrollYProgress, [0, 1], [80, 0]);
-
   return (
-    <section ref={ref} className="relative flex min-h-[86vh] flex-col items-center overflow-hidden bg-pt-pure px-5 pt-28 text-center md:pt-40">
+    <section className="relative flex flex-col items-center bg-pt-pure px-5 py-28 text-center md:py-40">
       <Reveal as="h2" className="pt-display-xl max-w-[900px] text-pt-ink">
         Convertí una compra
         <br />
@@ -35,12 +27,6 @@ export function CtaFinal() {
         </Link>
       </Reveal>
 
-      {/* La tarjeta, parcialmente recortada por el borde inferior */}
-      <div className="pointer-events-none mt-16 w-[88vw] max-w-[620px] translate-y-[28%] [perspective:1400px] md:mt-20">
-        <m.div style={{ rotateY, y }} className="rounded-pt-lg shadow-pt-card">
-          <PointCard puntos={9} reflejo={false} />
-        </m.div>
-      </div>
     </section>
   );
 }

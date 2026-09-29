@@ -12,7 +12,10 @@
       "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:fidelizacion-beta.vercel.app"
+      ]
     },
     "android": {
       "package": "com.point.fidelizacion",

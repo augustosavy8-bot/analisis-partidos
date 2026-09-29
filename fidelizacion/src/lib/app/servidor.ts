@@ -116,7 +116,7 @@ export async function detalleTarjeta(clienteId: string, slug: string): Promise<{
       qrSvg,
       appleWallet: appleWalletActivo(),
       personal: local.termino_personal,
-      movimientos: (movs ?? []).map((m) => ({ id: m.id, texto: textoMovimiento(m), puntos: m.puntos, fecha: m.created_at })),
+      movimientos: (movs ?? []).map((m) => ({ id: m.id, tipo: m.tipo, texto: textoMovimiento(m), puntos: m.puntos, fecha: m.created_at })),
     },
   };
 }

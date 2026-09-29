@@ -1,7 +1,5 @@
 import { NextResponse, after, type NextRequest } from "next/server";
-import { env } from "@/lib/env";
-import { validarChipPrueba, validarChipSun, type ResultadoChip } from "@/lib/chips";
-import { validarQR } from "@/lib/qr";
+import { validarEntradaToque } from "@/lib/entrada-toque";
 import { registrarRechazo } from "@/lib/rechazos";
 import {
   COOKIE_DISPOSITIVO,
@@ -27,24 +25,12 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const ir = (ruta: string) => NextResponse.redirect(new URL(ruta, req.url), 303);
 
-  const t = req.nextUrl.searchParams.get("t");
-  const q = req.nextUrl.searchParams.get("q");
-  const sp = req.nextUrl.searchParams;
-  const picc = sp.get("p") ?? sp.get("picc_data");
-  const mac = sp.get("m") ?? sp.get("cmac");
-  if (!(picc && mac) && !q && t && !env.permitirModoPrueba) return ir("/aviso?m=modo_prueba_off");
-
   // El chip y el celular se validan en paralelo (son independientes).
-  const validacion: Promise<ResultadoChip> =
-    picc && mac
-      ? validarChipSun(picc, mac)
-      : q
-        ? validarQR(q)
-        : t
-          ? validarChipPrueba(t)
-          : Promise.resolve({ ok: false, motivo: "chip_invalido" });
-  const [chip, cliente] = await Promise.all([validacion, clienteDesdeToken(req.cookies.get(COOKIE_DISPOSITIVO)?.value)]);
-  const origen = q ? "qr" : "nfc";
+  const [{ chip, origen }, cliente] = await Promise.all([
+    validarEntradaToque(req.nextUrl.searchParams),
+    clienteDesdeToken(req.cookies.get(COOKIE_DISPOSITIVO)?.value),
+  ]);
+  if (!chip.ok && chip.motivo === "modo_prueba_off") return ir("/aviso?m=modo_prueba_off");
   if (!chip.ok) {
     after(() => registrarRechazo({ motivo: chip.motivo, origen, localId: chip.localId, chipId: chip.chipId }));
     return ir(`/aviso?m=${chip.motivo}`);

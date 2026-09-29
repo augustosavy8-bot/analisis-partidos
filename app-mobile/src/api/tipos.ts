@@ -22,7 +22,7 @@ export type TarjetaResumenApp = {
   premiosDisponibles: number;
 };
 
-export type MovimientoApp = { id: string; texto: string; puntos: number; fecha: string };
+export type MovimientoApp = { id: string; tipo: "suma" | "canje" | "regalo"; texto: string; puntos: number; fecha: string };
 
 export type TarjetaDetalleApp = TarjetaResumenApp & {
   premios: PremioApp[];
@@ -34,3 +34,23 @@ export type TarjetaDetalleApp = TarjetaResumenApp & {
 };
 
 export type Sesion = { token: string; nombre: string };
+
+export type ResultadoToqueApp =
+  | { tipo: "suma"; sumados: number; regalos: { texto: string; puntos: number }[]; completado: string | null }
+  | { tipo: "canje"; premio: string | null }
+  | { tipo: "limite"; proximoEn: string };
+
+export type RespuestaToqueApp =
+  | { estado: "aplicado"; resultado: ResultadoToqueApp; tarjeta: TarjetaDetalleApp }
+  | { estado: "registro"; toquePendiente: string; local: LocalApp };
+
+/** Parámetros con los que el llavero (o el QR) abre la app: /n?p=…&m=… · ?t=… · ?q=… */
+export type ParamsToque = Partial<Record<"p" | "m" | "picc_data" | "cmac" | "t" | "q", string>>;
+
+export type DatosRegistro = {
+  nombre: string;
+  whatsapp: string;
+  consentimiento: true;
+  cumple?: { dia: number; mes: number } | null;
+  toquePendiente: string;
+};

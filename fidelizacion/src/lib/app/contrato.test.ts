@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ingresoBloqueado, localApp, resumenTarjeta, tokenBearer } from "./contrato";
+import { celebracion, ingresoBloqueado, localApp, resumenTarjeta, tokenBearer } from "./contrato";
 
 const fila = {
   slug: "fairplay",
@@ -44,5 +44,39 @@ describe("contrato de la app", () => {
     expect(tokenBearer("Bearer corto")).toBeNull();
     expect(tokenBearer("Basic abcdefghijklmnopqrstuvwxyz")).toBeNull();
     expect(tokenBearer(null)).toBeNull();
+  });
+});
+
+describe("celebración del toque", () => {
+  const premios = [
+    { id: "a", nombre: "Medias", descripcion: null, puntos: 3, alcanza: true },
+    { id: "b", nombre: "Descuento 15%", puntos: 8, descripcion: null, alcanza: true },
+  ];
+  const fecha = "2026-09-29T13:00:00.000Z";
+
+  it("suma con regalo de bienvenida en la misma visita y premio alcanzado", () => {
+    const r = celebracion(
+      {
+        puntos: 8,
+        premios,
+        movimientos: [
+          { id: "m1", tipo: "suma", texto: "Sumaste 1 punto", puntos: 1, fecha },
+          { id: "m2", tipo: "regalo", texto: "Regalo de bienvenida: +2", puntos: 2, fecha },
+          { id: "m0", tipo: "suma", texto: "Sumaste 1 punto", puntos: 1, fecha: "2026-09-28T13:00:00.000Z" },
+        ],
+      },
+      "m1",
+      "suma",
+    );
+    expect(r).toEqual({ tipo: "suma", sumados: 3, regalos: [{ texto: "Regalo de bienvenida: +2", puntos: 2 }], completado: "Descuento 15%" });
+  });
+
+  it("suma simple sin premio nuevo", () => {
+    const r = celebracion({ puntos: 5, premios, movimientos: [{ id: "m1", tipo: "suma", texto: "x", puntos: 1, fecha }] }, "m1", "suma");
+    expect(r).toEqual({ tipo: "suma", sumados: 1, regalos: [], completado: null });
+  });
+
+  it("canje", () => {
+    expect(celebracion({ puntos: 0, premios, movimientos: [] }, "m9", "canje", "Medias")).toEqual({ tipo: "canje", premio: "Medias" });
   });
 });

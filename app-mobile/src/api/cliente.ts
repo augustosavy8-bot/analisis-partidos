@@ -1,12 +1,14 @@
 import { File, Paths } from "expo-file-system";
 import { API_URL } from "@/lib/config";
-import type { Sesion, TarjetaDetalleApp, TarjetaResumenApp } from "./tipos";
+import type { DatosRegistro, ParamsToque, RespuestaToqueApp, Sesion, TarjetaDetalleApp, TarjetaResumenApp } from "./tipos";
 
 /** Error de la API con el mensaje (ya en castellano) que devuelve el servidor. */
 export class ErrorApi extends Error {
   constructor(
     mensaje: string,
     readonly status: number,
+    /** Título corto (errores del toque: "No reconocimos este llavero"…). */
+    readonly titulo?: string,
   ) {
     super(mensaje);
   }
@@ -29,8 +31,8 @@ async function pedir<T>(ruta: string, opciones: { token?: string | null; metodo?
   } catch {
     throw new ErrorApi(SIN_CONEXION, 0);
   }
-  const datos = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok) throw new ErrorApi(datos?.error ?? "Algo salió mal. Probá de nuevo en un rato.", res.status);
+  const datos = (await res.json().catch(() => null)) as (T & { error?: string; titulo?: string }) | null;
+  if (!res.ok) throw new ErrorApi(datos?.error ?? "Algo salió mal. Probá de nuevo en un rato.", res.status, datos?.titulo);
   return datos as T;
 }
 
@@ -39,6 +41,14 @@ export const api = {
   salir: (token: string) => pedir<{ ok: true }>("/sesion", { metodo: "DELETE", token }),
   tarjetas: (token: string) => pedir<{ nombre: string; tarjetas: TarjetaResumenApp[] }>("/tarjetas", { token }),
   tarjeta: (token: string, slug: string) => pedir<TarjetaDetalleApp>(`/tarjetas/${encodeURIComponent(slug)}`, { token }),
+  /** El llavero abrió la app: aplica el toque (con sesión) o devuelve el toque firmado para registrarse. */
+  toque: (token: string | null, params: ParamsToque) => pedir<RespuestaToqueApp>("/toque", { metodo: "POST", token, cuerpo: { params } }),
+  /** El toque que quedó esperando mientras el cliente entraba con su WhatsApp. */
+  toquePendiente: (token: string, toquePendiente: string) =>
+    pedir<RespuestaToqueApp>("/toque", { metodo: "POST", token, cuerpo: { toquePendiente } }),
+  /** Crear la tarjeta desde la app (después del primer toque). */
+  registro: (datos: DatosRegistro) =>
+    pedir<Sesion & Extract<RespuestaToqueApp, { estado: "aplicado" }>>("/registro", { metodo: "POST", cuerpo: datos }),
   eliminarCuenta: (token: string) => pedir<{ ok: true }>("/cuenta", { metodo: "DELETE", token }),
 
   /** Baja el .pkpass (con el token) a la caché y devuelve su URI local, para PassKit. */

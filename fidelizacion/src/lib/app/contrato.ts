@@ -27,7 +27,7 @@ export type TarjetaResumenApp = {
   premiosDisponibles: number;
 };
 
-export type MovimientoApp = { id: string; texto: string; puntos: number; fecha: string };
+export type MovimientoApp = { id: string; tipo: "suma" | "canje" | "regalo"; texto: string; puntos: number; fecha: string };
 
 export type TarjetaDetalleApp = TarjetaResumenApp & {
   premios: PremioApp[];
@@ -90,4 +90,43 @@ export function ingresoBloqueado(intentos: { exitoso: boolean }[]): boolean {
 export function tokenBearer(header: string | null): string | null {
   const m = header?.match(/^Bearer\s+([A-Za-z0-9_-]{20,100})$/);
   return m ? m[1] : null;
+}
+
+// --- Toque desde la app (el llavero abre la app) --------------------------------------
+
+/** Qué pasó con el toque, para la pantalla de celebración de la app. */
+export type ResultadoToqueApp =
+  | {
+      tipo: "suma";
+      /** Puntos del toque más los regalos (bienvenida, cumple) de la misma visita. */
+      sumados: number;
+      regalos: { texto: string; puntos: number }[];
+      /** Premio que se alcanzó justo con este toque. */
+      completado: string | null;
+    }
+  | { tipo: "canje"; premio: string | null }
+  | { tipo: "limite"; proximoEn: string };
+
+export type RespuestaToqueApp =
+  | { estado: "aplicado"; resultado: ResultadoToqueApp; tarjeta: TarjetaDetalleApp }
+  /** No hay sesión: la app pide registrarse (o entrar) y manda este toque firmado (15 min, un solo uso). */
+  | { estado: "registro"; toquePendiente: string; local: LocalApp };
+
+/**
+ * Arma la celebración a partir del detalle de la tarjeta ya actualizado y el
+ * movimiento del toque (los regalos de la misma visita tienen la misma hora).
+ */
+export function celebracion(
+  t: Pick<TarjetaDetalleApp, "puntos" | "premios" | "movimientos">,
+  movimientoId: string,
+  tipo: "suma" | "canje",
+  premioCanjeado: string | null = null,
+): ResultadoToqueApp {
+  if (tipo === "canje") return { tipo: "canje", premio: premioCanjeado };
+  const mov = t.movimientos.find((m) => m.id === movimientoId);
+  const regalos = mov ? t.movimientos.filter((m) => m.tipo === "regalo" && m.fecha === mov.fecha) : [];
+  const sumados = (mov?.puntos ?? 1) + regalos.reduce((a, r) => a + r.puntos, 0);
+  const antes = t.puntos - sumados;
+  const completado = t.premios.find((p) => antes < p.puntos && t.puntos >= p.puntos)?.nombre ?? null;
+  return { tipo: "suma", sumados, regalos: regalos.map((r) => ({ texto: r.texto, puntos: r.puntos })), completado };
 }

@@ -50,3 +50,8 @@ export function textoSobre(hex: string) {
   const contraNegro = (l + 0.05) / (0.0065 + 0.05); // #111311
   return contraBlanco >= contraNegro ? "#ffffff" : "#111311";
 }
+
+/** "14:05" en hora de Argentina. */
+export function horaCorta(iso: string) {
+  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/Argentina/Buenos_Aires" });
+}

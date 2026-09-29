@@ -13,6 +13,13 @@ Habla con la web (`../fidelizacion`) por la API `/api/app/v1`.
 - **Agregar a Apple Wallet**: botón oficial de Apple (`PKAddPassButton`, vía `@premieroctet/react-native-wallet`).
   Baja el `.pkpass` de `/api/app/v1/tarjetas/<local>/apple-wallet` con el token y abre la hoja nativa.
 - **Eliminar mi cuenta** (Ajustes): borra al cliente con todas sus tarjetas, puntos, historial y celulares.
+- **El llavero abre la app** (enlaces universales): el chip abre `https://fidelizacion-beta.vercel.app/n?…` y, si la
+  app está instalada, iOS abre la pantalla `src/app/n.tsx` en vez de Safari. La app manda los parámetros a
+  `POST /api/app/v1/toque` (misma validación antifraude que `/n` en la web) y muestra la celebración con los
+  colores del bar. Sin sesión, pide crear la tarjeta (`POST /api/app/v1/registro`) o entrar con el WhatsApp, con el
+  toque firmado que quedó esperando (15 min, un solo uso). Sin la app, el llavero sigue abriendo la web igual.
+  El dominio se declara en `app.json` (`ios.associatedDomains`) y la web sirve
+  `/.well-known/apple-app-site-association` con el Team ID de Apple.
 
 La tarjeta se crea siempre en el local, con el primer toque del llavero; la app entra a tarjetas que ya existen.
 
@@ -26,6 +33,8 @@ La tarjeta se crea siempre en el local, con el primer toque del llavero; la app 
 | GET | `/tarjetas/<local>` | Detalle (incluye el QR en SVG) |
 | GET | `/tarjetas/<local>/apple-wallet` | `.pkpass` |
 | DELETE | `/cuenta` | Elimina la cuenta |
+| POST | `/toque` `{ params }` o `{ toquePendiente }` | Aplica el toque del llavero (o devuelve el toque firmado para registrarse) |
+| POST | `/registro` | Crea la tarjeta desde la app con el toque firmado; devuelve `{ token, nombre, resultado, tarjeta }` |
 
 Todas (menos POST `/sesion`) usan `Authorization: Bearer <token>`. Los tipos están en
 `src/api/tipos.ts` (copia de `fidelizacion/src/lib/app/contrato.ts`).

@@ -60,3 +60,40 @@ export function nivelContraste(a: string, b: string, minimo = 4.5): NivelContras
   const c = contraste(a, b);
   return c >= minimo ? "ok" : c >= 3 ? "bajo" : "muy-bajo";
 }
+
+/** Mezcla dos colores hex: t = 0 → a, t = 1 → b. */
+export function mezclar(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = rgb(a);
+  const [r2, g2, b2] = rgb(b);
+  const c = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, "0");
+  return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
+}
+
+/**
+ * Lleva `color` hacia `destino` (blanco o negro) lo mínimo necesario para que su
+ * contraste con `contra` llegue a `objetivo`. Si ya llega, lo devuelve igual.
+ */
+export function ajustarHasta(color: string, contra: string, objetivo: number, destino: string): string {
+  if (contraste(color, contra) >= objetivo) return color;
+  for (let t = 0.05; t < 1; t += 0.05) {
+    const c = mezclar(color, destino, t);
+    if (contraste(c, contra) >= objetivo) return c;
+  }
+  return destino;
+}
+
+/** Aclara u oscurece (lo que corresponda) hasta el contraste pedido contra `contra`. */
+export function separarDe(color: string, contra: string, objetivo: number): string {
+  const destino = luminancia(contra) > 0.18 ? "#000000" : "#ffffff";
+  return ajustarHasta(color, contra, objetivo, destino);
+}
+
+/** Saturación HSL (0 = gris, 1 = color puro). */
+export function saturacion(hex: string): number {
+  const [r, g, b] = rgb(hex).map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return 0;
+  return (max - min) / (1 - Math.abs(2 * l - 1));
+}

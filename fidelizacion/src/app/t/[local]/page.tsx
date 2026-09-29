@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
@@ -17,6 +17,14 @@ import { promoVigente } from "@/lib/promos";
 import { googleWalletActivo } from "@/lib/wallet/google";
 import { appleWalletActivo } from "@/lib/wallet/apple";
 import { SinTarjeta, VistaTarjeta } from "./VistaTarjeta";
+import { TemaLocal } from "@/components/app/TemaLocal";
+import { temaDelLocal } from "@/lib/tema";
+
+/** La barra del navegador toma el fondo del bar. */
+export async function generateViewport({ params }: PageProps<"/t/[local]">): Promise<Viewport> {
+  const local = await buscarLocal((await params).local);
+  return local ? { themeColor: temaDelLocal(local).themeColor } : {};
+}
 
 export async function generateMetadata({ params }: PageProps<"/t/[local]">): Promise<Metadata> {
   const { local: slug } = await params;
@@ -43,7 +51,14 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
     cliente ? tarjetaDelCliente(cliente.clienteId, local.id) : Promise.resolve(null),
   ]);
 
-  if (!cliente || !tarjeta) return <SinTarjeta local={local} />;
+  if (!cliente || !tarjeta) {
+    return (
+      <>
+        <TemaLocal local={local} />
+        <SinTarjeta local={local} />
+      </>
+    );
+  }
   const cumple = cliente.cumple;
   const promoAhora = promoVigente(promos, local.zona_horaria);
 
@@ -88,34 +103,37 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   }
 
   return (
-    <VistaTarjeta
-      local={local}
-      nombre={cliente.nombre}
-      tarjeta={tarjeta}
-      premios={premios}
-      promos={promos}
-      promoAhora={promoAhora}
-      objetivo={objetivo}
-      alToque={!!canjeAlToqueHasta(tarjeta.ultimo_toque_en)}
-      pedirCumple={local.puntos_cumple > 0 && !cumple}
-      limite={limite}
-      urlPase={urlPase}
-      qrPase={qrPase}
-      googleWallet={(esAndroid || esCompu) && googleWalletActivo() ? `/t/${local.slug}/google-wallet` : undefined}
-      appleWallet={(esIOS || esCompu) && appleWalletActivo() ? `/t/${local.slug}/apple-wallet` : undefined}
-      celebracion={
-        movCelebrado
-          ? {
-              tipo: movCelebrado.tipo === "canje" ? "canje" : "suma",
-              sumados: movCelebrado.puntos,
-              promo: movCelebrado.detalle,
-              premio: movCelebrado.premio,
-              completo: completado ? { meta: completado.puntos_necesarios, premio: completado.nombre } : null,
-              regalos: regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos })),
-              mensaje: mensajeCelebracion,
-            }
-          : null
-      }
-    />
+    <>
+      <TemaLocal local={local} />
+      <VistaTarjeta
+        local={local}
+        nombre={cliente.nombre}
+        tarjeta={tarjeta}
+        premios={premios}
+        promos={promos}
+        promoAhora={promoAhora}
+        objetivo={objetivo}
+        alToque={!!canjeAlToqueHasta(tarjeta.ultimo_toque_en)}
+        pedirCumple={local.puntos_cumple > 0 && !cumple}
+        limite={limite}
+        urlPase={urlPase}
+        qrPase={qrPase}
+        googleWallet={(esAndroid || esCompu) && googleWalletActivo() ? `/t/${local.slug}/google-wallet` : undefined}
+        appleWallet={(esIOS || esCompu) && appleWalletActivo() ? `/t/${local.slug}/apple-wallet` : undefined}
+        celebracion={
+          movCelebrado
+            ? {
+                tipo: movCelebrado.tipo === "canje" ? "canje" : "suma",
+                sumados: movCelebrado.puntos,
+                promo: movCelebrado.detalle,
+                premio: movCelebrado.premio,
+                completo: completado ? { meta: completado.puntos_necesarios, premio: completado.nombre } : null,
+                regalos: regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos })),
+                mensaje: mensajeCelebracion,
+              }
+            : null
+        }
+      />
+    </>
   );
 }

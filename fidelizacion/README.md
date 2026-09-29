@@ -76,6 +76,14 @@ Reglas:
 - El canje queda pendiente 15 minutos; el próximo toque de un mozo lo confirma en vez de sumar.
 - En iPhone, la tarjeta instalada en inicio puede no compartir la cookie con Safari: si pasa, se recupera con el WhatsApp.
 
+## Estética por bar
+
+Las pantallas del cliente de un local (`/t/[local]`, registro y la vista desde la billetera) usan la paleta
+de ese bar (panel > Diseño): `TemaLocal` pisa las variables `--color-pt-*` que usan todos los componentes, y la
+tarjeta toma exactamente los colores de su pase (`--pt-tarjeta-*`). `lib/tema.ts` deriva tinta, grises,
+superficies, bordes y acentos respetando el tono del bar pero ajustándolos hasta cumplir contraste AA
+(tests con paletas oscuras, claras y saturadas). El panel y la landing siguen con la paleta de Point.
+
 ## Panel del dueño (`/panel`)
 
 Ingreso con email y contraseña (Supabase Auth; el registro público está desactivado y los usuarios se crean con `npm run usuario:crear` o, más adelante, desde el panel superadmin). Todo pasa por RLS con la sesión del usuario: un dueño sólo ve sus locales.

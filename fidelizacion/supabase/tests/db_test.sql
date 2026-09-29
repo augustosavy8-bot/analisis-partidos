@@ -489,4 +489,28 @@ exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'diseño: el dueño no escribe el diseño directo (lo hace el servidor)');
 reset role;
 
+-- ---------------------------------------------------------------- app móvil
+insert into public.intentos_app (ip_hash, exitoso) values (repeat('a', 64), false);
+do $$ begin
+  insert into public.intentos_app (ip_hash, exitoso) values ('corto', true);
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+do $$ begin
+  perform 1 from public.intentos_app;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'app: intentos_app sólo para el servidor (ni el superadmin)');
+reset role;
+-- Eliminar cuenta: borrar el cliente se lleva tarjetas, celulares y todo lo demás.
+insert into public.clientes (id, nombre, whatsapp, consentimiento) values ('cccccccc-0000-4000-8000-0000000000ee', 'Borrar', '+5493410000077', true);
+insert into public.tarjetas (id, cliente_id, local_id) values ('dddddddd-0000-4000-8000-0000000000ee', 'cccccccc-0000-4000-8000-0000000000ee', '00000000-0000-4000-8000-000000000001');
+insert into public.dispositivos (cliente_id, token_hash) values ('cccccccc-0000-4000-8000-0000000000ee', encode(sha256('app-eliminar-cuenta'::bytea), 'hex'));
+delete from public.clientes where id = 'cccccccc-0000-4000-8000-0000000000ee';
+select pg_temp.check(
+  (select count(*) from public.tarjetas where id = 'dddddddd-0000-4000-8000-0000000000ee') = 0
+  and (select count(*) from public.dispositivos where token_hash = encode(sha256('app-eliminar-cuenta'::bytea), 'hex')) = 0,
+  'app: eliminar la cuenta borra tarjetas y celulares');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

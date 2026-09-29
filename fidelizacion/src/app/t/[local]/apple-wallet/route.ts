@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { buscarLocal } from "@/lib/locales";
 import { clienteActual } from "@/lib/sesion-cliente";
-import { crearClienteAdmin } from "@/lib/supabase/admin";
-import { env } from "@/lib/env";
 import { proveedorWallet } from "@/lib/wallet";
+import { cabecerasPkpass, pkpassDeTarjeta } from "@/lib/wallet/pkpass-tarjeta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,38 +20,10 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/t/[local]
   if (!local) return ir("/aviso?m=local_inactivo");
   if (!apple || !cliente) return ir(`/t/${slug}`);
 
-  const { data: tarjeta } = await crearClienteAdmin()
-    .from("tarjetas")
-    .select("id, serial, wallet_auth_token, puntos")
-    .eq("cliente_id", cliente.clienteId)
-    .eq("local_id", local.id)
-    .maybeSingle();
-  if (!tarjeta) return ir(`/t/${slug}`);
-
   try {
-    const { archivo } = await apple.generarPase({
-      serial: tarjeta.serial,
-      token: tarjeta.wallet_auth_token,
-      localSlug: local.slug,
-      localNombre: local.nombre,
-      clienteNombre: cliente.nombre,
-      puntos: tarjeta.puntos,
-      colorPrimario: local.color_primario,
-      colorSecundario: local.color_secundario,
-      logoUrl: local.logo_url,
-      urlTarjeta: `${env.appUrl}/t/${local.slug}`,
-      tarjetaId: tarjeta.id,
-      clienteId: cliente.clienteId,
-      localId: local.id,
-    });
-    if (!archivo) throw new Error("sin archivo");
-    return new Response(Buffer.from(archivo), {
-      headers: {
-        "Content-Type": "application/vnd.apple.pkpass",
-        "Content-Disposition": `attachment; filename="${local.slug}.pkpass"`,
-        "Cache-Control": "no-store",
-      },
-    });
+    const pase = await pkpassDeTarjeta(cliente, local);
+    if (!pase) return ir(`/t/${slug}`);
+    return new Response(new Uint8Array(pase), { headers: cabecerasPkpass(local.slug) });
   } catch (e) {
     // Sin datos sensibles: sólo el mensaje (nunca certificados, tokens ni datos del cliente).
     console.error("Apple Wallet: no se pudo generar el pase", slug, e instanceof Error ? e.message : "error");

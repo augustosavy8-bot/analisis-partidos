@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Local } from "@/lib/locales";
-import { formatearHora, type CanjePendiente as TipoCanje, type Movimiento, type Premio } from "@/lib/tarjeta";
+import { formatearHora, type Movimiento, type Premio } from "@/lib/tarjeta";
 import { describirPromo, horaCorta, nombreMultiplicador, type Promo } from "@/lib/promos";
 import { formasTermino } from "@/lib/terminos";
 import { Icono } from "@/components/Icono";
@@ -15,7 +15,6 @@ import { EstadoVacio } from "@/components/app/EstadoVacio";
 import { Toasts } from "@/components/app/Toasts";
 import { Pestanas } from "./Pestanas";
 import { Celebracion } from "./Celebracion";
-import { CanjePendiente } from "./CanjePendiente";
 import { InstalarTarjeta } from "./InstalarTarjeta";
 import { LlevalaEnBilletera } from "./LlevalaEnBilletera";
 import { FormCumple } from "./FormCumple";
@@ -40,7 +39,6 @@ type Props = {
     serial: string;
     created_at: string;
     movimientos: Movimiento[];
-    canjePendiente: TipoCanje | null;
   };
   premios: Premio[];
   promos: Promo[];
@@ -95,7 +93,7 @@ export function VistaTarjeta(p: Props) {
         <span className="shrink-0 tabular-nums">Desde {formatearMesAnio(tarjeta.created_at, local.zona_horaria)}</span>
       </p>
 
-      {alcanzaAlguno && !tarjeta.canjePendiente && (
+      {alcanzaAlguno && (
         <a
           href="#premios"
           className="pt-subir mt-5 flex items-center gap-3 rounded-pt-card bg-pt-accent-soft px-4 py-3.5 text-pt-ink transition-colors duration-150 hover:bg-pt-accent/25"
@@ -158,7 +156,6 @@ export function VistaTarjeta(p: Props) {
           slug={local.slug}
           premios={p.premios}
           puntos={tarjeta.puntos}
-          hayCanjePendiente={!!tarjeta.canjePendiente}
           alToque={p.alToque}
           termino={termino}
         />
@@ -196,22 +193,11 @@ export function VistaTarjeta(p: Props) {
               Ya sumaste hace poco. Vas a poder sumar de nuevo a las <strong>{formatearHora(p.limite, local.zona_horaria)}</strong>.
             </Aviso>
           )}
-          {tarjeta.canjePendiente && (
-            <div className="mb-5">
-              <CanjePendiente
-                slug={local.slug}
-                canjeId={tarjeta.canjePendiente.id}
-                premio={tarjeta.canjePendiente.premio.nombre}
-                expiraEn={tarjeta.canjePendiente.expira_en}
-                termino={termino}
-              />
-            </div>
-          )}
 
           <Pestanas
             pestanas={[
               { clave: "tarjeta", nombre: "Tarjeta", icono: "tarjeta", contenido: pestanaTarjeta },
-              { clave: "premios", nombre: "Premios", icono: "premio", contenido: pestanaPremios, marca: alcanzaAlguno && !tarjeta.canjePendiente },
+              { clave: "premios", nombre: "Premios", icono: "premio", contenido: pestanaPremios, marca: alcanzaAlguno },
               { clave: "historial", nombre: "Historial", icono: "historial", contenido: pestanaHistorial },
             ]}
           />

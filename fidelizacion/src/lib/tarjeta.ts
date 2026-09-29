@@ -16,7 +16,6 @@ export type Movimiento = {
   created_at: string;
   mozo: string | null;
 };
-export type CanjePendiente = { id: string; expira_en: string; premio: Premio };
 
 export async function premiosDelLocal(localId: string): Promise<Premio[]> {
   const db = crearClienteAdmin();
@@ -58,21 +57,12 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
     .maybeSingle();
   if (!tarjeta) return null;
 
-  const [{ data: movs }, { data: canje }] = await Promise.all([
-    db
-      .from("movimientos")
-      .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre))")
-      .eq("tarjeta_id", tarjeta.id)
-      .order("created_at", { ascending: false })
-      .limit(20),
-    db
-      .from("canjes")
-      .select("id, expira_en, premios(id, nombre, descripcion, puntos_necesarios)")
-      .eq("tarjeta_id", tarjeta.id)
-      .eq("estado", "pendiente")
-      .gt("expira_en", new Date().toISOString())
-      .maybeSingle(),
-  ]);
+  const { data: movs } = await db
+    .from("movimientos")
+    .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre))")
+    .eq("tarjeta_id", tarjeta.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
 
   const movimientos: Movimiento[] = (movs ?? []).map((m) => ({
     id: m.id,
@@ -86,11 +76,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
     mozo: (m.mozos as unknown as { nombre: string } | null)?.nombre ?? null,
   }));
 
-  const canjePendiente: CanjePendiente | null = canje
-    ? { id: canje.id, expira_en: canje.expira_en, premio: canje.premios as unknown as Premio }
-    : null;
-
-  return { ...tarjeta, movimientos, canjePendiente };
+  return { ...tarjeta, movimientos };
 }
 
 /** El próximo premio a alcanzar (o el más caro si ya alcanzó todos). */

@@ -38,23 +38,8 @@ export async function solicitarCanje(slug: string, premioId: string) {
     redirect(`/t/${slug}?m=${alToque.movimiento_id}`);
   }
   if (alToque && alToque.motivo !== "sin_toque") redirect(`/aviso?m=${alToque.motivo}`);
-
-  // Si no, queda pendiente hasta el próximo toque.
-  const { data } = await db.rpc("solicitar_canje", { p_tarjeta_id: tarjeta.id, p_premio_id: premioId });
-  if (!data?.ok) redirect(`/aviso?m=${data?.motivo ?? "error"}`);
-  refresh();
-}
-
-export async function cancelarCanje(slug: string, canjeId: string) {
-  const tarjeta = await tarjetaActual(slug);
-  if (!tarjeta) redirect(`/t/${slug}`);
-  const db = crearClienteAdmin();
-  await db
-    .from("canjes")
-    .update({ estado: "cancelado", resuelto_en: new Date().toISOString() })
-    .eq("id", canjeId)
-    .eq("tarjeta_id", tarjeta.id)
-    .eq("estado", "pendiente");
+  // Sin toque reciente no hay canje (ni canje pendiente): la pantalla vuelve a
+  // pedir que apoyen el llavero.
   refresh();
 }
 

@@ -8,16 +8,15 @@ type Props = {
   slug: string;
   premios: Premio[];
   puntos: number;
-  hayCanjePendiente: boolean;
   alToque: boolean;
   termino: string;
 };
 
-export function ListaPremios({ slug, premios, puntos, hayCanjePendiente, alToque, termino }: Props) {
+export function ListaPremios({ slug, premios, puntos, alToque, termino }: Props) {
   const alcanzaAlguno = premios.some((p) => puntos >= p.puntos_necesarios);
   return (
     <>
-      {alcanzaAlguno && !hayCanjePendiente && (
+      {alcanzaAlguno && (
         alToque ? (
           <Aviso tono="acento" className="mb-4">
             <span className="flex items-center gap-2.5 font-medium">
@@ -30,7 +29,7 @@ export function ListaPremios({ slug, premios, puntos, hayCanjePendiente, alToque
           </Aviso>
         ) : (
           <Aviso tono="suave" icono="nfc" className="mb-4">
-            Para canjear, pedile al {termino} que apoye su llavero y después tocá <strong className="text-pt-ink">Canjear</strong> en esta pantalla.
+            Para canjear, pedile al {termino} que apoye su llavero: el botón <strong className="text-pt-ink">Canjear</strong> aparece acá mismo.
           </Aviso>
         )
       )}
@@ -48,7 +47,7 @@ export function ListaPremios({ slug, premios, puntos, hayCanjePendiente, alToque
                   {alcanza ? <span className="font-medium text-pt-accent-ink"> · listo para canjear</span> : <span> · te {faltan === 1 ? "falta 1" : `faltan ${faltan}`}</span>}
                 </p>
               </div>
-              {alcanza && <BotonCanjear slug={slug} premioId={p.id} deshabilitado={hayCanjePendiente} />}
+              {alcanza && alToque && <BotonCanjear slug={slug} premioId={p.id} />}
             </li>
           );
         })}

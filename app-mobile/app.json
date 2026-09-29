@@ -43,7 +43,11 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "https://fidelizacion-beta.vercel.app"
-    }
+      "apiUrl": "https://fidelizacion-beta.vercel.app",
+      "eas": {
+        "projectId": "234af9c9-107c-46af-95a9-52167e817de0"
+      }
+    },
+    "owner": "point-team"
   }
 }

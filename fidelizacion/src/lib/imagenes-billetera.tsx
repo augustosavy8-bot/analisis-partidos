@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { colorTextoSobre, type Local } from "@/lib/locales";
+import { PROPORCION_LOGO, fuenteIcono } from "@/lib/icono";
 import { MAX_SELLOS_FRANJA, svgCabecera, svgFranja, svgStripApple, textoSobre } from "@/lib/diseno-billetera";
 
 // Instrument Sans Bold (licencia OFL, ver assets/InstrumentSans-OFL.txt).
@@ -73,27 +74,73 @@ export async function imagenCabecera(local: Local, lema = "Un toque y sumás") {
   );
 }
 
-/** Ícono cuadrado del local (PWA, Google Wallet y icon.png de Apple Wallet). */
-export function imagenIcono(local: Local, s: number, headers?: Record<string, string>) {
+// --- Ícono del local ----------------------------------------------------------------
+
+const TIPOS_IMAGEN = new Set(["image/png", "image/jpeg"]);
+const cacheImagenesRemotas = new Map<string, Promise<string | null>>();
+
+/**
+ * Baja una imagen (PNG o JPEG, hasta 5 MB) y la devuelve como data URI. null si no
+ * se puede: así un logo caído no rompe el pase y caemos al siguiente nivel.
+ */
+function imagenRemota(url: string): Promise<string | null> {
+  let p = cacheImagenesRemotas.get(url);
+  if (!p) {
+    p = (async () => {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        const tipo = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
+        if (!res.ok || !TIPOS_IMAGEN.has(tipo)) return null;
+        const datos = Buffer.from(await res.arrayBuffer());
+        if (datos.length > 5 * 1024 * 1024) return null;
+        return `data:${tipo};base64,${datos.toString("base64")}`;
+      } catch {
+        return null;
+      }
+    })();
+    // Los fallos no se cachean (puede ser algo momentáneo).
+    p.then((v) => v === null && cacheImagenesRemotas.delete(url));
+    if (cacheImagenesRemotas.size > 30) cacheImagenesRemotas.delete(cacheImagenesRemotas.keys().next().value!);
+    cacheImagenesRemotas.set(url, p);
+  }
+  return p;
+}
+
+/**
+ * Ícono cuadrado del local (icon.png de Apple Wallet, PWA y Google Wallet):
+ * fondo sólido con el color del local y, centrado ocupando ~80%, el ícono subido
+ * en el panel; si no hay, el logo recortado a cuadrado; si tampoco, la inicial.
+ */
+export async function imagenIcono(local: Local, s: number, headers?: Record<string, string>) {
+  const fuente = fuenteIcono(local);
+  let imagen = fuente.tipo !== "inicial" ? await imagenRemota(fuente.url) : null;
+  // Si el ícono subido no se puede bajar, probamos con el logo.
+  if (!imagen && fuente.tipo === "icono" && local.logo_url) imagen = await imagenRemota(local.logo_url);
+  const lado = Math.round(s * PROPORCION_LOGO);
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: local.color_primario }}>
-        <div
-          style={{
-            width: s * 0.56,
-            height: s * 0.56,
-            borderRadius: s * 0.16,
-            background: local.color_secundario,
-            color: colorTextoSobre(local.color_secundario) === "#ffffff" ? "#ffffff" : local.color_primario,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: s * 0.32,
-            fontWeight: 700,
-          }}
-        >
-          {local.nombre.charAt(0).toUpperCase()}
-        </div>
+        {imagen ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imagen} alt="" width={lado} height={lado} style={{ width: lado, height: lado, objectFit: "cover" }} />
+        ) : (
+          <div
+            style={{
+              width: s * 0.56,
+              height: s * 0.56,
+              borderRadius: s * 0.16,
+              background: local.color_secundario,
+              color: colorTextoSobre(local.color_secundario) === "#ffffff" ? "#ffffff" : local.color_primario,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: s * 0.32,
+              fontWeight: 700,
+            }}
+          >
+            {local.nombre.charAt(0).toUpperCase()}
+          </div>
+        )}
       </div>
     ),
     { width: s, height: s, headers },

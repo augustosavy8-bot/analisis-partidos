@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     "/t/[local]/franja": ["./assets/**"],
     "/t/[local]/cabecera": ["./assets/**"],
   },
+  experimental: {
+    // Ícono de notificaciones del panel: PNG de hasta 2 MB + lo que suma el multipart.
+    serverActions: { bodySizeLimit: "2200kb" },
+  },
 };
 
 export default nextConfig;

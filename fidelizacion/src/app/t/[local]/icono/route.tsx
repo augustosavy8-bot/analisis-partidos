@@ -1,7 +1,7 @@
 import { buscarLocal } from "@/lib/locales";
 import { imagenIcono } from "@/lib/imagenes-billetera";
 
-/** Ícono de la PWA (y logo de Google Wallet) generado con los colores e inicial del local. */
+/** Ícono del local (PWA, Google Wallet y vista previa del panel): ícono subido, logo o inicial. */
 export async function GET(req: Request, { params }: RouteContext<"/t/[local]/icono">) {
   const { local: slug } = await params;
   const local = await buscarLocal(slug);

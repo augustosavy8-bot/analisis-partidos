@@ -22,14 +22,14 @@ async function png(r: Response) {
 }
 
 function imagenesDelLocal(local: Local): Promise<ImagenesPase> {
-  const clave = [local.id, local.nombre, local.logo_url, local.color_primario, local.color_secundario].join("|");
+  const clave = [local.id, local.nombre, local.logo_url, local.icono_url, local.color_primario, local.color_secundario].join("|");
   let p = cacheImagenes.get(clave);
   if (!p) {
     p = (async () => {
       const [icon, icon2, icon3, logo, logo2, logo3, strip, strip2, strip3] = await Promise.all([
-        png(imagenIcono(local, 29)),
-        png(imagenIcono(local, 58)),
-        png(imagenIcono(local, 87)),
+        imagenIcono(local, 29).then(png),
+        imagenIcono(local, 58).then(png),
+        imagenIcono(local, 87).then(png),
         png(imagenLogoPase(local, 1)),
         png(imagenLogoPase(local, 2)),
         png(imagenLogoPase(local, 3)),
@@ -100,7 +100,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       .from("tarjetas")
       .select(
         "serial, wallet_auth_token, puntos, clientes(nombre), " +
-          "locales(id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud)",
+          "locales(id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud)",
       )
       .eq("id", pase.tarjeta_id)
       .maybeSingle(),

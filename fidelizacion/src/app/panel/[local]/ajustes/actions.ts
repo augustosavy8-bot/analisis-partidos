@@ -6,6 +6,8 @@ import { notificarCambioLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { esTermino } from "@/lib/terminos";
 import { leerCoordenadas } from "@/lib/coordenadas";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { pathIcono, validarIcono } from "@/lib/icono";
 
 export type EstadoAjustes = { error?: string; ok?: number };
 
@@ -54,6 +56,53 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
     .eq("id", local.id);
   if (error) return { error: "No se pudo guardar." };
   after(() => notificarCambioLocal(local.id)); // clase de Google y pases de Apple (nombre, logo, colores, ubicación)
+  refresh();
+  return { ok: Date.now() };
+}
+
+// --- Ícono de notificaciones ---------------------------------------------------------
+
+export type EstadoIcono = { error?: string; ok?: number };
+
+const BUCKET = "logos";
+
+/**
+ * Sube el ícono (PNG cuadrado ≥512) a Storage en logos/{local_id}/icon.png y guarda
+ * la URL con ?v= para que las cachés (CDN, pases) tomen la versión nueva. Después
+ * actualiza todos los pases de Apple del local (updated_at + push).
+ */
+export async function subirIcono(slug: string, _prev: EstadoIcono, form: FormData): Promise<EstadoIcono> {
+  const { local } = await requerirLocal(slug);
+  const archivo = form.get("icono");
+  if (!(archivo instanceof File) || archivo.size === 0) return { error: "Elegí un archivo PNG." };
+  const datos = new Uint8Array(await archivo.arrayBuffer());
+  const error = validarIcono(datos);
+  if (error) return { error };
+
+  const admin = crearClienteAdmin();
+  const path = pathIcono(local.id);
+  const subida = await admin.storage.from(BUCKET).upload(path, datos, { contentType: "image/png", upsert: true, cacheControl: "3600" });
+  if (subida.error) {
+    console.error("Ícono: no se pudo subir a Storage", local.id, subida.error.message);
+    return { error: "No se pudo subir el ícono. Probá de nuevo." };
+  }
+  const url = `${admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+  const { error: errorDb } = await admin.from("locales").update({ icono_url: url }).eq("id", local.id);
+  if (errorDb) return { error: "No se pudo guardar el ícono." };
+
+  after(() => notificarCambioLocal(local.id)); // pases de Apple: updated_at + push
+  refresh();
+  return { ok: Date.now() };
+}
+
+/** Vuelve al logo (o a la inicial) y actualiza los pases. */
+export async function quitarIcono(slug: string): Promise<EstadoIcono> {
+  const { local } = await requerirLocal(slug);
+  const admin = crearClienteAdmin();
+  const { error } = await admin.from("locales").update({ icono_url: null }).eq("id", local.id);
+  if (error) return { error: "No se pudo quitar el ícono." };
+  await admin.storage.from(BUCKET).remove([pathIcono(local.id)]);
+  after(() => notificarCambioLocal(local.id));
   refresh();
   return { ok: Date.now() };
 }

@@ -8,6 +8,8 @@ export type Local = {
   nombre: string;
   rubro: string | null;
   logo_url: string | null;
+  /** Ícono de notificaciones subido desde el panel (PNG cuadrado). Si no hay, se usa el logo. */
+  icono_url: string | null;
   color_primario: string;
   color_secundario: string;
   minutos_entre_puntos: number;
@@ -25,7 +27,7 @@ export const buscarLocal = cache(async (slug: string): Promise<Local | null> => 
   const db = crearClienteAdmin();
   const { data } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud")
+    .select("id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud")
     .eq("slug", slug)
     .eq("activo", true)
     .maybeSingle();

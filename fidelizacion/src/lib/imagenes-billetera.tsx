@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { colorTextoSobre, type Local } from "@/lib/locales";
-import { PROPORCION_LOGO, fuenteIcono } from "@/lib/icono";
+import { PROPORCION_LOGO, fuenteIcono, type FuenteIcono } from "@/lib/icono";
 import { MAX_SELLOS_FRANJA, svgCabecera, svgFranja, svgStripApple, textoSobre } from "@/lib/diseno-billetera";
 
 // Instrument Sans Bold (licencia OFL, ver assets/InstrumentSans-OFL.txt).
@@ -90,11 +90,18 @@ function imagenRemota(url: string): Promise<string | null> {
       try {
         const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
         const tipo = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
-        if (!res.ok || !TIPOS_IMAGEN.has(tipo)) return null;
+        if (!res.ok || !TIPOS_IMAGEN.has(tipo)) {
+          console.warn(`Ícono: no se pudo usar ${url} (status ${res.status}, tipo "${tipo}")`);
+          return null;
+        }
         const datos = Buffer.from(await res.arrayBuffer());
-        if (datos.length > 5 * 1024 * 1024) return null;
+        if (datos.length > 5 * 1024 * 1024) {
+          console.warn(`Ícono: ${url} pesa más de 5 MB`);
+          return null;
+        }
         return `data:${tipo};base64,${datos.toString("base64")}`;
-      } catch {
+      } catch (e) {
+        console.warn(`Ícono: no se pudo bajar ${url}`, e instanceof Error ? e.message : e);
         return null;
       }
     })();
@@ -113,9 +120,14 @@ function imagenRemota(url: string): Promise<string | null> {
  */
 export async function imagenIcono(local: Local, s: number, headers?: Record<string, string>) {
   const fuente = fuenteIcono(local);
+  let usada: FuenteIcono["tipo"] = fuente.tipo;
   let imagen = fuente.tipo !== "inicial" ? await imagenRemota(fuente.url) : null;
   // Si el ícono subido no se puede bajar, probamos con el logo.
-  if (!imagen && fuente.tipo === "icono" && local.logo_url) imagen = await imagenRemota(local.logo_url);
+  if (!imagen && fuente.tipo === "icono" && local.logo_url) {
+    imagen = await imagenRemota(local.logo_url);
+    usada = "logo";
+  }
+  if (!imagen) usada = "inicial";
   const lado = Math.round(s * PROPORCION_LOGO);
   return new ImageResponse(
     (
@@ -143,7 +155,8 @@ export async function imagenIcono(local: Local, s: number, headers?: Record<stri
         )}
       </div>
     ),
-    { width: s, height: s, headers },
+    // X-Icono-Fuente: qué se terminó dibujando (para diagnosticar).
+    { width: s, height: s, headers: { ...headers, "X-Icono-Fuente": usada } },
   );
 }
 

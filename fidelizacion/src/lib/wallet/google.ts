@@ -5,6 +5,7 @@ import { proximoPremio } from "@/lib/tarjeta";
 import type { DatosPase, ProveedorWallet } from "./index";
 import {
   agregarMensaje,
+  hashCorto,
   idObjeto,
   jwtGuardar,
   patchObjeto,
@@ -32,7 +33,11 @@ export async function sincronizarClaseLocal(localId: string) {
   try {
     const db = crearClienteAdmin();
     const [{ data: local }, { data: premios }] = await Promise.all([
-      db.from("locales").select("slug, nombre, logo_url, color_primario, latitud, longitud").eq("id", localId).maybeSingle(),
+      db
+        .from("locales")
+        .select("slug, nombre, logo_url, icono_url, color_primario, color_secundario, latitud, longitud, nombre_programa, texto_dorso, franja_url")
+        .eq("id", localId)
+        .maybeSingle(),
       db.from("premios").select("nombre, puntos_necesarios").eq("local_id", localId).eq("activo", true).order("puntos_necesarios"),
     ]);
     if (!local) return;
@@ -45,6 +50,10 @@ export async function sincronizarClaseLocal(localId: string) {
         colorPrimario: local.color_primario,
         premios: (premios ?? []).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
         ubicacion: local.latitud != null && local.longitud != null ? { latitud: local.latitud, longitud: local.longitud } : null,
+        nombrePrograma: local.nombre_programa,
+        textoDorso: local.texto_dorso,
+        franjaUrl: local.franja_url,
+        versionIcono: hashCorto([local.icono_url, local.logo_url, local.color_primario, local.color_secundario, local.nombre].join("|")),
       },
       env.appUrl,
     );
@@ -59,7 +68,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
   let consulta = db
     .from("tarjetas")
     .select(
-      `id, local_id, serial, wallet_auth_token, puntos, clientes(nombre), locales(slug, nombre)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
+      `id, local_id, serial, wallet_auth_token, puntos, clientes(nombre), locales(slug, nombre, franja_url)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
     )
     .eq("serial", serial);
   if (soloRegistradas) consulta = consulta.eq("wallet_registros.plataforma", "google");
@@ -72,7 +81,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
     wallet_auth_token: string;
     puntos: number;
     clientes: { nombre: string } | null;
-    locales: { slug: string; nombre: string } | null;
+    locales: { slug: string; nombre: string; franja_url: string | null } | null;
   };
   if (!t.locales) return null;
   const { data: premios } = await db
@@ -90,6 +99,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
     clienteNombre: t.clientes?.nombre ?? "",
     localSlug: t.locales.slug,
     localNombre: t.locales.nombre,
+    franjaUrl: t.locales.franja_url,
     proximo: proximo ? { nombre: proximo.nombre, puntos: proximo.puntos_necesarios } : null,
   };
 }
@@ -113,6 +123,7 @@ export const proveedorGoogle: ProveedorWallet = {
         clienteNombre: datos.clienteNombre,
         localSlug: datos.localSlug,
         localNombre: datos.localNombre,
+        franjaUrl: datos.franjaUrl,
         proximo: datos.proximoPremio ? { nombre: datos.proximoPremio.nombre, puntos: datos.proximoPremio.puntosNecesarios } : null,
       },
       env.appUrl,
@@ -170,4 +181,35 @@ export async function enviarMensajeGoogle(localId: string, m: MensajeGoogle): Pr
     }
   }
   return { enviados, fallidos };
+}
+
+/**
+ * Cambió el diseño del local: PATCH de todos sus objetos (la franja va en el
+ * objeto) sin notificar. La clase se actualiza aparte (sincronizarClaseLocal).
+ */
+export async function actualizarObjetosGoogleLocal(localId: string): Promise<number> {
+  const cred = env.googleWallet;
+  if (!cred) return 0;
+  try {
+    const { data } = await crearClienteAdmin()
+      .from("tarjetas")
+      .select("serial, wallet_registros!inner(plataforma)")
+      .eq("local_id", localId)
+      .eq("wallet_registros.plataforma", "google");
+    const seriales = [...new Set((data ?? []).map((t) => t.serial as string))];
+    let actualizados = 0;
+    for (let i = 0; i < seriales.length; i += EN_PARALELO) {
+      const tanda = await Promise.allSettled(
+        seriales.slice(i, i + EN_PARALELO).map(async (s) => {
+          const datos = await datosTarjeta(s, false);
+          return datos ? patchObjeto(cred, datos, env.appUrl) : false;
+        }),
+      );
+      actualizados += tanda.filter((r) => r.status === "fulfilled" && r.value).length;
+    }
+    return actualizados;
+  } catch (e) {
+    console.error("Google Wallet: no se pudieron actualizar los objetos del local", localId, e instanceof Error ? e.message : e);
+    return 0;
+  }
 }

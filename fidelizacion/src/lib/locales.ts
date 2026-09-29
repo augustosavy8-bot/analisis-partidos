@@ -12,6 +12,12 @@ export type Local = {
   icono_url: string | null;
   color_primario: string;
   color_secundario: string;
+  /** Diseño de la tarjeta (panel > Diseño). null = lo calculado / generado. */
+  color_texto: string | null;
+  color_etiqueta: string | null;
+  franja_url: string | null;
+  nombre_programa: string | null;
+  texto_dorso: string | null;
   minutos_entre_puntos: number;
   zona_horaria: string;
   termino_personal: string;
@@ -27,7 +33,7 @@ export const buscarLocal = cache(async (slug: string): Promise<Local | null> => 
   const db = crearClienteAdmin();
   const { data } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud")
+    .select("id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud")
     .eq("slug", slug)
     .eq("activo", true)
     .maybeSingle();

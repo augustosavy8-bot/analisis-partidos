@@ -5,6 +5,7 @@ import {
   agregarMensaje,
   armarClase,
   armarObjeto,
+  hashCorto,
   idClase,
   idObjeto,
   jwtGuardar,
@@ -79,11 +80,26 @@ describe("clase del local", () => {
     expect(clase.heroImage.sourceUri.uri).toBe("https://point.app/t/cafe-aurora/cabecera");
   });
 
-  it("usa el logo del local si tiene y lista los premios", () => {
-    const conLogo = armarClase(cred.issuerId, { slug: "x", nombre: "X", logoUrl: "https://cdn/logo.png", colorPrimario: "#000000", premios: [] }, APP);
-    expect(conLogo.programLogo.sourceUri.uri).toBe("https://cdn/logo.png");
-    expect(conLogo.textModulesData[0].body).toMatch(/Sumá puntos/);
+  it("usa siempre el ícono cuadrado del local como logo (versionado) y lista los premios", () => {
+    const conVersion = armarClase(cred.issuerId, { slug: "x", nombre: "X", logoUrl: "https://cdn/logo.png", colorPrimario: "#000000", premios: [], versionIcono: "abc" }, APP);
+    expect(conVersion.programLogo.sourceUri.uri).toBe("https://point.app/t/x/icono?s=660&v=abc");
+    expect(conVersion.textModulesData[0].body).toMatch(/Sumá puntos/);
     expect(clase.textModulesData[0].body).toBe("Café gratis · 8 puntos\nDesayuno · 15 puntos");
+  });
+
+  it("diseño del panel: nombre del programa, franja propia y texto del dorso", () => {
+    const disenada = armarClase(
+      cred.issuerId,
+      { slug: "fp", nombre: "FairPlay", logoUrl: null, colorPrimario: "#111111", premios: [], nombrePrograma: "Club FairPlay", textoDorso: "Sumá en cada compra.", franjaUrl: "https://s/franja.jpg?v=1" },
+      APP,
+    );
+    expect(disenada.issuerName).toBe("FairPlay");
+    expect(disenada.programName).toBe("Club FairPlay");
+    expect(disenada.heroImage.sourceUri.uri).toBe("https://s/franja.jpg?v=1");
+    expect(disenada.textModulesData[1]).toEqual({ id: "sobre", header: "Club FairPlay", body: "Sumá en cada compra." });
+    expect(clase.textModulesData).toHaveLength(1);
+    expect(hashCorto("a|b")).toBe(hashCorto("a|b"));
+    expect(hashCorto("a|b")).not.toBe(hashCorto("a|c"));
   });
 
   it("carga la ubicación del local en merchantLocations (y [] para borrarla)", () => {
@@ -116,6 +132,10 @@ describe("objeto de la tarjeta", () => {
   it("tiene un QR con el link /w/[serial]/[token] y la franja con los sellos", () => {
     expect(objeto.barcode).toEqual({ type: "QR_CODE", value: `https://point.app/w/${tarjeta.serial}/${tarjeta.token}`, alternateText: "Tu tarjeta" });
     expect(objeto.heroImage.sourceUri.uri).toBe("https://point.app/t/cafe-aurora/franja?p=5&m=8");
+  });
+
+  it("con franja propia, la usa en lugar de la de los sellos", () => {
+    expect(armarObjeto(cred.issuerId, { ...tarjeta, franjaUrl: "https://s/f.png" }, APP).heroImage.sourceUri.uri).toBe("https://s/f.png");
   });
 
   it("sin premios no muestra progreso", () => {

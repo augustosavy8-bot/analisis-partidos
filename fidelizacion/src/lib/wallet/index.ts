@@ -1,7 +1,7 @@
 import "server-only";
 import { env } from "@/lib/env";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
-import { enviarMensajeGoogle, proveedorGoogle, sincronizarClaseLocal } from "./google";
+import { actualizarObjetosGoogleLocal, enviarMensajeGoogle, proveedorGoogle, sincronizarClaseLocal } from "./google";
 import { notificarCambioLocalApple, notificarMensajeApple, proveedorApple } from "./apple";
 
 /**
@@ -30,6 +30,8 @@ export interface DatosPase {
   colorPrimario: string;
   colorSecundario: string;
   logoUrl?: string | null;
+  /** Franja subida por el local (Google: heroImage del objeto). */
+  franjaUrl?: string | null;
   urlTarjeta: string;
   /** Ids de la tarjeta (Apple guarda el pase por tarjeta). */
   tarjetaId?: string;
@@ -75,6 +77,15 @@ export async function notificarCambioTarjeta(serial: string) {
  */
 export async function notificarCambioLocal(localId: string) {
   await Promise.allSettled([sincronizarClaseLocal(localId), notificarCambioLocalApple(localId)]);
+}
+
+/**
+ * Guardaron el diseño de la tarjeta: clase de Google + todos sus objetos (franja)
+ * y todos los pases de Apple (updated_at + push). Llamalo dentro de after(); nunca lanza.
+ */
+export async function actualizarDisenoLocal(localId: string) {
+  await sincronizarClaseLocal(localId); // primero la clase: los objetos la referencian
+  await Promise.allSettled([actualizarObjetosGoogleLocal(localId), notificarCambioLocalApple(localId)]);
 }
 
 /**

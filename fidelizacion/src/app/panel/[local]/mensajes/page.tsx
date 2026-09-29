@@ -1,24 +1,11 @@
 import { requerirLocal, fechaHora } from "@/lib/panel";
-import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { alcanceBilleteras } from "@/lib/wallet/alcance";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { Insignia } from "@/components/app/Superficie";
 import { textoAlcance, type MensajeLocal } from "@/lib/mensajes";
 import { FormMensaje } from "./FormMensaje";
 
 export const metadata = { title: "Mensajes" };
-
-/** Cuántos clientes tienen la tarjeta del local en cada billetera (dedupe por tarjeta). */
-async function alcance(localId: string) {
-  const admin = crearClienteAdmin();
-  const [{ data: google }, { data: apple }] = await Promise.all([
-    admin.from("wallet_registros").select("tarjeta_id, tarjetas!inner(local_id)").eq("plataforma", "google").eq("tarjetas.local_id", localId),
-    admin.from("apple_registrations").select("serial, apple_passes!inner(local_id)").eq("apple_passes.local_id", localId),
-  ]);
-  return {
-    google: new Set((google ?? []).map((r) => r.tarjeta_id)).size,
-    apple: new Set((apple ?? []).map((r) => r.serial)).size,
-  };
-}
 
 export default async function Mensajes({ params }: PageProps<"/panel/[local]/mensajes">) {
   const { local: slug } = await params;
@@ -31,7 +18,7 @@ export default async function Mensajes({ params }: PageProps<"/panel/[local]/men
       .eq("local_id", local.id)
       .order("created_at", { ascending: false })
       .limit(30),
-    alcance(local.id),
+    alcanceBilleteras(local.id),
   ]);
   const mensajes = (historial ?? []) as MensajeLocal[];
 

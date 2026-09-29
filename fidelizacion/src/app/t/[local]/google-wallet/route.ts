@@ -45,6 +45,7 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/t/[local]
       colorPrimario: local.color_primario,
       colorSecundario: local.color_secundario,
       logoUrl: local.logo_url,
+      franjaUrl: local.franja_url,
       urlTarjeta: `${env.appUrl}/t/${local.slug}`,
     });
     if (!url) throw new Error("sin url");

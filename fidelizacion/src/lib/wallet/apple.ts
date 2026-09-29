@@ -22,7 +22,7 @@ async function png(r: Response) {
 }
 
 function imagenesDelLocal(local: Local): Promise<ImagenesPase> {
-  const clave = [local.id, local.nombre, local.logo_url, local.icono_url, local.color_primario, local.color_secundario].join("|");
+  const clave = [local.id, local.nombre, local.logo_url, local.icono_url, local.franja_url, local.color_primario, local.color_secundario].join("|");
   let p = cacheImagenes.get(clave);
   if (!p) {
     p = (async () => {
@@ -30,12 +30,12 @@ function imagenesDelLocal(local: Local): Promise<ImagenesPase> {
         imagenIcono(local, 29).then(png),
         imagenIcono(local, 58).then(png),
         imagenIcono(local, 87).then(png),
-        png(imagenLogoPase(local, 1)),
-        png(imagenLogoPase(local, 2)),
-        png(imagenLogoPase(local, 3)),
-        png(imagenStripPase(local, 1)),
-        png(imagenStripPase(local, 2)),
-        png(imagenStripPase(local, 3)),
+        imagenLogoPase(local, 1).then(png),
+        imagenLogoPase(local, 2).then(png),
+        imagenLogoPase(local, 3).then(png),
+        imagenStripPase(local, 1).then(png),
+        imagenStripPase(local, 2).then(png),
+        imagenStripPase(local, 3).then(png),
       ]);
       return {
         "icon.png": icon,
@@ -100,7 +100,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       .from("tarjetas")
       .select(
         "serial, wallet_auth_token, puntos, clientes(nombre), " +
-          "locales(id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud)",
+          "locales(id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud)",
       )
       .eq("id", pase.tarjeta_id)
       .maybeSingle(),
@@ -141,6 +141,10 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
         nombre: local.nombre,
         colorPrimario: local.color_primario,
         colorSecundario: local.color_secundario,
+        colorTexto: local.color_texto,
+        colorEtiqueta: local.color_etiqueta,
+        nombrePrograma: local.nombre_programa,
+        textoDorso: local.texto_dorso,
         premios: (premios ?? []).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
         latitud: local.latitud,
         longitud: local.longitud,

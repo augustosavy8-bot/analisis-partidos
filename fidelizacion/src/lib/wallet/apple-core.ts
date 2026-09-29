@@ -6,6 +6,7 @@
 import { connect, type ClientHttp2Session } from "node:http2";
 import { timingSafeEqual } from "node:crypto";
 import { PKPass } from "passkit-generator";
+import { coloresTarjeta, contraste, cssRgb } from "@/lib/colores";
 
 export type CredencialesApple = {
   passTypeId: string;
@@ -51,29 +52,12 @@ export function leerCredencialesApple(v: {
 
 // --- Colores ------------------------------------------------------------------
 
-function rgb(hex: string) {
-  const n = parseInt(hex.replace("#", ""), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
-}
-const cssRgb = (hex: string) => `rgb(${rgb(hex).join(", ")})`;
+export { contraste };
 
-function luminancia(hex: string) {
-  const [r, g, b] = rgb(hex).map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-export function contraste(a: string, b: string) {
-  const [x, y] = [luminancia(a), luminancia(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
-}
-
-/** Fondo = color principal; texto blanco o casi negro; etiquetas en el acento si se leen. */
-export function coloresPase(primario: string, secundario: string) {
-  const texto = contraste(primario, "#ffffff") >= contraste(primario, "#111311") ? "#ffffff" : "#111311";
-  const etiqueta = contraste(primario, secundario) >= 3 ? secundario : texto;
-  return { backgroundColor: cssRgb(primario), foregroundColor: cssRgb(texto), labelColor: cssRgb(etiqueta) };
+/** Fondo = color principal; texto y etiquetas: lo elegido en el panel o lo calculado por contraste. */
+export function coloresPase(primario: string, secundario: string, texto?: string | null, etiqueta?: string | null) {
+  const c = coloresTarjeta({ color_primario: primario, color_secundario: secundario, color_texto: texto, color_etiqueta: etiqueta });
+  return { backgroundColor: cssRgb(c.fondo), foregroundColor: cssRgb(c.texto), labelColor: cssRgb(c.etiqueta) };
 }
 
 // --- pass.json ----------------------------------------------------------------
@@ -94,6 +78,11 @@ export type DatosPaseApple = {
     nombre: string;
     colorPrimario: string;
     colorSecundario: string;
+    /** Diseño elegido en el panel (null = calculado / nombre del local). */
+    colorTexto?: string | null;
+    colorEtiqueta?: string | null;
+    nombrePrograma?: string | null;
+    textoDorso?: string | null;
     premios: { nombre: string; puntos: number }[];
     latitud: number | null;
     longitud: number | null;
@@ -115,6 +104,7 @@ export function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"]) 
 export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "teamId">, d: DatosPaseApple, appUrl: string) {
   const base = appUrl.replace(/\/$/, "");
   const { local } = d;
+  const programa = local.nombrePrograma || local.nombre;
   const proximo = proximoPremioApple(d.puntos, local.premios);
   const faltan = proximo ? Math.max(0, proximo.puntos - d.puntos) : 0;
   const premios = local.premios.length
@@ -129,10 +119,10 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
     authenticationToken: d.authToken,
     webServiceURL: `${base}/api/apple-wallet`,
     organizationName: local.nombre,
-    description: `Tarjeta de puntos de ${local.nombre}`,
-    logoText: local.nombre,
+    description: `Tarjeta de puntos de ${programa}`,
+    logoText: programa,
     sharingProhibited: true,
-    ...coloresPase(local.colorPrimario, local.colorSecundario),
+    ...coloresPase(local.colorPrimario, local.colorSecundario, local.colorTexto, local.colorEtiqueta),
     storeCard: {
       primaryFields: [
         {
@@ -160,6 +150,7 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
           changeMessage: "%@",
         },
         { key: "premios", label: "Premios", value: premios },
+        ...(local.textoDorso ? [{ key: "sobre", label: programa, value: local.textoDorso }] : []),
         {
           key: "tarjeta",
           label: "Tu tarjeta",

@@ -49,24 +49,42 @@ export type LocalGoogle = {
   premios: { nombre: string; puntos: number }[];
   /** Ubicación del local: Google muestra el pase cuando el cliente está cerca. */
   ubicacion?: { latitud: number; longitud: number } | null;
+  /** Diseño elegido en el panel (null = lo de siempre). */
+  nombrePrograma?: string | null;
+  textoDorso?: string | null;
+  franjaUrl?: string | null;
+  /** Cambia cuando cambian el ícono, el logo o los colores: Google cachea las imágenes por URL. */
+  versionIcono?: string;
 };
+
+/** Hash corto y estable (djb2) para versionar URLs de imágenes. */
+export function hashCorto(texto: string) {
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
 
 export function armarClase(issuerId: string, local: LocalGoogle, appUrl: string) {
   const base = appUrl.replace(/\/$/, "");
   const premios = local.premios.length
     ? local.premios.map((p) => `${p.nombre} · ${p.puntos} ${p.puntos === 1 ? "punto" : "puntos"}`).join("\n")
     : "Sumá puntos en cada visita.";
+  const programa = local.nombrePrograma || local.nombre;
+  const version = local.versionIcono ? `&v=${local.versionIcono}` : "";
   return {
     id: idClase(issuerId, local.slug),
     issuerName: local.nombre,
-    programName: local.nombre,
-    // Google pide un logo cuadrado: si el local no tiene, usamos el ícono generado.
-    programLogo: imagen(local.logoUrl ?? `${base}/t/${local.slug}/icono?s=660`, `Logo de ${local.nombre}`),
-    heroImage: imagen(`${base}/t/${local.slug}/cabecera`, local.nombre),
+    programName: programa,
+    // Google pide un logo cuadrado: el ícono del local (ícono subido, logo o inicial sobre su color).
+    programLogo: imagen(`${base}/t/${local.slug}/icono?s=660${version}`, `Logo de ${local.nombre}`),
+    heroImage: imagen(local.franjaUrl ?? `${base}/t/${local.slug}/cabecera`, programa),
     hexBackgroundColor: local.colorPrimario,
     countryCode: "AR",
     reviewStatus: "UNDER_REVIEW",
-    textModulesData: [{ id: "premios", header: "Premios", body: premios }],
+    textModulesData: [
+      { id: "premios", header: "Premios", body: premios },
+      ...(local.textoDorso ? [{ id: "sobre", header: programa, body: local.textoDorso }] : []),
+    ],
     linksModuleData: { uris: [{ id: "point", uri: `${base}/t/${local.slug}`, description: "Abrir la tarjeta" }] },
     // Sin ubicación mandamos [] para que un PATCH borre la anterior.
     merchantLocations: local.ubicacion ? [{ latitude: local.ubicacion.latitud, longitude: local.ubicacion.longitud }] : [],
@@ -84,6 +102,8 @@ export type TarjetaGoogle = {
   localNombre: string;
   /** Próximo premio (el primero que todavía no alcanza, o el último si ya los alcanzó todos). */
   proximo: { nombre: string; puntos: number } | null;
+  /** Franja subida por el local: reemplaza la de los sellos. */
+  franjaUrl?: string | null;
 };
 
 export function textoProgreso(puntos: number, proximo: TarjetaGoogle["proximo"]) {
@@ -111,7 +131,7 @@ export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string, 
     ...(t.proximo
       ? { secondaryLoyaltyPoints: { label: "Próximo premio", balance: { string: `${Math.min(t.puntos, t.proximo.puntos)}/${t.proximo.puntos}` } } }
       : {}),
-    heroImage: imagen(franja, `Tus sellos en ${t.localNombre}`),
+    heroImage: t.franjaUrl ? imagen(t.franjaUrl, t.localNombre) : imagen(franja, `Tus sellos en ${t.localNombre}`),
     textModulesData: [{ id: "progreso", header: "Próximo premio", body: textoProgreso(t.puntos, t.proximo) }],
     barcode: { type: "QR_CODE", value: urlPase, alternateText: "Tu tarjeta" },
     linksModuleData: { uris: [{ id: "tarjeta", uri: `${base}/t/${t.localSlug}`, description: "Abrir mi tarjeta completa" }] },

@@ -14,8 +14,6 @@ type Local = {
   nombre: string;
   rubro: string | null;
   logo_url: string | null;
-  color_primario: string;
-  color_secundario: string;
   minutos_entre_puntos: number;
   termino_personal: string;
   latitud: number | null;
@@ -25,8 +23,6 @@ type Local = {
 export function FormAjustes({ local }: { local: Local }) {
   const [estado, accion, pendiente] = useActionState<EstadoAjustes, FormData>(guardarAjustes.bind(null, local.slug), {});
   const [nombre, setNombre] = useState(local.nombre);
-  const [primario, setPrimario] = useState(local.color_primario);
-  const [secundario, setSecundario] = useState(local.color_secundario);
   useEffect(() => {
     if (estado.ok) avisar("Cambios guardados");
   }, [estado.ok]);
@@ -92,20 +88,6 @@ export function FormAjustes({ local }: { local: Local }) {
               <input name="rubro" maxLength={60} defaultValue={local.rubro ?? ""} placeholder="Ej: Cafetería de especialidad" className={inputPanel} />
             </label>
             <label className="block">
-              <EtiquetaPanel>Color principal (billetera)</EtiquetaPanel>
-              <div className="flex gap-2">
-                <input type="color" name="color_primario" value={primario} onChange={(e) => setPrimario(e.target.value)} className="h-pt-control-sm w-14 shrink-0 cursor-pointer rounded-pt-sm border border-pt-border bg-pt-pure p-1" />
-                <input value={primario} readOnly className={`${inputPanel} font-mono`} aria-label="Código del color principal" />
-              </div>
-            </label>
-            <label className="block">
-              <EtiquetaPanel>Color de acento (billetera)</EtiquetaPanel>
-              <div className="flex gap-2">
-                <input type="color" name="color_secundario" value={secundario} onChange={(e) => setSecundario(e.target.value)} className="h-pt-control-sm w-14 shrink-0 cursor-pointer rounded-pt-sm border border-pt-border bg-pt-pure p-1" />
-                <input value={secundario} readOnly className={`${inputPanel} font-mono`} aria-label="Código del color de acento" />
-              </div>
-            </label>
-            <label className="block">
               <EtiquetaPanel>¿Cómo llamás a tu personal?</EtiquetaPanel>
               <select name="termino_personal" defaultValue={local.termino_personal} className={inputPanel}>
                 {TERMINOS.map((t) => (
@@ -115,10 +97,6 @@ export function FormAjustes({ local }: { local: Local }) {
                 ))}
               </select>
               <span className="mt-1.5 block pt-app-detalle text-pt-ink-2">Se usa en la tarjeta: “Pedile al vendedor que apoye su llavero”.</span>
-            </label>
-            <label className="block sm:col-span-2">
-              <EtiquetaPanel>Logo (link https a una imagen cuadrada, opcional)</EtiquetaPanel>
-              <input name="logo_url" type="url" defaultValue={local.logo_url ?? ""} placeholder="https://…/logo.png" className={inputPanel} />
             </label>
           </div>
         </Tarjeta>
@@ -209,11 +187,13 @@ export function FormAjustes({ local }: { local: Local }) {
         <div className="rounded-pt-lg shadow-pt-card-app">
           <PointCard comercio={nombre || "Tu local"} inicial={(nombre || "T").charAt(0).toUpperCase()} logo={local.logo_url} puntos={5} meta={8} premio="tu premio" reflejo={false} />
         </div>
-        <div className="mt-3 flex items-center gap-2 pt-app-detalle text-pt-ink-2">
-          <span className="h-4 w-4 rounded-full ring-1 ring-pt-border" style={{ background: primario }} aria-hidden />
-          <span className="h-4 w-4 rounded-full ring-1 ring-pt-border" style={{ background: secundario }} aria-hidden />
-          Tus colores se usan en la imagen para la billetera.
-        </div>
+        <p className="mt-3 pt-app-detalle text-pt-ink-2">
+          Colores, logo e imágenes de Apple y Google Wallet: en{" "}
+          <a href={`/panel/${local.slug}/diseno`} className="font-medium text-pt-accent-ink underline underline-offset-2">
+            Diseño de tarjeta
+          </a>
+          .
+        </p>
       </div>
     </form>
   );

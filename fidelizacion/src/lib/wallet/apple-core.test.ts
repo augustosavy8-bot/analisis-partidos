@@ -134,6 +134,17 @@ describe("pass.json", () => {
     expect(listo.storeCard.secondaryFields[1]).toMatchObject({ value: "¡Listo para canjear!" });
   });
 
+  it("diseño del panel: colores elegidos, nombre del programa y texto del dorso", () => {
+    const disenado = armarPassJson(
+      cred,
+      { ...datos, local: { ...datos.local, colorTexto: "#fafafa", colorEtiqueta: "#ffcc00", nombrePrograma: "Club Aurora", textoDorso: "Gracias por venir." } },
+      "https://x.app",
+    );
+    expect(disenado).toMatchObject({ organizationName: "Café Aurora", logoText: "Club Aurora", foregroundColor: "rgb(250, 250, 250)", labelColor: "rgb(255, 204, 0)" });
+    expect(disenado.storeCard.backFields.find((f) => f.key === "sobre")).toEqual({ key: "sobre", label: "Club Aurora", value: "Gracias por venir." });
+    expect(pase.storeCard.backFields.some((f) => f.key === "sobre")).toBe(false);
+  });
+
   it("colores legibles: texto contrastado y etiqueta en el acento sólo si se lee", () => {
     const oscuro = coloresPase("#3b2a20", "#e6633a");
     expect(oscuro.foregroundColor).toBe("rgb(255, 255, 255)");

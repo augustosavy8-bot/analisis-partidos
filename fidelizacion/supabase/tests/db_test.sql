@@ -468,4 +468,25 @@ do $$ begin
 exception when check_violation then null; end $$;
 select pg_temp.check(true, 'ícono: sólo URLs https');
 
+-- ---------------------------------------------------------------- diseño de la tarjeta
+update public.locales set color_texto = '#FFFFFF', color_etiqueta = '#c8f031', nombre_programa = 'Club FairPlay', texto_dorso = 'Sumá en cada compra.'
+  where id = '00000000-0000-4000-8000-000000000001';
+do $$ begin
+  update public.locales set color_texto = 'blanco' where id = '00000000-0000-4000-8000-000000000001';
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+do $$ begin
+  update public.locales set nombre_programa = repeat('x', 41) where id = '00000000-0000-4000-8000-000000000001';
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+select pg_temp.check(true, 'diseño: colores hex y nombre del programa de hasta 40');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+do $$ begin
+  update public.locales set franja_url = 'https://x.supabase.co/f.png' where id = '00000000-0000-4000-8000-000000000001';
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'diseño: el dueño no escribe el diseño directo (lo hace el servidor)');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

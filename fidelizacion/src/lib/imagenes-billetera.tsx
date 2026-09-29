@@ -164,16 +164,18 @@ export async function imagenIcono(local: Local, s: number, headers?: Record<stri
  * logo.png del pase de Apple (160×50 por escala): el logo del local o su inicial,
  * alineado a la izquierda y con fondo transparente (el nombre va en logoText).
  */
-export function imagenLogoPase(local: Local, escala: number) {
+export async function imagenLogoPase(local: Local, escala: number) {
   const w = 160 * escala;
   const h = 50 * escala;
   const lado = h * 0.84;
+  const logo = local.logo_url ? await imagenRemota(local.logo_url) : null;
   return new ImageResponse(
     (
       <div style={{ width: w, height: h, display: "flex", alignItems: "center" }}>
-        {local.logo_url ? (
+        {logo ? (
+          // Logo entero (sin recortar), a lo alto del espacio y alineado a la izquierda.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={local.logo_url} alt="" width={lado} height={lado} style={{ borderRadius: lado * 0.22, objectFit: "cover" }} />
+          <img src={logo} alt="" height={lado} style={{ height: lado, maxWidth: w, objectFit: "contain", objectPosition: "left center" }} />
         ) : (
           <div
             style={{
@@ -199,19 +201,20 @@ export function imagenLogoPase(local: Local, escala: number) {
 }
 
 /**
- * strip.png del pase de Apple (375×123 por escala): el arte de la cabecera de
- * Google sin textos, con el sello a la derecha para que los puntos (que Wallet
- * dibuja arriba a la izquierda) se lean limpios.
+ * strip.png del pase de Apple (375×123 por escala): la franja que subió el local
+ * (recortada para llenar) o, si no hay, el arte de la cabecera de Google sin
+ * textos, con el sello a la derecha para que los puntos se lean limpios.
  */
-export function imagenStripPase(local: Local, escala: number) {
+export async function imagenStripPase(local: Local, escala: number) {
   const w = 375 * escala;
   const h = 123 * escala;
-  const svg = svgStripApple({ primario: local.color_primario, acento: local.color_secundario });
+  const propia = local.franja_url ? await imagenRemota(local.franja_url) : null;
+  const src = propia ?? dataUri(svgStripApple({ primario: local.color_primario, acento: local.color_secundario }));
   return new ImageResponse(
     (
       <div style={{ width: w, height: h, display: "flex", background: local.color_primario }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={dataUri(svg)} width={w} height={h} alt="" style={{ objectFit: "cover" }} />
+        <img src={src} width={w} height={h} alt="" style={{ width: w, height: h, objectFit: "cover" }} />
       </div>
     ),
     { width: w, height: h },

@@ -6,6 +6,7 @@ import type { Local } from "@/lib/locales";
 import { imagenIcono, imagenLogoPase, imagenStripPase } from "@/lib/imagenes-billetera";
 import type { DatosPase, ProveedorWallet } from "./index";
 import { armarPassJson, enviarPushes, firmarPkpass, type ImagenesPase } from "./apple-core";
+import { ultimoMovimiento } from "./movimiento";
 
 /** ¿Hay credenciales válidas de Apple Wallet? Sin ellas, todo esto no hace nada. */
 export function appleWalletActivo() {
@@ -94,7 +95,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
   const cred = env.appleWallet;
   if (!cred) throw new Error("Apple Wallet no está configurado");
   const db = crearClienteAdmin();
-  const [{ data: tarjeta }, { data: premios }] = await Promise.all([
+  const [{ data: tarjeta }, { data: premios }, { data: novedad }, ultimo] = await Promise.all([
     db
       .from("tarjetas")
       .select(
@@ -104,6 +105,15 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       .eq("id", pase.tarjeta_id)
       .maybeSingle(),
     db.from("premios").select("nombre, puntos_necesarios").eq("local_id", pase.local_id).eq("activo", true).order("puntos_necesarios"),
+    db
+      .from("mensajes_local")
+      .select("titulo, texto")
+      .eq("local_id", pase.local_id)
+      .neq("estado", "error")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    ultimoMovimiento(pase.tarjeta_id),
   ]);
   const t = tarjeta as unknown as {
     serial: string;
@@ -125,6 +135,8 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       clienteNombre: t.clientes?.nombre ?? "",
       urlPase: `${base}/w/${t.serial}/${t.wallet_auth_token}`,
       urlTarjeta: `${base}/t/${local.slug}`,
+      ultimoMovimiento: ultimo,
+      novedad,
       local: {
         nombre: local.nombre,
         colorPrimario: local.color_primario,
@@ -145,14 +157,14 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
  * Marca como actualizados los pases indicados y manda push (APNs) a todos los
  * dispositivos registrados. Si APNs responde 410, borra ese dispositivo.
  */
-async function actualizarYAvisar(filtro: { serial: string } | { localId: string }) {
+async function actualizarYAvisar(filtro: { serial: string } | { localId: string }): Promise<number> {
   const cred = env.appleWallet;
-  if (!cred) return;
+  if (!cred) return 0;
   const db = crearClienteAdmin();
   const consulta = db.from("apple_passes").update({ updated_at: new Date().toISOString() });
   const { data: pases } = await ("serial" in filtro ? consulta.eq("serial", filtro.serial) : consulta.eq("local_id", filtro.localId)).select("serial");
   const seriales = (pases ?? []).map((p) => p.serial);
-  if (!seriales.length) return;
+  if (!seriales.length) return 0;
 
   const { data: regs } = await db
     .from("apple_registrations")
@@ -162,13 +174,14 @@ async function actualizarYAvisar(filtro: { serial: string } | { localId: string 
   for (const r of (regs ?? []) as unknown as { device_library_id: string; apple_devices: { push_token: string } | null }[]) {
     if (r.apple_devices?.push_token) porToken.set(r.apple_devices.push_token, r.device_library_id);
   }
-  if (!porToken.size) return;
+  if (!porToken.size) return seriales.length;
 
   const resultados = await enviarPushes(cred, [...porToken.keys()]);
   const bajas = resultados.filter((r) => r.status === 410).map((r) => porToken.get(r.token)!);
   if (bajas.length) await db.from("apple_devices").delete().in("device_library_id", bajas);
   const fallidos = resultados.filter((r) => r.status !== 200 && r.status !== 410).length;
   if (fallidos) console.error(`Apple Wallet: ${fallidos} de ${resultados.length} push fallaron (status ${[...new Set(resultados.map((r) => r.status))].join(", ")})`);
+  return seriales.length;
 }
 
 /** Cambió el local o sus premios: actualiza todos sus pases de Apple. Nunca lanza. */
@@ -177,6 +190,20 @@ export async function notificarCambioLocalApple(localId: string) {
     await actualizarYAvisar({ localId });
   } catch (e) {
     console.error("Apple Wallet: no se pudo avisar el cambio del local", localId, e instanceof Error ? e.message : e);
+  }
+}
+
+/**
+ * El local mandó un mensaje: actualiza sus pases (el campo Novedades cambia) y
+ * manda push; iOS muestra el mensaje por el changeMessage. Devuelve cuántos pases
+ * se actualizaron. Nunca lanza.
+ */
+export async function notificarMensajeApple(localId: string): Promise<number> {
+  try {
+    return await actualizarYAvisar({ localId });
+  } catch (e) {
+    console.error("Apple Wallet: no se pudo avisar el mensaje del local", localId, e instanceof Error ? e.message : e);
+    return 0;
   }
 }
 

@@ -16,6 +16,7 @@ function secciones(personal: string): SeccionPanel[] {
     { ruta: "/premios", nombre: "Premios", icono: "premio", principal: true },
     { ruta: "/movimientos", nombre: "Movimientos", icono: "historial" },
     { ruta: "/promos", nombre: "Promos", icono: "sumar-punto" },
+    { ruta: "/mensajes", nombre: "Mensajes", icono: "notificacion" },
     { ruta: "/mozos", nombre: personal, icono: "mozo" },
     { ruta: "/ajustes", nombre: "Ajustes", icono: "configuracion" },
   ];

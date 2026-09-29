@@ -47,6 +47,8 @@ export type LocalGoogle = {
   logoUrl: string | null;
   colorPrimario: string;
   premios: { nombre: string; puntos: number }[];
+  /** Ubicación del local: Google muestra el pase cuando el cliente está cerca. */
+  ubicacion?: { latitud: number; longitud: number } | null;
 };
 
 export function armarClase(issuerId: string, local: LocalGoogle, appUrl: string) {
@@ -66,6 +68,8 @@ export function armarClase(issuerId: string, local: LocalGoogle, appUrl: string)
     reviewStatus: "UNDER_REVIEW",
     textModulesData: [{ id: "premios", header: "Premios", body: premios }],
     linksModuleData: { uris: [{ id: "point", uri: `${base}/t/${local.slug}`, description: "Abrir la tarjeta" }] },
+    // Sin ubicación mandamos [] para que un PATCH borre la anterior.
+    merchantLocations: local.ubicacion ? [{ latitude: local.ubicacion.latitud, longitude: local.ubicacion.longitud }] : [],
   };
 }
 
@@ -89,7 +93,11 @@ export function textoProgreso(puntos: number, proximo: TarjetaGoogle["proximo"])
   return `${proximo.nombre} · te ${faltan === 1 ? "falta 1 punto" : `faltan ${faltan} puntos`}`;
 }
 
-export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string) {
+/**
+ * `notificar`: pide a Google que avise al cliente del cambio de loyaltyPoints.balance
+ * (notifyPreference vale sólo para ese request; Google permite 3 avisos por pase cada 24 hs).
+ */
+export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string, notificar = false) {
   const base = appUrl.replace(/\/$/, "");
   const urlPase = `${base}/w/${t.serial}/${t.token}`;
   const franja = `${base}/t/${t.localSlug}/franja?p=${t.puntos}${t.proximo ? `&m=${t.proximo.puntos}` : ""}`;
@@ -107,6 +115,7 @@ export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string) 
     textModulesData: [{ id: "progreso", header: "Próximo premio", body: textoProgreso(t.puntos, t.proximo) }],
     barcode: { type: "QR_CODE", value: urlPase, alternateText: "Tu tarjeta" },
     linksModuleData: { uris: [{ id: "tarjeta", uri: `${base}/t/${t.localSlug}`, description: "Abrir mi tarjeta completa" }] },
+    ...(notificar ? { notifyPreference: "NOTIFY_ON_UPDATE" } : {}),
   };
 }
 
@@ -204,10 +213,28 @@ export function upsertObjeto(cred: CredencialesGoogle, t: TarjetaGoogle, appUrl:
 }
 
 /** PATCH del objeto. Devuelve false si no existe (404): no es un error para el toque. */
-export async function patchObjeto(cred: CredencialesGoogle, t: TarjetaGoogle, appUrl: string, f: Fetch = fetch) {
-  const objeto = armarObjeto(cred.issuerId, t, appUrl);
+export async function patchObjeto(cred: CredencialesGoogle, t: TarjetaGoogle, appUrl: string, f: Fetch = fetch, notificar = false) {
+  const objeto = armarObjeto(cred.issuerId, t, appUrl, notificar);
   const res = await llamar(cred, "PATCH", `/loyaltyObject/${encodeURIComponent(objeto.id)}`, objeto, f);
   if (res.status === 404) return false;
   if (!res.ok) return fallar(res, "patch loyaltyObject");
+  return true;
+}
+
+// --- Mensajes (Add Message API) ---------------------------------------------------
+
+export type MensajeGoogle = { id: string; titulo: string; texto: string };
+
+/**
+ * Agrega un mensaje al dorso del pase y manda la notificación (TEXT_AND_NOTIFY).
+ * Devuelve false si el objeto no existe (404).
+ */
+export async function agregarMensaje(cred: CredencialesGoogle, serial: string, m: MensajeGoogle, f: Fetch = fetch) {
+  const id = idObjeto(cred.issuerId, serial);
+  const res = await llamar(cred, "POST", `/loyaltyObject/${encodeURIComponent(id)}/addMessage`, {
+    message: { id: m.id, header: m.titulo, body: m.texto, messageType: "TEXT_AND_NOTIFY" },
+  }, f);
+  if (res.status === 404) return false;
+  if (!res.ok) return fallar(res, "addMessage");
   return true;
 }

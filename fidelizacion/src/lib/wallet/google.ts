@@ -4,14 +4,17 @@ import { env } from "@/lib/env";
 import { proximoPremio } from "@/lib/tarjeta";
 import type { DatosPase, ProveedorWallet } from "./index";
 import {
+  agregarMensaje,
   idObjeto,
   jwtGuardar,
   patchObjeto,
   upsertClase,
   upsertObjeto,
   urlGuardar,
+  type MensajeGoogle,
   type TarjetaGoogle,
 } from "./google-core";
+import { ultimoMovimiento } from "./movimiento";
 
 /** ¿Hay credenciales válidas de Google Wallet? Sin ellas, todo esto no hace nada. */
 export function googleWalletActivo() {
@@ -29,7 +32,7 @@ export async function sincronizarClaseLocal(localId: string) {
   try {
     const db = crearClienteAdmin();
     const [{ data: local }, { data: premios }] = await Promise.all([
-      db.from("locales").select("slug, nombre, logo_url, color_primario").eq("id", localId).maybeSingle(),
+      db.from("locales").select("slug, nombre, logo_url, color_primario, latitud, longitud").eq("id", localId).maybeSingle(),
       db.from("premios").select("nombre, puntos_necesarios").eq("local_id", localId).eq("activo", true).order("puntos_necesarios"),
     ]);
     if (!local) return;
@@ -41,6 +44,7 @@ export async function sincronizarClaseLocal(localId: string) {
         logoUrl: local.logo_url,
         colorPrimario: local.color_primario,
         premios: (premios ?? []).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
+        ubicacion: local.latitud != null && local.longitud != null ? { latitud: local.latitud, longitud: local.longitud } : null,
       },
       env.appUrl,
     );
@@ -50,18 +54,19 @@ export async function sincronizarClaseLocal(localId: string) {
 }
 
 /** Datos del objeto a partir del serial (tarjeta, cliente, local y próximo premio). */
-async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<TarjetaGoogle | null> {
+async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(TarjetaGoogle & { tarjetaId: string }) | null> {
   const db = crearClienteAdmin();
   let consulta = db
     .from("tarjetas")
     .select(
-      `local_id, serial, wallet_auth_token, puntos, clientes(nombre), locales(slug, nombre)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
+      `id, local_id, serial, wallet_auth_token, puntos, clientes(nombre), locales(slug, nombre)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
     )
     .eq("serial", serial);
   if (soloRegistradas) consulta = consulta.eq("wallet_registros.plataforma", "google");
   const { data } = await consulta.limit(1).maybeSingle();
   if (!data) return null;
   const t = data as unknown as {
+    id: string;
     local_id: string;
     serial: string;
     wallet_auth_token: string;
@@ -78,6 +83,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<T
     .order("puntos_necesarios");
   const proximo = proximoPremio(premios ?? [], t.puntos);
   return {
+    tarjetaId: t.id,
     serial: t.serial,
     token: t.wallet_auth_token,
     puntos: t.puntos,
@@ -115,13 +121,53 @@ export const proveedorGoogle: ProveedorWallet = {
     return { url: urlGuardar(jwt) };
   },
 
-  /** PATCH del objeto con los puntos nuevos. Sólo para tarjetas que pidieron el pase. */
+  /**
+   * PATCH del objeto con los puntos nuevos. Sólo para tarjetas que pidieron el pase.
+   * Si el cambio fue una suma (o un regalo), Google le avisa al cliente.
+   */
   async notificarCambio(serial: string) {
     const cred = env.googleWallet;
     if (!cred) return;
     const datos = await datosTarjeta(serial, true);
     if (!datos) return;
+    const avisar = (await ultimoMovimiento(datos.tarjetaId)) !== "canje";
     // 404: el objeto no existe en Google (no debería pasar: se crea al pedir el pase).
-    await patchObjeto(cred, datos, env.appUrl);
+    await patchObjeto(cred, datos, env.appUrl, fetch, avisar);
   },
 };
+
+// --- Mensajes del local -----------------------------------------------------------
+
+const EN_PARALELO = 8;
+
+/**
+ * Manda el mensaje (Add Message API, TEXT_AND_NOTIFY) a todos los pases de Google
+ * del local. Devuelve cuántos llegaron y cuántos fallaron. Nunca lanza.
+ */
+export async function enviarMensajeGoogle(localId: string, m: MensajeGoogle): Promise<{ enviados: number; fallidos: number }> {
+  const cred = env.googleWallet;
+  if (!cred) return { enviados: 0, fallidos: 0 };
+  const { data, error } = await crearClienteAdmin()
+    .from("tarjetas")
+    .select("serial, wallet_registros!inner(plataforma)")
+    .eq("local_id", localId)
+    .eq("wallet_registros.plataforma", "google");
+  if (error) {
+    console.error("Google Wallet: no se pudieron leer los pases del local", localId, error.message);
+    return { enviados: 0, fallidos: 0 };
+  }
+  const seriales = [...new Set((data ?? []).map((t) => t.serial as string))];
+  let enviados = 0;
+  let fallidos = 0;
+  for (let i = 0; i < seriales.length; i += EN_PARALELO) {
+    const tanda = await Promise.allSettled(seriales.slice(i, i + EN_PARALELO).map((s) => agregarMensaje(cred, s, m)));
+    for (const r of tanda) {
+      if (r.status === "fulfilled" && r.value) enviados++;
+      else if (r.status === "rejected") {
+        fallidos++;
+        if (fallidos <= 3) console.error("Google Wallet: addMessage falló", r.reason instanceof Error ? r.reason.message : r.reason);
+      }
+    }
+  }
+  return { enviados, fallidos };
+}

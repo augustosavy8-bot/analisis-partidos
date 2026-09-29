@@ -1,7 +1,8 @@
 import "server-only";
 import { env } from "@/lib/env";
-import { proveedorGoogle, sincronizarClaseLocal } from "./google";
-import { notificarCambioLocalApple, proveedorApple } from "./apple";
+import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { enviarMensajeGoogle, proveedorGoogle, sincronizarClaseLocal } from "./google";
+import { notificarCambioLocalApple, notificarMensajeApple, proveedorApple } from "./apple";
 
 /**
  * Integración con billeteras nativas.
@@ -74,4 +75,33 @@ export async function notificarCambioTarjeta(serial: string) {
  */
 export async function notificarCambioLocal(localId: string) {
   await Promise.allSettled([sincronizarClaseLocal(localId), notificarCambioLocalApple(localId)]);
+}
+
+/**
+ * Mensaje del local a sus clientes: Google (Add Message API, TEXT_AND_NOTIFY) y
+ * Apple (campo Novedades + push). Guarda el resultado en mensajes_local.
+ * Llamalo dentro de after(); nunca lanza.
+ */
+export async function enviarMensajeLocal(m: { id: string; localId: string; titulo: string; texto: string }) {
+  const db = crearClienteAdmin();
+  try {
+    const [google, apple] = await Promise.all([
+      enviarMensajeGoogle(m.localId, { id: m.id, titulo: m.titulo, texto: m.texto }),
+      notificarMensajeApple(m.localId),
+    ]);
+    // Si Google falló en todos y no había pases de Apple, no cuenta para el límite diario.
+    const error = google.fallidos > 0 && google.enviados === 0 && apple === 0;
+    await db
+      .from("mensajes_local")
+      .update({
+        estado: error ? "error" : "enviado",
+        google_enviados: google.enviados,
+        google_fallidos: google.fallidos,
+        apple_pases: apple,
+      })
+      .eq("id", m.id);
+  } catch (e) {
+    console.error("Wallet: no se pudo enviar el mensaje", m.id, e instanceof Error ? e.message : e);
+    await db.from("mensajes_local").update({ estado: "error" }).eq("id", m.id);
+  }
 }

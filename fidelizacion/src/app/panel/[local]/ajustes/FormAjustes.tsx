@@ -7,6 +7,7 @@ import { PointCard } from "@/components/landing/PointCard";
 import { avisar } from "@/components/app/Toasts";
 import { ErrorForm } from "@/components/Campo";
 import { TERMINOS, capitalizar, plural } from "@/lib/terminos";
+import { coordenadasValidas, leerCoordenadas, urlMapa } from "@/lib/coordenadas";
 
 type Local = {
   slug: string;
@@ -30,6 +31,21 @@ export function FormAjustes({ local }: { local: Local }) {
     if (estado.ok) avisar("Cambios guardados");
   }, [estado.ok]);
   const [horas, setHoras] = useState(String(+(local.minutos_entre_puntos / 60).toFixed(2)));
+  const [latitud, setLatitud] = useState(local.latitud?.toString() ?? "");
+  const [longitud, setLongitud] = useState(local.longitud?.toString() ?? "");
+  const [pegado, setPegado] = useState("");
+  const pegadoValido = pegado.trim() ? leerCoordenadas(pegado) : null;
+  const punto = { latitud: Number(latitud.replace(",", ".")), longitud: Number(longitud.replace(",", ".")) };
+  const hayPunto = latitud.trim() !== "" && longitud.trim() !== "" && coordenadasValidas(punto);
+
+  /** Pegar "lat, lng" (de Google Maps) en cualquier campo completa los dos. */
+  function pegar(texto: string) {
+    const c = leerCoordenadas(texto);
+    if (!c) return false;
+    setLatitud(String(c.latitud));
+    setLongitud(String(c.longitud));
+    return true;
+  }
 
   const h = Number(horas.replace(",", "."));
   const reglaTexto =
@@ -110,18 +126,74 @@ export function FormAjustes({ local }: { local: Local }) {
         <Tarjeta>
           <h2 className="pt-app-seccion text-pt-ink">Ubicación (opcional)</h2>
           <p className="mt-1 pt-app-detalle text-pt-ink-2">
-            Con la ubicación, el pase de Apple Wallet aparece en la pantalla bloqueada del cliente cuando está cerca del local.
-            En Google Maps, mantené apretado sobre el local y copiá los dos números.
+            Con la ubicación, la tarjeta aparece sola en el celular del cliente cuando pasa cerca del local (Apple Wallet y
+            Google Wallet). En Google Maps, mantené apretado sobre el local y tocá los números para copiarlos.
           </p>
+          <label className="mt-3 block">
+            <EtiquetaPanel>Pegá la ubicación de Google Maps</EtiquetaPanel>
+            <input
+              value={pegado}
+              onChange={(e) => {
+                setPegado(e.target.value);
+                pegar(e.target.value);
+              }}
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="-32.946812, -60.639321"
+              aria-describedby="ayuda-ubicacion"
+              className={`${inputPanel} font-mono`}
+            />
+            <span id="ayuda-ubicacion" className="mt-1.5 block pt-app-detalle text-pt-ink-2" aria-live="polite">
+              {!pegado.trim()
+                ? "Formato “latitud, longitud”. Completa los dos campos de abajo."
+                : pegadoValido
+                  ? "Listo: completamos latitud y longitud. Guardá los cambios."
+                  : "No reconocemos esas coordenadas. Tienen que ser dos números, por ejemplo -32.9468, -60.6393."}
+            </span>
+          </label>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block">
               <EtiquetaPanel>Latitud</EtiquetaPanel>
-              <input name="latitud" inputMode="decimal" defaultValue={local.latitud ?? ""} placeholder="Ej: -32.9468" className={inputPanel} />
+              <input
+                name="latitud"
+                inputMode="decimal"
+                value={latitud}
+                onChange={(e) => pegar(e.target.value) || setLatitud(e.target.value)}
+                placeholder="Ej: -32.9468"
+                className={`${inputPanel} font-mono`}
+              />
             </label>
             <label className="block">
               <EtiquetaPanel>Longitud</EtiquetaPanel>
-              <input name="longitud" inputMode="decimal" defaultValue={local.longitud ?? ""} placeholder="Ej: -60.6393" className={inputPanel} />
+              <input
+                name="longitud"
+                inputMode="decimal"
+                value={longitud}
+                onChange={(e) => pegar(e.target.value) || setLongitud(e.target.value)}
+                placeholder="Ej: -60.6393"
+                className={`${inputPanel} font-mono`}
+              />
             </label>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pt-app-detalle">
+            {hayPunto && (
+              <a href={urlMapa(punto)} target="_blank" rel="noreferrer" className="font-medium text-pt-accent-ink underline underline-offset-2">
+                Ver el punto en Google Maps
+              </a>
+            )}
+            {(latitud || longitud) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLatitud("");
+                  setLongitud("");
+                  setPegado("");
+                }}
+                className="font-medium text-pt-ink-2 underline underline-offset-2 hover:text-pt-ink"
+              >
+                Quitar ubicación
+              </button>
+            )}
           </div>
         </Tarjeta>
 

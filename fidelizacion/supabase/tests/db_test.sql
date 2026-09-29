@@ -421,4 +421,36 @@ delete from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006';
 select pg_temp.check((select count(*) from public.apple_registrations) = 0 and (select count(*) from public.apple_passes) = 0,
   'apple: borrar la tarjeta borra su pase y sus registros');
 
+-- ---------------------------------------------------------------- mensajes del local
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', '2x1 hoy', 'Medialunas 2x1 hasta las 12'))->>'ok' = 'true',
+  'mensajes: el dueño manda un mensaje');
+select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', 'Otro', 'Otro mensaje'))->>'motivo' = 'limite',
+  'mensajes: 1 por día por local');
+select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-000000000001') > now() + interval '23 hours',
+  'mensajes: informa cuándo se puede mandar el próximo');
+select pg_temp.check((select count(*) from public.mensajes_local) = 1, 'mensajes: el dueño ve su historial');
+do $$ begin
+  perform public.registrar_mensaje_local('00000000-0000-4000-8000-00000000000f', 'Hola', 'No es mi local');
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'mensajes: no se puede mandar por un local ajeno');
+do $$ begin
+  update public.mensajes_local set estado = 'error';
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'mensajes: el dueño no edita el historial');
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000003"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000003', false);
+select pg_temp.check((select count(*) from public.mensajes_local) = 0, 'mensajes: otro dueño no ve el historial ajeno');
+reset role;
+update public.mensajes_local set estado = 'error';
+select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-000000000001') is null,
+  'mensajes: un envío fallido no cuenta para el límite');
+do $$ begin
+  insert into public.mensajes_local (local_id, titulo, texto) values ('00000000-0000-4000-8000-000000000001', 'Largo', repeat('x', 151));
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+select pg_temp.check(true, 'mensajes: texto de hasta 150 caracteres');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

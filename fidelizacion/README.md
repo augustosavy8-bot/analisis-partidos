@@ -89,7 +89,8 @@ Ingreso con email y contraseña (Supabase Auth; el registro público está desac
 | Mozos | Alta con PIN, cambio de PIN, activar/desactivar, llaveros asignados |
 | WhatsApp | Segmentos: no vienen hace N días, les falta poco para un premio, tienen premio sin usar, cumplen años. Mensaje editable con `{nombre}`, `{puntos}`, `{premio}`, `{faltan}`, `{local}`, `{link}`; cada botón abre `wa.me` con el texto listo y queda registrado (`contactos_whatsapp`). “No escribir más” marca la tarjeta con `no_contactar` |
 | Promos | Puntos de bienvenida (primera visita), regalo de cumple (primera visita del día del cumple a 6 días después, una vez por año, si el cumple se cargó hace 30+ días) y promos x2/x3 por días y horario |
-| Ajustes | Regla de puntos (horas entre puntos), nombre, rubro, colores y logo, con vista previa |
+| Mensajes | “Enviar mensaje a clientes” (título + hasta 150 caracteres): notificación en Google Wallet (Add Message, `TEXT_AND_NOTIFY`) y Apple Wallet (campo Novedades + push). 1 por local cada 24 hs (`registrar_mensaje_local`, atómico); historial con a cuántas tarjetas llegó (`mensajes_local`) |
+| Ajustes | Regla de puntos (horas entre puntos), nombre, rubro, colores y logo, con vista previa. Ubicación: se pega “lat, lng” de Google Maps; va a `merchantLocations` (Google) y `locations` (Apple) |
 
 ## Panel superadmin (`/admin`)
 
@@ -151,6 +152,10 @@ Pase `storeCard` nativo, en paralelo a Google Wallet. Código en `src/lib/wallet
 - **Push**: `notificarCambioTarjeta` (suma, canje, regalo; en `after()`) y `notificarCambioLocal` (Ajustes,
   premios) actualizan `apple_passes.updated_at` y mandan `{}` por APNs (HTTP/2, certificado del pase,
   `apns-topic` = Pass Type ID). Un 410 borra el dispositivo.
+- **Notificaciones**: puntos con `changeMessage` “Sumaste puntos: ahora tenés %@” (o “Canjeaste tu premio…”
+  si el último movimiento fue un canje); dorso “Novedades” con el último mensaje del local y `changeMessage` `%@`;
+  `relevantText` “Estás cerca de {local}. Tenés {puntos} puntos”. En Google, el PATCH de una suma lleva
+  `notifyPreference: NOTIFY_ON_UPDATE` (Google limita a 3 avisos por pase cada 24 hs).
 - **Tablas** (sólo service_role): `apple_passes`, `apple_devices`, `apple_registrations`.
 - **Variables**: `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`, `APPLE_PASS_CERT`, `APPLE_PASS_KEY` (sin contraseña),
   `APPLE_WWDR_CERT` (G4). Sin alguna, el botón no aparece.

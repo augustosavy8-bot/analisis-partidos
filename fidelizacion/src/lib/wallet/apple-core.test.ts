@@ -99,7 +99,9 @@ describe("pass.json", () => {
   });
 
   it("puntos en primary, próximo premio y faltan en secondary", () => {
-    expect(pase.storeCard.primaryFields[0]).toMatchObject({ key: "puntos", value: 5 });
+    expect(pase.storeCard.primaryFields[0]).toMatchObject({ key: "puntos", value: 5, changeMessage: "Sumaste puntos: ahora tenés %@" });
+    const canje = armarPassJson(cred, { ...datos, ultimoMovimiento: "canje" }, "https://x.app");
+    expect(canje.storeCard.primaryFields[0].changeMessage).toBe("Canjeaste tu premio: ahora tenés %@");
     expect(pase.storeCard.secondaryFields).toEqual([
       { key: "proximo", label: "PRÓXIMO PREMIO", value: "Café gratis" },
       { key: "faltan", label: "TE FALTAN", value: 3, textAlignment: "PKTextAlignmentRight" },
@@ -112,9 +114,17 @@ describe("pass.json", () => {
     expect(dorso.tarjeta.value).toBe("https://point.app/t/cafe-aurora");
   });
 
+  it("Novedades en el dorso: siempre presente, con el último mensaje del local y changeMessage %@", () => {
+    expect(pase.storeCard.backFields[0]).toEqual({ key: "novedades", label: "Novedades", value: "Todavía no hay novedades.", changeMessage: "%@" });
+    const conMensaje = armarPassJson(cred, { ...datos, novedad: { titulo: "2x1 hoy", texto: "Medialunas hasta las 12" } }, "https://x.app");
+    expect(conMensaje.storeCard.backFields[0].value).toBe("2x1 hoy\nMedialunas hasta las 12");
+  });
+
   it("QR con el mismo link que Google y locations si hay coordenadas", () => {
     expect(pase.barcodes).toEqual([{ format: "PKBarcodeFormatQR", message: datos.urlPase, messageEncoding: "iso-8859-1" }]);
-    expect(pase.locations?.[0]).toMatchObject({ latitude: -32.9468, longitude: -60.6393 });
+    expect(pase.locations?.[0]).toEqual({ latitude: -32.9468, longitude: -60.6393, relevantText: "Estás cerca de Café Aurora. Tenés 5 puntos" });
+    const uno = armarPassJson(cred, { ...datos, puntos: 1 }, "https://x.app");
+    expect(uno.locations?.[0].relevantText).toBe("Estás cerca de Café Aurora. Tenés 1 punto");
     const sinUbicacion = armarPassJson(cred, { ...datos, local: { ...datos.local, latitud: null, longitud: null } }, "https://x.app");
     expect(sinUbicacion).not.toHaveProperty("locations");
   });

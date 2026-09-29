@@ -2,6 +2,7 @@ import { generateKeyPairSync, createVerify } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   API_WALLET,
+  agregarMensaje,
   armarClase,
   armarObjeto,
   idClase,
@@ -84,6 +85,16 @@ describe("clase del local", () => {
     expect(conLogo.textModulesData[0].body).toMatch(/Sumá puntos/);
     expect(clase.textModulesData[0].body).toBe("Café gratis · 8 puntos\nDesayuno · 15 puntos");
   });
+
+  it("carga la ubicación del local en merchantLocations (y [] para borrarla)", () => {
+    expect(clase.merchantLocations).toEqual([]);
+    const conUbicacion = armarClase(
+      cred.issuerId,
+      { slug: "x", nombre: "X", logoUrl: null, colorPrimario: "#000000", premios: [], ubicacion: { latitud: -32.9468, longitud: -60.6393 } },
+      APP,
+    );
+    expect(conUbicacion.merchantLocations).toEqual([{ latitude: -32.9468, longitude: -60.6393 }]);
+  });
 });
 
 describe("objeto de la tarjeta", () => {
@@ -111,6 +122,11 @@ describe("objeto de la tarjeta", () => {
     const sin = armarObjeto(cred.issuerId, { ...tarjeta, proximo: null }, APP);
     expect(sin).not.toHaveProperty("secondaryLoyaltyPoints");
     expect(sin.heroImage.sourceUri.uri).toBe("https://point.app/t/cafe-aurora/franja?p=5");
+  });
+
+  it("pide notificación sólo cuando se lo indicamos (notifyPreference es por request)", () => {
+    expect(objeto).not.toHaveProperty("notifyPreference");
+    expect(armarObjeto(cred.issuerId, tarjeta, APP, true).notifyPreference).toBe("NOTIFY_ON_UPDATE");
   });
 
   it("describe el progreso", () => {
@@ -182,5 +198,32 @@ describe("API (con fetch simulado)", () => {
     await expect(patchObjeto(cred, tarjeta, APP, con(404) as typeof fetch)).resolves.toBe(false);
     await expect(patchObjeto(cred, tarjeta, APP, con(200) as typeof fetch)).resolves.toBe(true);
     await expect(patchObjeto(cred, tarjeta, APP, con(500) as typeof fetch)).rejects.toThrow(/500/);
+  });
+
+  it("PATCH con aviso: manda notifyPreference en el cuerpo", async () => {
+    let cuerpo: Record<string, unknown> = {};
+    const f = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).includes("oauth2")) return respuestaToken();
+      cuerpo = JSON.parse(String(init?.body));
+      return new Response("{}", { status: 200 });
+    });
+    await patchObjeto(cred, tarjeta, APP, f as typeof fetch, true);
+    expect(cuerpo).toMatchObject({ loyaltyPoints: { balance: { int: 5 } }, notifyPreference: "NOTIFY_ON_UPDATE" });
+  });
+
+  it("addMessage: TEXT_AND_NOTIFY al objeto de la tarjeta; 404 no es error", async () => {
+    const llamadas: { url: string; cuerpo: unknown }[] = [];
+    const f = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).includes("oauth2")) return respuestaToken();
+      llamadas.push({ url: String(url).replace(API_WALLET, ""), cuerpo: JSON.parse(String(init?.body)) });
+      return new Response("{}", { status: llamadas.length === 1 ? 200 : 404 });
+    });
+    const m = { id: "msg-1", titulo: "2x1 hoy", texto: "Medialunas 2x1 hasta las 12" };
+    await expect(agregarMensaje(cred, tarjeta.serial, m, f as typeof fetch)).resolves.toBe(true);
+    await expect(agregarMensaje(cred, tarjeta.serial, m, f as typeof fetch)).resolves.toBe(false);
+    expect(llamadas[0]).toEqual({
+      url: `/loyaltyObject/${encodeURIComponent(idObjeto(cred.issuerId, tarjeta.serial))}/addMessage`,
+      cuerpo: { message: { id: "msg-1", header: "2x1 hoy", body: "Medialunas 2x1 hasta las 12", messageType: "TEXT_AND_NOTIFY" } },
+    });
   });
 });

@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { notificarCambioLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { esTermino } from "@/lib/terminos";
+import { leerCoordenadas } from "@/lib/coordenadas";
 
 export type EstadoAjustes = { error?: string; ok?: number };
 
@@ -19,10 +20,13 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   const logo = String(form.get("logo_url") ?? "").trim() || null;
   const termino = String(form.get("termino_personal") ?? "mozo");
   const horas = Number(String(form.get("horas") ?? "").replace(",", "."));
-  const latTxt = String(form.get("latitud") ?? "").trim().replace(",", ".");
-  const lngTxt = String(form.get("longitud") ?? "").trim().replace(",", ".");
-  const latitud = latTxt ? Number(latTxt) : null;
-  const longitud = lngTxt ? Number(lngTxt) : null;
+  let latTxt = String(form.get("latitud") ?? "").trim();
+  let lngTxt = String(form.get("longitud") ?? "").trim();
+  // Si pegaron "lat, lng" entero en un solo campo, lo separamos.
+  const pegado = !lngTxt ? leerCoordenadas(latTxt) : !latTxt ? leerCoordenadas(lngTxt) : null;
+  if (pegado) [latTxt, lngTxt] = [String(pegado.latitud), String(pegado.longitud)];
+  const latitud = latTxt ? Number(latTxt.replace(",", ".")) : null;
+  const longitud = lngTxt ? Number(lngTxt.replace(",", ".")) : null;
 
   if (nombre.length < 2 || nombre.length > 60) return { error: "El nombre tiene que tener entre 2 y 60 letras." };
   if (rubro && rubro.length > 60) return { error: "El rubro es muy largo." };
@@ -49,7 +53,7 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
     })
     .eq("id", local.id);
   if (error) return { error: "No se pudo guardar." };
-  after(() => notificarCambioLocal(local.id)); // clase de Google y pases de Apple (nombre, logo, colores)
+  after(() => notificarCambioLocal(local.id)); // clase de Google y pases de Apple (nombre, logo, colores, ubicación)
   refresh();
   return { ok: Date.now() };
 }

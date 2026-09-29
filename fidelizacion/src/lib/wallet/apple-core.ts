@@ -85,6 +85,10 @@ export type DatosPaseApple = {
   clienteNombre: string;
   /** El mismo link del QR de Google: /w/<serial>/<wallet_auth_token>. */
   urlPase: string;
+  /** Tipo del último movimiento: elige el texto de la notificación de puntos. */
+  ultimoMovimiento?: "suma" | "canje" | "regalo" | null;
+  /** Último mensaje del local (campo Novedades del dorso). */
+  novedad?: { titulo: string; texto: string } | null;
   urlTarjeta: string;
   local: {
     nombre: string;
@@ -99,6 +103,13 @@ export type DatosPaseApple = {
 export function proximoPremioApple(puntos: number, premios: DatosPaseApple["local"]["premios"]) {
   if (!premios.length) return null;
   return premios.find((p) => p.puntos > puntos) ?? premios[premios.length - 1];
+}
+
+export const SIN_NOVEDADES = "Todavía no hay novedades.";
+
+/** Texto de la notificación de iOS cuando cambian los puntos (%@ = puntos nuevos). */
+export function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"]) {
+  return ultimo === "canje" ? "Canjeaste tu premio: ahora tenés %@" : "Sumaste puntos: ahora tenés %@";
 }
 
 export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "teamId">, d: DatosPaseApple, appUrl: string) {
@@ -128,7 +139,7 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
           key: "puntos",
           label: "PUNTOS",
           value: d.puntos,
-          changeMessage: "Ahora tenés %@ puntos",
+          changeMessage: mensajeCambioPuntos(d.ultimoMovimiento),
         },
       ],
       secondaryFields: proximo
@@ -141,6 +152,13 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
         : [{ key: "proximo", label: "PREMIOS", value: "Próximamente" }],
       auxiliaryFields: [{ key: "cliente", label: "CLIENTE", value: d.clienteNombre }],
       backFields: [
+        // Siempre presente: cuando el local manda un mensaje cambia el valor e iOS lo notifica.
+        {
+          key: "novedades",
+          label: "Novedades",
+          value: d.novedad ? `${d.novedad.titulo}\n${d.novedad.texto}` : SIN_NOVEDADES,
+          changeMessage: "%@",
+        },
         { key: "premios", label: "Premios", value: premios },
         {
           key: "tarjeta",
@@ -159,7 +177,7 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
             {
               latitude: local.latitud,
               longitude: local.longitud,
-              relevantText: `Estás cerca de ${local.nombre}: sumá con tu tarjeta`,
+              relevantText: `Estás cerca de ${local.nombre}. Tenés ${d.puntos} ${d.puntos === 1 ? "punto" : "puntos"}`,
             },
           ],
         }

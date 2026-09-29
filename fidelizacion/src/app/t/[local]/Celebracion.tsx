@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCanje, SelloAnimado, TarjetaCompleta } from "@/components/Animaciones";
+import { CheckCanje, SelloAnimado } from "@/components/Animaciones";
+import { TarjetaCompletaAnimada } from "./TarjetaCompletaAnimada";
 import { claseBoton } from "@/components/app/Boton";
 
 type Props = {
@@ -16,9 +17,12 @@ type Props = {
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   puntos: number;
   mensaje: string;
+  /** Local (para dibujar su tarjeta cuando se completa). */
+  comercio: string;
+  logo: string | null;
 };
 
-export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje }: Props) {
+export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje, comercio, logo }: Props) {
   const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
   const cumple = regalos.some((r) => r.motivo === "cumple");
   const [visible, setVisible] = useState(true);
@@ -50,7 +54,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
             <CheckCanje color="var(--color-pt-accent-dark)" tamaño={140} />
           </div>
         ) : completo ? (
-          <TarjetaCompleta meta={completo.meta} sello="var(--color-pt-accent)" fondo="var(--color-pt-pure)" caja="var(--color-pt-card)" />
+          <TarjetaCompletaAnimada meta={completo.meta} premio={completo.premio} comercio={comercio} logo={logo} />
         ) : (
           <div className="relative">
             <SelloAnimado aro="var(--color-pt-accent)" ondas="#fff" tamaño={176} />
@@ -64,7 +68,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
         )}
       </div>
 
-      <h1 className="pt-app-titulo anim-subir mt-10" style={{ animationDelay: "350ms" }}>
+      <h1 className="pt-app-titulo anim-subir mt-10" style={{ animationDelay: completo ? "900ms" : "350ms" }}>
         {tipo === "canje"
           ? "¡Premio canjeado!"
           : completo
@@ -97,20 +101,51 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
           Mostrale esta pantalla a quien te atiende.
         </p>
       )}
-      <p className="anim-subir mt-3 pt-app-texto text-white/85" style={{ animationDelay: "450ms" }}>
-        {mensaje}
-      </p>
-      <p className="anim-subir mt-1 pt-app-detalle text-white/70" style={{ animationDelay: "500ms" }}>
-        Tenés <Contador hasta={puntos} desde={Math.max(0, puntos - (tipo === "suma" ? total : 0))} /> {puntos === 1 ? "punto" : "puntos"}
-      </p>
+      {completo ? (
+        <>
+          <p className="anim-subir mt-3 pt-app-texto text-white/80" style={{ animationDelay: "1000ms" }}>
+            Desbloqueaste
+          </p>
+          <p
+            className="anim-subir mt-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 font-[family-name:var(--font-pt-display)] text-lg font-semibold ring-1 ring-white/15"
+            style={{ animationDelay: "1050ms" }}
+          >
+            <span className="h-2 w-2 rounded-full bg-pt-accent" aria-hidden />
+            {completo.premio}
+          </p>
+          <div className="anim-subir mt-10 flex w-full max-w-xs flex-col items-center gap-2" style={{ animationDelay: "1200ms" }}>
+            <button
+              onClick={() => {
+                setVisible(false);
+                window.location.hash = "premios";
+              }}
+              className={claseBoton("acento", "lg")}
+            >
+              Canjear ahora
+            </button>
+            <button onClick={() => setVisible(false)} className={claseBoton("fantasma", "md", "!text-white/75 hover:!bg-white/10 hover:!text-white")}>
+              Ahora no
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="anim-subir mt-3 pt-app-texto text-white/85" style={{ animationDelay: "450ms" }}>
+            {mensaje}
+          </p>
+          <p className="anim-subir mt-1 pt-app-detalle text-white/70" style={{ animationDelay: "500ms" }}>
+            Tenés <Contador hasta={puntos} desde={Math.max(0, puntos - (tipo === "suma" ? total : 0))} /> {puntos === 1 ? "punto" : "puntos"}
+          </p>
 
-      <button
-        onClick={() => setVisible(false)}
-        className={`anim-subir ${claseBoton("acento", "md", "mt-12 !h-pt-control !px-8")}`}
-        style={{ animationDelay: "700ms" }}
-      >
-        Ver mi tarjeta
-      </button>
+          <button
+            onClick={() => setVisible(false)}
+            className={`anim-subir ${claseBoton("acento", "md", "mt-12 !h-pt-control !px-8")}`}
+            style={{ animationDelay: "700ms" }}
+          >
+            Ver mi tarjeta
+          </button>
+        </>
+      )}
     </div>
   );
 }

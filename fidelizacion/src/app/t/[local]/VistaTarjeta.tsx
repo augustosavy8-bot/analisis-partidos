@@ -188,7 +188,7 @@ export function VistaTarjeta(p: Props) {
     <div className="pt-app flex flex-1 flex-col">
       <MotionProvider>
         <main className="mx-auto w-full max-w-md flex-1 px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[calc(var(--spacing-pt-tabbar)+env(safe-area-inset-bottom)+2rem)]">
-          {p.celebracion && <Celebracion {...p.celebracion} puntos={tarjeta.puntos} />}
+          {p.celebracion && <Celebracion {...p.celebracion} puntos={tarjeta.puntos} comercio={local.nombre} logo={local.logo_url} />}
 
           {/* Avisos que importan en cualquier pestaña */}
           {p.limite && (

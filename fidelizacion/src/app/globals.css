@@ -262,24 +262,6 @@ body {
   45% { opacity: 0.25; }
   100% { transform: scale(1.2); opacity: 0; }
 }
-.pt-ultimo { transform-box: view-box; animation: ptUltimo 0.75s cubic-bezier(0.22, 0.9, 0.3, 1.08) both; }
-.pt-regalo { transform-box: view-box; animation: ptRegalo 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s both; }
-.pt-chispas { animation: ptChispas 0.75s ease-out 0.75s both; }
-@keyframes ptUltimo {
-  0% { transform: scale(0.25); opacity: 0; }
-  55% { transform: scale(1.14); opacity: 1; }
-  100% { transform: scale(1); }
-}
-@keyframes ptRegalo {
-  0% { transform: translateY(12px) scale(0.9); opacity: 0; }
-  70% { transform: translateY(-2px) scale(1.02); opacity: 1; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-@keyframes ptChispas {
-  0% { opacity: 0; transform: translateY(5px); }
-  45% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-8px); }
-}
 .pt-onda { transform-box: view-box; transform-origin: 112px 150px; opacity: 0.18; animation: ptOnda 1.5s ease-in-out infinite; }
 .pt-onda-2 { animation-delay: 0.18s; }
 .pt-onda-3 { animation-delay: 0.36s; }
@@ -291,7 +273,7 @@ body {
 .pt-check-tilde { stroke-dasharray: 150; stroke-dashoffset: 150; animation: ptTrazo 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) 0.28s forwards; }
 @keyframes ptTrazo { to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .pt-sello, .pt-sello-pulso, .pt-ultimo, .pt-regalo, .pt-chispas, .pt-onda { animation: none; opacity: 1; }
+  .pt-sello, .pt-sello-pulso, .pt-onda { animation: none; opacity: 1; }
   .pt-sello-pulso { opacity: 0; }
   .pt-check-aro, .pt-check-tilde { animation: none; stroke-dashoffset: 0; }
 }
@@ -324,5 +306,49 @@ body {
   .pt-pop,
   .pt-subir {
     animation: none;
+  }
+}
+
+/* --- Tarjeta completa (celebración) ---------------------------------------- */
+.pt-completa-entrada {
+  animation: pt-completa-entrada 650ms var(--ease-pt) both;
+}
+@keyframes pt-completa-entrada {
+  from { opacity: 0; transform: translateY(24px) rotateX(14deg) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+.pt-completa-onda {
+  animation: pt-completa-onda 1400ms var(--ease-pt) both;
+}
+.pt-completa-onda-2 {
+  animation-delay: 260ms;
+}
+@keyframes pt-completa-onda {
+  0% { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+.pt-completa-brillo {
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.22) 50%, transparent 100%);
+  animation: pt-completa-brillo 900ms var(--ease-pt) 120ms both;
+}
+@keyframes pt-completa-brillo {
+  from { transform: translateX(0); }
+  to { transform: translateX(320%); }
+}
+.pt-completa-sello {
+  animation: pt-completa-sello 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) 200ms both;
+}
+@keyframes pt-completa-sello {
+  0% { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-completa-entrada,
+  .pt-completa-sello {
+    animation: none;
+  }
+  .pt-completa-onda,
+  .pt-completa-brillo {
+    display: none;
   }
 }

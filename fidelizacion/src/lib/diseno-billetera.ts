@@ -143,6 +143,28 @@ export function svgCabecera({ primario, acento }: Colores): string {
   );
 }
 
+/**
+ * Strip del pase de Apple: el mismo arte de la cabecera con el sello a la derecha
+ * (sin espejar la marca) y las curvas reflejadas, para dejar libre la izquierda,
+ * donde Wallet dibuja los puntos.
+ */
+export function svgStripApple({ primario, acento }: Colores): string {
+  const claro = mezclar(primario, "#ffffff", 0.12);
+  const x = 872; // centro del sello
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1032" height="336" viewBox="0 0 1032 336" fill="none">` +
+    `<defs><linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${primario}"/><stop offset="1" stop-color="${claro}"/></linearGradient></defs>` +
+    `<rect width="1032" height="336" fill="url(#fondo)"/>` +
+    `<circle cx="${x}" cy="168" r="64" stroke="${acento}" stroke-width="16" fill="none"/>` +
+    `<circle cx="${x}" cy="168" r="24" fill="${acento}"/>` +
+    `<path d="M ${x + 35} 118 A 45 45 0 0 1 ${x + 60} 160" stroke="${acento}" stroke-width="11" stroke-linecap="round" fill="none"/>` +
+    `<path d="M ${x + 58} 100 A 64 64 0 0 1 ${x + 88} 171" stroke="${acento}" stroke-width="11" stroke-linecap="round" fill="none"/>` +
+    `<path d="M1032 280 C852 240 772 270 652 336 H1032 Z" fill="${acento}" opacity="0.65"/>` +
+    `<path d="M0 78 C92 40 112 14 132 0 H0 Z" fill="${acento}" opacity="0.35"/>` +
+    `</svg>`
+  );
+}
+
 /** Color del texto sobre el color principal. */
 export function textoSobre(hex: string): string {
   return luminancia(hex) > 0.45 ? "#1c1917" : "#F6F4EF";

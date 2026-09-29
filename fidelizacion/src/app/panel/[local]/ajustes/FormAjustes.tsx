@@ -17,6 +17,8 @@ type Local = {
   color_secundario: string;
   minutos_entre_puntos: number;
   termino_personal: string;
+  latitud: number | null;
+  longitud: number | null;
 };
 
 export function FormAjustes({ local }: { local: Local }) {
@@ -101,6 +103,24 @@ export function FormAjustes({ local }: { local: Local }) {
             <label className="block sm:col-span-2">
               <EtiquetaPanel>Logo (link https a una imagen cuadrada, opcional)</EtiquetaPanel>
               <input name="logo_url" type="url" defaultValue={local.logo_url ?? ""} placeholder="https://…/logo.png" className={inputPanel} />
+            </label>
+          </div>
+        </Tarjeta>
+
+        <Tarjeta>
+          <h2 className="pt-app-seccion text-pt-ink">Ubicación (opcional)</h2>
+          <p className="mt-1 pt-app-detalle text-pt-ink-2">
+            Con la ubicación, el pase de Apple Wallet aparece en la pantalla bloqueada del cliente cuando está cerca del local.
+            En Google Maps, mantené apretado sobre el local y copiá los dos números.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <EtiquetaPanel>Latitud</EtiquetaPanel>
+              <input name="latitud" inputMode="decimal" defaultValue={local.latitud ?? ""} placeholder="Ej: -32.9468" className={inputPanel} />
+            </label>
+            <label className="block">
+              <EtiquetaPanel>Longitud</EtiquetaPanel>
+              <input name="longitud" inputMode="decimal" defaultValue={local.longitud ?? ""} placeholder="Ej: -60.6393" className={inputPanel} />
             </label>
           </div>
         </Tarjeta>

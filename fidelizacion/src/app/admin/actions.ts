@@ -10,7 +10,7 @@ import { hashToken } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
 import { esTermino } from "@/lib/terminos";
 import { after } from "next/server";
-import { sincronizarClaseLocal } from "@/lib/wallet/google";
+import { notificarCambioLocal } from "@/lib/wallet";
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,7 +75,7 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
     .single();
   if (error || !local) return { error: "No se pudo crear el local." };
 
-  after(() => sincronizarClaseLocal(local.id)); // clase del local en Google Wallet
+  after(() => notificarCambioLocal(local.id)); // clase del local en Google Wallet (Apple todavía no tiene pases)
   const creado: NonNullable<EstadoLocal["creado"]> = { slug: local.slug, nombre };
   if (email) {
     creado.email = email;

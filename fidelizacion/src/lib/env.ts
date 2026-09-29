@@ -1,7 +1,9 @@
 import "server-only";
 import { leerCredenciales, type CredencialesGoogle } from "@/lib/wallet/google-core";
+import { leerCredencialesApple, type CredencialesApple } from "@/lib/wallet/apple-core";
 
 let avisoGoogle = false;
+let avisoApple = false;
 
 function requerida(nombre: string): string {
   const valor = process.env[nombre];
@@ -57,6 +59,29 @@ export const env = {
     } catch (e) {
       if (!avisoGoogle) console.error(`Google Wallet desactivado: ${e instanceof Error ? e.message : e}`);
       avisoGoogle = true;
+      return null;
+    }
+  },
+  /**
+   * Apple Wallet (opcional): APPLE_PASS_TYPE_ID, APPLE_TEAM_ID y los PEM
+   * APPLE_PASS_CERT, APPLE_PASS_KEY (sin contraseña) y APPLE_WWDR_CERT (G4).
+   * Si falta alguna o es inválida, devuelve null (proveedor desactivado).
+   * El aviso nunca incluye los valores.
+   */
+  get appleWallet(): CredencialesApple | null {
+    const v = {
+      passTypeId: process.env.APPLE_PASS_TYPE_ID,
+      teamId: process.env.APPLE_TEAM_ID,
+      cert: process.env.APPLE_PASS_CERT,
+      key: process.env.APPLE_PASS_KEY,
+      wwdr: process.env.APPLE_WWDR_CERT,
+    };
+    if (!v.passTypeId || !v.teamId || !v.cert || !v.key || !v.wwdr) return null;
+    try {
+      return leerCredencialesApple(v);
+    } catch (e) {
+      if (!avisoApple) console.error(`Apple Wallet desactivado: ${e instanceof Error ? e.message : "credenciales inválidas"}`);
+      avisoApple = true;
       return null;
     }
   },

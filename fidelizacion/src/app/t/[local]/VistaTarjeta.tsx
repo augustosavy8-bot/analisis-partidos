@@ -54,6 +54,8 @@ type Props = {
   qrPase: string;
   /** Link "Agregar a Google Wallet" (sólo Android con Google Wallet configurado). */
   googleWallet?: string;
+  /** Link "Agregar a Apple Wallet" (.pkpass; iPhone o compu con Apple Wallet configurado). */
+  appleWallet?: string;
   celebracion: DatosCelebracion | null;
 };
 
@@ -133,6 +135,7 @@ export function VistaTarjeta(p: Props) {
         url={p.urlPase}
         qrSvg={p.qrPase}
         googleWallet={p.googleWallet}
+        appleWallet={p.appleWallet}
         franja={`/t/${local.slug}/franja?p=${tarjeta.puntos}${p.objetivo ? `&m=${p.objetivo.puntos_necesarios}` : ""}`}
       />
 

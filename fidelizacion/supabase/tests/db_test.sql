@@ -383,4 +383,42 @@ update public.interesados set estado = 'contactado';
 select pg_temp.check((select estado from public.interesados) = 'contactado', 'el superadmin cambia el estado');
 reset role;
 
+-- ---------------------------------------------------------------- apple wallet
+insert into public.apple_passes (serial, tarjeta_id, cliente_id, local_id, auth_token)
+  select serial, id, cliente_id, local_id, repeat('a', 40) from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006';
+insert into public.apple_devices (device_library_id, push_token) values ('dev-1', 'tok-1');
+insert into public.apple_registrations (device_library_id, serial)
+  select 'dev-1', serial from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((select count(*) from public.apple_registrations) = 1, 'apple: el backend registra un dispositivo');
+do $$ begin
+  insert into public.apple_passes (serial, tarjeta_id, cliente_id, local_id, auth_token)
+    select serial, id, cliente_id, local_id, 'corto' from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006';
+  raise exception 'debía fallar';
+exception when check_violation or unique_violation then null; end $$;
+select pg_temp.check(true, 'apple: rechaza tokens cortos o pases duplicados');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+do $$ begin
+  perform 1 from public.apple_passes;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'apple: ni el superadmin lee apple_passes (sólo service_role)');
+reset role;
+set role anon;
+do $$ begin
+  perform 1 from public.apple_devices;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'apple: anon no lee apple_devices');
+reset role;
+do $$ begin
+  update public.locales set latitud = -32.9 where id = '00000000-0000-4000-8000-000000000001';
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+select pg_temp.check(true, 'locales: latitud y longitud van juntas');
+update public.locales set latitud = -32.9, longitud = -60.6 where id = '00000000-0000-4000-8000-000000000001';
+delete from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006';
+select pg_temp.check((select count(*) from public.apple_registrations) = 0 and (select count(*) from public.apple_passes) = 0,
+  'apple: borrar la tarjeta borra su pase y sus registros');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

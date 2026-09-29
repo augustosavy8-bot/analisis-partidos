@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
-import { sincronizarClaseLocal } from "@/lib/wallet/google";
+import { notificarCambioLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { esTermino } from "@/lib/terminos";
 
@@ -19,6 +19,10 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   const logo = String(form.get("logo_url") ?? "").trim() || null;
   const termino = String(form.get("termino_personal") ?? "mozo");
   const horas = Number(String(form.get("horas") ?? "").replace(",", "."));
+  const latTxt = String(form.get("latitud") ?? "").trim().replace(",", ".");
+  const lngTxt = String(form.get("longitud") ?? "").trim().replace(",", ".");
+  const latitud = latTxt ? Number(latTxt) : null;
+  const longitud = lngTxt ? Number(lngTxt) : null;
 
   if (nombre.length < 2 || nombre.length > 60) return { error: "El nombre tiene que tener entre 2 y 60 letras." };
   if (rubro && rubro.length > 60) return { error: "El rubro es muy largo." };
@@ -26,6 +30,9 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   if (logo && !/^https:\/\/\S{4,500}$/.test(logo)) return { error: "El logo tiene que ser un link https a una imagen." };
   if (!esTermino(termino)) return { error: "Elegí cómo llamás a tu personal." };
   if (!Number.isFinite(horas) || horas < 0 || horas > 168) return { error: "La regla tiene que estar entre 0 y 168 horas." };
+  if ((latitud === null) !== (longitud === null)) return { error: "Cargá latitud y longitud juntas (o dejá las dos vacías)." };
+  if (latitud !== null && (!Number.isFinite(latitud) || latitud < -90 || latitud > 90)) return { error: "La latitud tiene que estar entre -90 y 90." };
+  if (longitud !== null && (!Number.isFinite(longitud) || longitud < -180 || longitud > 180)) return { error: "La longitud tiene que estar entre -180 y 180." };
 
   const { error } = await db
     .from("locales")
@@ -37,10 +44,12 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
       logo_url: logo,
       minutos_entre_puntos: Math.round(horas * 60),
       termino_personal: termino,
+      latitud,
+      longitud,
     })
     .eq("id", local.id);
   if (error) return { error: "No se pudo guardar." };
-  after(() => sincronizarClaseLocal(local.id)); // nombre, logo y colores del pase de Google Wallet
+  after(() => notificarCambioLocal(local.id)); // clase de Google y pases de Apple (nombre, logo, colores)
   refresh();
   return { ok: Date.now() };
 }

@@ -1,7 +1,7 @@
-import { ImageResponse } from "next/og";
-import { buscarLocal, colorTextoSobre } from "@/lib/locales";
+import { buscarLocal } from "@/lib/locales";
+import { imagenIcono } from "@/lib/imagenes-billetera";
 
-/** Ícono de la PWA generado con los colores e inicial del local. */
+/** Ícono de la PWA (y logo de Google Wallet) generado con los colores e inicial del local. */
 export async function GET(req: Request, { params }: RouteContext<"/t/[local]/icono">) {
   const { local: slug } = await params;
   const local = await buscarLocal(slug);
@@ -10,37 +10,5 @@ export async function GET(req: Request, { params }: RouteContext<"/t/[local]/ico
   const pedido = Number(new URL(req.url).searchParams.get("s")) || 192;
   // Hasta 660: el logo cuadrado que recomienda Google Wallet.
   const s = Math.min(660, Math.max(64, Math.round(pedido)));
-
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: local.color_primario,
-        }}
-      >
-        <div
-          style={{
-            width: s * 0.56,
-            height: s * 0.56,
-            borderRadius: s * 0.16,
-            background: local.color_secundario,
-            color: colorTextoSobre(local.color_secundario) === "#ffffff" ? "#ffffff" : local.color_primario,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: s * 0.32,
-            fontWeight: 700,
-          }}
-        >
-          {local.nombre.charAt(0).toUpperCase()}
-        </div>
-      </div>
-    ),
-    { width: s, height: s, headers: { "Cache-Control": "public, max-age=86400" } },
-  );
+  return imagenIcono(local, s, { "Cache-Control": "public, max-age=86400" });
 }

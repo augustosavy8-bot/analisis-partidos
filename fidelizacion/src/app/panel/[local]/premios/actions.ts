@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
-import { sincronizarClaseLocal } from "@/lib/wallet/google";
+import { notificarCambioLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 
 export type EstadoPremio = { error?: string; ok?: number };
@@ -21,7 +21,7 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
     ? await db.from("premios").update(datos).eq("id", id).eq("local_id", local.id)
     : await db.from("premios").insert({ ...datos, local_id: local.id });
   if (error) return { error: "No se pudo guardar. Probá de nuevo." };
-  after(() => sincronizarClaseLocal(local.id)); // lista de premios del pase de Google Wallet
+  after(() => notificarCambioLocal(local.id)); // premios en los pases de Google y Apple
   refresh();
   return { ok: Date.now() };
 }
@@ -29,7 +29,7 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
 export async function alternarPremio(slug: string, id: string, activo: boolean) {
   const { db, local } = await requerirLocal(slug);
   await db.from("premios").update({ activo }).eq("id", id).eq("local_id", local.id);
-  after(() => sincronizarClaseLocal(local.id));
+  after(() => notificarCambioLocal(local.id));
   refresh();
 }
 
@@ -42,6 +42,6 @@ export async function borrarPremio(slug: string, id: string) {
   } else {
     await db.from("premios").delete().eq("id", id).eq("local_id", local.id);
   }
-  after(() => sincronizarClaseLocal(local.id));
+  after(() => notificarCambioLocal(local.id));
   refresh();
 }

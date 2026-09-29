@@ -7,12 +7,25 @@ import { avisar } from "@/components/app/Toasts";
 
 /**
  * "Llevala en tu billetera".
- *  - Android con Google Wallet configurado: botón oficial "Agregar a Google Wallet"
- *    (el pase nativo se actualiza solo con cada punto) y Pass2U queda como alternativa.
- *  - iPhone y el resto: QR + link personal para Pass2U (hasta tener Apple Wallet).
+ *  - Con billeteras nativas configuradas: badges oficiales (Apple en iPhone, Google en
+ *    Android, los dos en la compu). El pase se actualiza solo con cada punto y Pass2U
+ *    queda como alternativa plegada.
+ *  - Sin billeteras nativas: QR + link personal para Pass2U.
  */
-export function LlevalaEnBilletera({ url, qrSvg, franja, googleWallet }: { url: string; qrSvg: string; franja: string; googleWallet?: string }) {
-  if (googleWallet) {
+export function LlevalaEnBilletera({
+  url,
+  qrSvg,
+  franja,
+  googleWallet,
+  appleWallet,
+}: {
+  url: string;
+  qrSvg: string;
+  franja: string;
+  googleWallet?: string;
+  appleWallet?: string;
+}) {
+  if (googleWallet || appleWallet) {
     return (
       <section className="mt-7 rounded-pt-card bg-pt-pure p-4 shadow-pt-ui ring-1 ring-pt-border/60">
         <p className="flex items-center gap-3 text-[15px] font-semibold text-pt-ink">
@@ -21,12 +34,22 @@ export function LlevalaEnBilletera({ url, qrSvg, franja, googleWallet }: { url: 
           </span>
           Llevala en tu billetera
         </p>
-        <p className="mt-2 pt-app-detalle text-pt-ink-2">Guardala en la Billetera de Google: se actualiza sola cada vez que sumás.</p>
-        {/* Botón oficial de Google, sin modificar (guidelines de marca de Google Wallet). */}
-        <a href={googleWallet} className="mt-4 inline-block rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pt-accent-dark">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wallet/agregar-a-google-wallet.svg" alt="Agregar a la Billetera de Google" height={48} className="h-12 w-auto" />
-        </a>
+        <p className="mt-2 pt-app-detalle text-pt-ink-2">Guardala en la billetera de tu celular: se actualiza sola cada vez que sumás.</p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {/* Badges oficiales, sin modificar (guidelines de Apple y de Google). */}
+          {appleWallet && (
+            <a href={appleWallet} className="inline-block rounded-[10px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pt-accent-dark">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/wallet/agregar-a-apple-wallet.svg" alt="Agregar a Apple Wallet" height={48} className="h-12 w-auto" />
+            </a>
+          )}
+          {googleWallet && (
+            <a href={googleWallet} className="inline-block rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pt-accent-dark">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/wallet/agregar-a-google-wallet.svg" alt="Agregar a la Billetera de Google" height={48} className="h-12 w-auto" />
+            </a>
+          )}
+        </div>
         <details className="group mt-4 border-t border-pt-border pt-3">
           <summary className="flex cursor-pointer list-none items-center justify-between pt-app-detalle font-medium text-pt-ink-2 hover:text-pt-ink [&::-webkit-details-marker]:hidden">
             Usar otra app de billetera

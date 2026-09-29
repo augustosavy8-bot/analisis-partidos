@@ -2,8 +2,8 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import type { Local } from "@/lib/locales";
-import { MAX_SELLOS_FRANJA, svgCabecera, svgFranja, textoSobre } from "@/lib/diseno-billetera";
+import { colorTextoSobre, type Local } from "@/lib/locales";
+import { MAX_SELLOS_FRANJA, svgCabecera, svgFranja, svgStripApple, textoSobre } from "@/lib/diseno-billetera";
 
 // Instrument Sans Bold (licencia OFL, ver assets/InstrumentSans-OFL.txt).
 let fuente: Promise<Buffer> | null = null;
@@ -70,5 +70,90 @@ export async function imagenCabecera(local: Local, lema = "Un toque y sumás") {
       </div>
     ),
     { width: 1032, height: 336, fonts: await fuentes(), headers: { "Cache-Control": "public, max-age=3600" } },
+  );
+}
+
+/** Ícono cuadrado del local (PWA, Google Wallet y icon.png de Apple Wallet). */
+export function imagenIcono(local: Local, s: number, headers?: Record<string, string>) {
+  return new ImageResponse(
+    (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: local.color_primario }}>
+        <div
+          style={{
+            width: s * 0.56,
+            height: s * 0.56,
+            borderRadius: s * 0.16,
+            background: local.color_secundario,
+            color: colorTextoSobre(local.color_secundario) === "#ffffff" ? "#ffffff" : local.color_primario,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: s * 0.32,
+            fontWeight: 700,
+          }}
+        >
+          {local.nombre.charAt(0).toUpperCase()}
+        </div>
+      </div>
+    ),
+    { width: s, height: s, headers },
+  );
+}
+
+/**
+ * logo.png del pase de Apple (160×50 por escala): el logo del local o su inicial,
+ * alineado a la izquierda y con fondo transparente (el nombre va en logoText).
+ */
+export function imagenLogoPase(local: Local, escala: number) {
+  const w = 160 * escala;
+  const h = 50 * escala;
+  const lado = h * 0.84;
+  return new ImageResponse(
+    (
+      <div style={{ width: w, height: h, display: "flex", alignItems: "center" }}>
+        {local.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={local.logo_url} alt="" width={lado} height={lado} style={{ borderRadius: lado * 0.22, objectFit: "cover" }} />
+        ) : (
+          <div
+            style={{
+              width: lado,
+              height: lado,
+              borderRadius: lado * 0.28,
+              background: local.color_secundario,
+              color: colorTextoSobre(local.color_secundario),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: lado * 0.56,
+              fontWeight: 700,
+            }}
+          >
+            {local.nombre.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+    ),
+    { width: w, height: h },
+  );
+}
+
+/**
+ * strip.png del pase de Apple (375×123 por escala): el arte de la cabecera de
+ * Google sin textos, con el sello a la derecha para que los puntos (que Wallet
+ * dibuja arriba a la izquierda) se lean limpios.
+ */
+export function imagenStripPase(local: Local, escala: number) {
+  const w = 375 * escala;
+  const h = 123 * escala;
+  const svg = svgStripApple({ primario: local.color_primario, acento: local.color_secundario });
+  return new ImageResponse(
+    (
+      <div style={{ width: w, height: h, display: "flex", background: local.color_primario }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={dataUri(svg)} width={w} height={h} alt="" style={{ objectFit: "cover" }} />
+      </div>
+    ),
+    { width: w, height: h },
   );
 }

@@ -22,6 +22,7 @@ Cada local usa su propia marca en la tarjeta; Point aparece sólo como plataform
 - [x] **Panel del dueño**: métricas, clientes (búsqueda + CSV), movimientos, premios, mozos y ajustes
 - [x] **Panel superadmin**: locales, dueños, chips (prueba y producción con clave cifrada) y estado general
 - [x] **Promos y regalos**: puntos dobles/triples por día y horario, puntos de bienvenida y regalo de cumple
+- [x] **Apple Wallet nativo (iPhone)**: pase storeCard con web service de actualización y push por APNs (ver abajo)
 - [x] **Google Wallet nativo (Android)**: pase de lealtad que se actualiza solo con cada punto (ver abajo)
 - [x] **Reactivar por WhatsApp**: listas de clientes (no vienen, les falta poco, premio sin usar, cumpleaños) con mensaje listo vía wa.me
 
@@ -127,6 +128,32 @@ Pase de lealtad nativo; en iPhone sigue Pass2U hasta tener Apple Wallet. Todo el
   Google agregadas como usuarios de prueba en la consola.
 - Botón oficial: `public/wallet/agregar-a-google-wallet.svg` (asset de Google es-419 "Agregar a la Billetera de Google", sin modificar).
 - Pendiente: callbacks de Google (guardado/borrado confirmado) y Apple Wallet.
+
+## Apple Wallet (iPhone)
+
+Pase `storeCard` nativo, en paralelo a Google Wallet. Código en `src/lib/wallet/apple-core.ts`
+(pass.json, firma con `passkit-generator`, APNs; testeado) y `src/lib/wallet/apple.ts` (proveedor).
+
+- **Pase por tarjeta** (cliente + local): `serialNumber` = serial de la tarjeta, `authenticationToken`
+  aleatorio de 48 caracteres guardado en `apple_passes`. `organizationName` y `logoText` = el local.
+  Campos: puntos (primary), próximo premio y cuántos faltan (secondary), cliente (auxiliary), premios y
+  link a la tarjeta web (back). QR con el mismo link `/w/<serial>/<token>` que Google.
+  `locations` si el local cargó latitud/longitud en Ajustes.
+- **Imágenes** generadas con ImageResponse (colores del local): `icon` 29/58/87, `logo` 160×50 @1-3x y
+  `strip` 375×123 @1-3x (el arte de la cabecera, con el sello a la derecha).
+- **Descarga**: `GET /t/<local>/apple-wallet` → `.pkpass` (`application/vnd.apple.pkpass`) de la tarjeta
+  del celular logueado (cookie). En iPhone la pestaña Tarjeta muestra el badge oficial; en la compu, los dos.
+- **Web service** (`webServiceURL` = `APP_URL/api/apple-wallet`), runtime Node:
+  - `POST|DELETE /v1/devices/:device/registrations/:passTypeId/:serial` (201/200; `Authorization: ApplePass <token>`)
+  - `GET /v1/devices/:device/registrations/:passTypeId?passesUpdatedSince=` (seriales + `lastUpdated`, 204 sin cambios)
+  - `GET /v1/passes/:passTypeId/:serial` (pase con `Last-Modified`; 304 con `If-Modified-Since`)
+  - `POST /v1/log`
+- **Push**: `notificarCambioTarjeta` (suma, canje, regalo; en `after()`) y `notificarCambioLocal` (Ajustes,
+  premios) actualizan `apple_passes.updated_at` y mandan `{}` por APNs (HTTP/2, certificado del pase,
+  `apns-topic` = Pass Type ID). Un 410 borra el dispositivo.
+- **Tablas** (sólo service_role): `apple_passes`, `apple_devices`, `apple_registrations`.
+- **Variables**: `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`, `APPLE_PASS_CERT`, `APPLE_PASS_KEY` (sin contraseña),
+  `APPLE_WWDR_CERT` (G4). Sin alguna, el botón no aparece.
 
 ## Tests
 

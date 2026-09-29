@@ -1,6 +1,7 @@
 import "server-only";
 import { env } from "@/lib/env";
-import { proveedorGoogle } from "./google";
+import { proveedorGoogle, sincronizarClaseLocal } from "./google";
+import { notificarCambioLocalApple, proveedorApple } from "./apple";
 
 /**
  * Integración con billeteras nativas.
@@ -11,8 +12,8 @@ import { proveedorGoogle } from "./google";
  *  - `wallet_registros` guarda quién pidió cada pase (plataforma + dispositivo).
  *  - Después de cada cambio de puntos se llama a `notificarCambioTarjeta` (con after()).
  *
- * Google Wallet: implementado (lib/wallet/google.ts), activo si hay credenciales.
- * Apple Wallet: pendiente (hoy se usa Pass2U).
+ * Google Wallet: lib/wallet/google.ts. Apple Wallet: lib/wallet/apple.ts (+ web
+ * service en /api/apple-wallet/v1). Cada uno se activa si tiene credenciales.
  */
 export type PlataformaWallet = "apple" | "google";
 
@@ -29,6 +30,10 @@ export interface DatosPase {
   colorSecundario: string;
   logoUrl?: string | null;
   urlTarjeta: string;
+  /** Ids de la tarjeta (Apple guarda el pase por tarjeta). */
+  tarjetaId?: string;
+  clienteId?: string;
+  localId?: string;
 }
 
 export interface ProveedorWallet {
@@ -50,6 +55,7 @@ export function proveedorWallet(plataforma: PlataformaWallet) {
 }
 
 if (env.googleWallet) registrarProveedorWallet(proveedorGoogle);
+if (env.appleWallet) registrarProveedorWallet(proveedorApple);
 
 /**
  * Punto único a llamar después de cada cambio de puntos (suma, canje o regalo).
@@ -60,4 +66,12 @@ export async function notificarCambioTarjeta(serial: string) {
   resultados.forEach((r, i) => {
     if (r.status === "rejected") console.error(`Wallet ${proveedores[i].plataforma}: no se pudo actualizar ${serial}`, r.reason);
   });
+}
+
+/**
+ * Cambió el local (nombre, logo, colores, ubicación) o sus premios: actualiza la
+ * clase de Google y los pases de Apple (push). Llamalo dentro de after(); nunca lanza.
+ */
+export async function notificarCambioLocal(localId: string) {
+  await Promise.allSettled([sincronizarClaseLocal(localId), notificarCambioLocalApple(localId)]);
 }

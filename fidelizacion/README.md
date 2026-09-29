@@ -125,7 +125,7 @@ Pase de lealtad nativo; en iPhone sigue Pass2U hasta tener Apple Wallet. Todo el
   el botón no aparece y todo sigue como antes. `APP_URL` tiene que ser la URL pública https.
 - **Modo demo**: mientras el issuer esté en modo demo, sólo pueden guardar el pase las cuentas de
   Google agregadas como usuarios de prueba en la consola.
-- Botón oficial: `public/wallet/agregar-a-google-wallet.svg` (asset de Google, sin modificar).
+- Botón oficial: `public/wallet/agregar-a-google-wallet.svg` (asset de Google es-419 "Agregar a la Billetera de Google", sin modificar).
 - Pendiente: callbacks de Google (guardado/borrado confirmado) y Apple Wallet.
 
 ## Tests

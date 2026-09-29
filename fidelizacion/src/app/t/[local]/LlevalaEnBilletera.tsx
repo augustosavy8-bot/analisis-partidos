@@ -21,11 +21,11 @@ export function LlevalaEnBilletera({ url, qrSvg, franja, googleWallet }: { url: 
           </span>
           Llevala en tu billetera
         </p>
-        <p className="mt-2 pt-app-detalle text-pt-ink-2">Guardala en Google Wallet: se actualiza sola cada vez que sumás.</p>
+        <p className="mt-2 pt-app-detalle text-pt-ink-2">Guardala en la Billetera de Google: se actualiza sola cada vez que sumás.</p>
         {/* Botón oficial de Google, sin modificar (guidelines de marca de Google Wallet). */}
         <a href={googleWallet} className="mt-4 inline-block rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pt-accent-dark">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/wallet/agregar-a-google-wallet.svg" alt="Agregar a Google Wallet" height={48} className="h-12 w-auto" />
+          <img src="/wallet/agregar-a-google-wallet.svg" alt="Agregar a la Billetera de Google" height={48} className="h-12 w-auto" />
         </a>
         <details className="group mt-4 border-t border-pt-border pt-3">
           <summary className="flex cursor-pointer list-none items-center justify-between pt-app-detalle font-medium text-pt-ink-2 hover:text-pt-ink [&::-webkit-details-marker]:hidden">

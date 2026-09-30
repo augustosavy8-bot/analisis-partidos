@@ -85,6 +85,18 @@ export const env = {
       return null;
     }
   },
+  /** Access Token de Mercado Pago (sólo servidor). En pruebas, el de la cuenta de prueba vendedora. */
+  get mpAccessToken() {
+    return requerida("MP_ACCESS_TOKEN");
+  },
+  /** Clave secreta de Webhooks de Mercado Pago (valida el header x-signature). */
+  get mpWebhookSecret() {
+    return requerida("MP_WEBHOOK_SECRET");
+  },
+  /** ¿Están cargadas las credenciales de Mercado Pago? (para no romper páginas sin configurar) */
+  get mpConfigurado() {
+    return Boolean(process.env.MP_ACCESS_TOKEN && process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);
+  },
   get esProduccion() {
     return process.env.NODE_ENV === "production";
   },

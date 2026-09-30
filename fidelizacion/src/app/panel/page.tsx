@@ -8,12 +8,18 @@ import { Encabezado, Lista } from "@/components/app/Superficie";
 import { BotonLink, claseBoton } from "@/components/app/Boton";
 import { Vacio } from "@/components/Panel";
 import { Icono } from "@/components/Icono";
+import { completarRegistroPendiente } from "@/lib/facturacion/registro-servidor";
+import { comercioDelUsuario, suscripcionVigente } from "@/lib/facturacion/comercio";
 
 export const metadata = { title: "Panel", robots: { index: false } };
 
 export default async function Panel() {
   const { email } = await requerirUsuario();
-  const [locales, superadmin] = await Promise.all([localesDelUsuario(), esSuperadmin()]);
+  // Recién confirmó el email: se crea su comercio con el primer local.
+  await completarRegistroPendiente();
+  const [locales, superadmin, comercio] = await Promise.all([localesDelUsuario(), esSuperadmin(), comercioDelUsuario()]);
+  // Comercio sin suscripción (ni cortesía): primero tiene que activar la cuenta.
+  if (comercio && !superadmin && !(await suscripcionVigente(comercio.id))) redirect("/panel/facturacion");
   if (locales.length === 1 && !superadmin) redirect(`/panel/${locales[0].slug}`);
 
   return (

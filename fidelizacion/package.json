@@ -16,8 +16,10 @@
     "wallet:google:sync": "tsx --env-file=.env.local scripts/google-wallet-sync.ts"
   },
   "dependencies": {
+    "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.1",
+    "mercadopago": "^3.6.1",
     "motion": "^13.4.4",
     "next": "16.3.6",
     "passkit-generator": "^3.6.1",

@@ -652,4 +652,63 @@ exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'facturación: un dueño no puede darse una cortesía a sí mismo');
 reset role;
 
+-- ---------------------------------------------------------------- fase 2: alta
+insert into auth.users (id, email) values ('aaaaaaaa-0000-4000-8000-0000000000a1', 'nuevo@bar.test');
+do $$
+declare v_c uuid; v_c2 uuid; v_s uuid; v_s2 uuid;
+begin
+  -- Registro propio: comercio + local + dueño, idempotente.
+  v_c := public.completar_registro('aaaaaaaa-0000-4000-8000-0000000000a1', 'Bar Nuevo', 'Bar', 'bar-nuevo', '', '20123456786', 'monotributo', 'nuevo@bar.test');
+  v_c2 := public.completar_registro('aaaaaaaa-0000-4000-8000-0000000000a1', 'Otro nombre', 'Bar', 'otro-slug', '', '', '', 'nuevo@bar.test');
+  perform pg_temp.check(v_c = v_c2
+    and (select count(*) from public.locales where comercio_id = v_c) = 1
+    and (select slug from public.locales where comercio_id = v_c) = 'bar-nuevo'
+    and exists (select 1 from public.miembros_local m join public.locales l on l.id = m.local_id where l.comercio_id = v_c and m.user_id = 'aaaaaaaa-0000-4000-8000-0000000000a1')
+    and (select cuit from public.comercios where id = v_c) = '20123456786'
+    and (select count(*) from public.suscripciones where comercio_id = v_c) = 0,
+    'alta: el registro crea comercio, local y dueño una sola vez (sin suscripción todavía)');
+
+  -- Doble clic: la segunda reserva pierde.
+  perform pg_temp.check(public.reservar_alta_suscripcion(v_c) and not public.reservar_alta_suscripcion(v_c),
+    'alta: dos altas simultáneas → sólo una puede llamar a Mercado Pago');
+  perform public.liberar_alta_suscripcion(v_c);
+  perform pg_temp.check(public.reservar_alta_suscripcion(v_c), 'alta: liberada la reserva, se puede reintentar');
+
+  v_s := public.registrar_alta_suscripcion(v_c, (select id from public.planes where codigo = 'pro'), 'mp-alta-1', 'pagador@test', 3000000,
+    'trialing', now() + interval '14 days', now() + interval '14 days', 'aaaaaaaa-0000-4000-8000-0000000000a1');
+  v_s2 := public.registrar_alta_suscripcion(v_c, (select id from public.planes where codigo = 'pro'), 'mp-alta-1', 'pagador@test', 3000000,
+    'trialing', now() + interval '14 days', now() + interval '14 days', 'aaaaaaaa-0000-4000-8000-0000000000a1');
+  perform pg_temp.check(v_s = v_s2
+    and (select count(*) from public.suscripciones where comercio_id = v_c) = 1
+    and (select estado from public.suscripciones where id = v_s) = 'trialing'
+    and (select alta_en_curso_hasta from public.comercios where id = v_c) is null
+    and (select count(*) from public.avisos_comercio where comercio_id = v_c and tipo = 'suscripcion_alta') = 1
+    and (select count(*) from public.historial_suscripcion where suscripcion_id = v_s) = 1,
+    'alta: registrar la misma suscripción de MP dos veces no duplica nada (webhook + panel)');
+  perform pg_temp.check(not public.reservar_alta_suscripcion(v_c), 'alta: con una suscripción paga vigente no se puede dar otra de alta');
+
+  -- Pasar de cortesía a pago: la cortesía se cierra en la misma transacción.
+  v_s := public.registrar_alta_suscripcion('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'basico'),
+    'mp-alta-2', 'aurora@test', 1500000, 'authorized', null, now() + interval '1 month', null);
+  perform pg_temp.check(
+    (select count(*) from public.suscripciones where comercio_id = '00000000-0000-4000-8000-0000000000c1' and estado <> 'cancelled') = 1
+    and (select estado from public.suscripciones where comercio_id = '00000000-0000-4000-8000-0000000000c1' and mp_preapproval_id is null) = 'cancelled',
+    'alta: pasar de cortesía a pago cierra la cortesía (nunca dos vigentes)');
+end $$;
+
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-0000000000a1"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-0000000000a1', false);
+select pg_temp.check((select count(*) from public.comercios) = 1 and (select count(*) from public.suscripciones) = 1,
+  'alta: el dueño registrado ve su comercio y su suscripción');
+do $$ begin
+  perform public.reservar_alta_suscripcion((select id from public.comercios limit 1));
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform public.completar_registro('aaaaaaaa-0000-4000-8000-0000000000a1', 'X', 'Bar', 'x', '', '', '', 'x@x');
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'alta: las funciones de alta sólo las usa el servidor');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

@@ -6,7 +6,8 @@ import { useRef } from "react";
 import { Icono, type NombreIcono } from "@/components/Icono";
 import { TabBar } from "@/components/app/TabBar";
 
-type SeccionPanel = { ruta: string; nombre: string; icono: NombreIcono; principal?: boolean };
+/** `absoluta`: la ruta no cuelga del local (por ejemplo, la facturación es del comercio). */
+type SeccionPanel = { ruta: string; nombre: string; icono: NombreIcono; principal?: boolean; absoluta?: boolean };
 
 function secciones(personal: string): SeccionPanel[] {
   return [
@@ -20,6 +21,7 @@ function secciones(personal: string): SeccionPanel[] {
     { ruta: "/diseno", nombre: "Diseño", icono: "tarjeta" },
     { ruta: "/mozos", nombre: personal, icono: "mozo" },
     { ruta: "/ajustes", nombre: "Ajustes", icono: "configuracion" },
+    { ruta: "/panel/facturacion", nombre: "Facturación", icono: "wallet", absoluta: true },
   ];
 }
 
@@ -28,7 +30,7 @@ export function NavPanel({ slug, personal, cuenta, vista }: { slug: string; pers
   const actual = usePathname();
   const hoja = useRef<HTMLDialogElement>(null);
   const todas = secciones(personal);
-  const href = (s: SeccionPanel) => `/panel/${slug}${s.ruta}`;
+  const href = (s: SeccionPanel) => (s.absoluta ? s.ruta : `/panel/${slug}${s.ruta}`);
   const activa = (s: SeccionPanel) => (s.ruta === "" ? actual === href(s) : actual.startsWith(href(s)));
   const enMas = todas.some((s) => !s.principal && activa(s));
 

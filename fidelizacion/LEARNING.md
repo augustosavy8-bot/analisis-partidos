@@ -57,8 +57,15 @@ cobra) y una **compradora** (hace del comercio, paga con tarjetas de prueba).
 Las credenciales de la app de la cuenta vendedora son las que usa el servidor.
 Un pago de prueba nunca mueve plata real.
 
-Estado: pendiente de crear la aplicación "Point" en Tus integraciones (ver
-TESTING.md).
+Estado: listo. App "Point Test" creada con la cuenta de prueba vendedora; sus
+credenciales están en Vercel (`MP_ACCESS_TOKEN`, `NEXT_PUBLIC_MP_PUBLIC_KEY`,
+`MP_WEBHOOK_SECRET`, `CRON_SECRET`).
+
+**Por qué las credenciales de una cuenta de prueba "de producción" son de prueba:**
+MP marca a las cuentas de prueba como tales. Todo lo que hagan (cobros, suscripciones)
+vive en el sandbox, aunque las credenciales empiecen con `APP_USR-` como las reales.
+Y ambas puntas tienen que ser de prueba: un vendedor de prueba no puede cobrarle a
+una persona real, ni al revés.
 
 ---
 
@@ -130,3 +137,75 @@ también los duplicados.
 jsonb de un plan viene roto, se aplican los límites más restrictivos (nunca "sin
 límite"). Un error de carga no puede regalar el plan Pro
 (`src/lib/facturacion/planes.ts`).
+
+---
+
+## Fase 2 — Registro del comercio y alta de la suscripción con prueba gratis
+
+### Qué se hizo
+- `/sumate` es el registro: email + contraseña (con verificación por email), nombre
+  del local, rubro y datos fiscales opcionales (razón social, CUIT con dígito
+  verificador, condición fiscal). "Empezar" en la landing lleva acá.
+- Al confirmar el email y entrar por primera vez, se crea el comercio con su primer
+  local (`completar_registro`, en una transacción).
+- `/panel/facturacion`: sin suscripción → elegir plan + tarjeta (formulario de MP).
+  Con suscripción → estado, plan y fecha del primer cobro.
+- Un comercio sin suscripción que entra a `/panel` va primero a activar la cuenta.
+- El plan de MP (`preapproval_plan`) se crea solo la primera vez que alguien se
+  suscribe a ese plan, con el precio y los días de prueba de nuestra base.
+
+### Conceptos de pagos que aparecieron
+
+**1. Tokenización: nunca tocar la tarjeta.** El formulario de tarjeta es de MP
+(Card Payment Brick) y corre en el navegador. El número viaja directo a MP, que
+devuelve un `token` de un solo uso. Nuestro servidor sólo recibe el token. Si el
+número de tarjeta pasara por nuestro servidor, quedaríamos dentro del estándar PCI
+DSS completo (auditorías, cifrado, controles). Con el token, eso lo carga MP.
+
+**2. El precio nunca viene del navegador.** La server action recibe el *código*
+del plan (`"pro"`), no el monto. El monto sale de la base. Si aceptáramos el precio
+del cliente, cualquiera podría suscribirse al Pro por $1 editando la request.
+
+**3. El doble clic que cobra dos veces.** Entre "el usuario apretó el botón" y
+"quedó guardado" hay una llamada a MP que tarda. Dos clics (o dos pestañas) = dos
+suscripciones en MP = dos débitos por mes. Solución en capas:
+- El botón se deshabilita mientras procesa (UX, no seguridad).
+- `reservar_alta_suscripcion`: un `UPDATE ... WHERE alta_en_curso_hasta IS NULL`
+  atómico. Dos requests a la vez → sólo una lo consigue; la otra recibe "ya se está
+  activando". La reserva vence sola en 2 minutos por si el servidor se cae a mitad.
+- `idempotencyKey` en la llamada a MP: si reintentamos la misma request (timeout de
+  red), MP devuelve la misma suscripción en vez de crear otra.
+
+**4. No hay transacción entre MP y nuestra base.** Son dos sistemas: no existe un
+"commit" que abarque a los dos. El orden importa:
+1. Reservar en nuestra base.
+2. Crear en MP.
+3. Guardar en nuestra base.
+
+Si falla 2, liberamos y no pasó nada. Si 2 sale bien y falla 3, **la suscripción
+existe en MP y no en nuestra base**. No la podemos "deshacer" con seguridad, así
+que la recuperamos. Para eso es clave el `external_reference = id del comercio`:
+el webhook (fase 3) y la reconciliación diaria (fase 7) la encuentran y la
+registran. `registrar_alta_suscripcion` es idempotente por `mp_preapproval_id`,
+así que da igual quién llegue primero, el panel o el webhook.
+
+**5. La prueba gratis no es "sin tarjeta".** Con el plan de MP, el trial se
+configura en el `preapproval_plan` (`free_trial: 14 days`). La suscripción nace
+`authorized` (la tarjeta quedó autorizada) y MP hace un cobro mínimo de validación
+que devuelve. El primer débito real es cuando termina la prueba (`next_payment_date`).
+
+**6. Traducir estados: los de MP no son los nuestros.** Para MP, una suscripción en
+prueba está `authorized`. Para nosotros es `trialing`: todavía no cobramos nada y
+eso cambia qué mostramos ("tu prueba termina el…"). La traducción vive en una
+función pura y testeada (`estadoInicial`). Preferimos las fechas que manda MP
+(`next_payment_date`) a calcularlas nosotros, porque MP es quien realmente cobra.
+
+**7. Registro diferido.** Al registrarse no se crea el comercio: se guarda lo que
+cargó y se crea recién al confirmar el email. Así un email mal escrito o un bot no
+dejan comercios fantasma ocupando direcciones (`/t/bar-central`). Esos datos los
+escribió el navegador, así que el servidor los vuelve a validar al usarlos.
+
+**8. Errores de MP para humanos.** MP responde errores técnicos
+(`cc_rejected_insufficient_amount`, `Card token was used`). Al comercio le mostramos
+algo accionable ("La tarjeta fue rechazada, probá con otra"); el detalle técnico va
+a los logs, sin datos de la tarjeta.

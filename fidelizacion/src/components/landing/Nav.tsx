@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LogoPoint } from "./LogoPoint";
-import { linkWhatsappPoint } from "./contacto";
 
 const LINKS = [
   { href: "/#como-funciona", texto: "Cómo funciona" },
@@ -42,15 +41,12 @@ export function Nav() {
           <Link href="/panel" className="hidden px-3 pt-ui text-pt-ink-2 hover:text-pt-ink sm:block">
             Ingresar
           </Link>
-          <a
-            href={linkWhatsappPoint()}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Empezar: escribinos por WhatsApp"
+          <Link
+            href="/sumate"
             className="inline-flex h-9 items-center rounded-full bg-pt-ink px-4 pt-ui text-white transition-colors hover:bg-black"
           >
             Empezar
-          </a>
+          </Link>
         </div>
       </div>
     </header>

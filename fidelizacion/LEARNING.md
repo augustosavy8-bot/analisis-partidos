@@ -69,7 +69,7 @@ una persona real, ni al revés.
 
 ---
 
-## Fase 1 — Esquema, RLS, planes y productos, página de precios
+## Fase 1 — Esquema, RLS, planes y productos
 
 ### Qué se hizo
 - Migración `20260930000021_facturacion.sql`: `comercios`, `planes`,
@@ -80,7 +80,8 @@ una persona real, ni al revés.
   existían quedaron cada uno en su comercio, **en cortesía con plan Pro y sin fecha
   de fin**.
 - Planes y productos cargados con los valores de prueba (editables desde /admin
-  en la fase 7). Página pública `/precios` que los lee de la base.
+  en la fase 7). ~~Página pública `/precios`~~: se sacó después (ver "Cambio: precios
+  sólo dentro del panel" en la fase 2).
 - `crear_comercio()`: alta atómica de un comercio (con cortesía opcional). La usa
   /admin y la va a usar el registro propio (fase 2).
 
@@ -117,7 +118,7 @@ siempre tiene `mp_preapproval_id` y una cortesía nunca.
 pero nunca dos activas, ni aunque dos requests intenten crearla a la vez.
 
 **6. El navegador lee, el servidor escribe.** RLS abre sólo lecturas (el dueño ve
-su comercio, su suscripción y sus pedidos; cualquiera ve el catálogo de precios).
+su comercio, su suscripción y sus pedidos; el catálogo de precios sólo con sesión).
 Ningún rol del navegador puede insertar ni modificar: los cambios de estado pasan
 por el servidor, que es quien habla con MP y valida. Si el precio o el estado se
 pudieran escribir desde el cliente, bastaría con abrir la consola para darse el
@@ -237,3 +238,15 @@ email ya está registrado, y responde "OK" igual. Es a propósito (evita la
 *enumeración de usuarios*: que alguien pruebe emails para saber quién tiene cuenta).
 Por eso la pantalla de "Revisá tu email" avisa que, si ya tenías cuenta, tenés que
 ingresar o recuperar la contraseña.
+
+### Cambio: precios sólo dentro del panel
+
+Los precios dejaron de ser públicos: la landing no los muestra y `/precios` redirige
+al registro. El dueño los ve recién en `/panel/facturacion`, ya registrado, con todo
+lo que incluye cada plan.
+
+Esto no es sólo "sacar una página": también se cerró la lectura anónima de `planes`,
+`productos` y `config_facturacion` en la base (migración 023). Con la clave pública de
+Supabase cualquiera podía consultar la API y ver los precios aunque no hubiera página.
+**Lo que no querés público no alcanza con no mostrarlo en la interfaz: hay que
+cerrarlo en la fuente.**

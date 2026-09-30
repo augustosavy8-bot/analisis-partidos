@@ -8,7 +8,6 @@ export function Footer() {
         <LogoPoint alto={18} />
         <nav className="flex gap-6 pt-ui text-pt-ink-3">
           <Link href="/privacidad" className="hover:text-pt-ink">Privacidad</Link>
-          <Link href="/precios" className="hover:text-pt-ink">Precios</Link>
           <Link href="/sumate" className="hover:text-pt-ink">Sumá tu local</Link>
           <Link href="/panel" className="hover:text-pt-ink">Ingresar</Link>
         </nav>

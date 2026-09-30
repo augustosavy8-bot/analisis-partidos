@@ -29,13 +29,14 @@ entorno) y en tu panel de Mercado Pago.
    `MP_ACCESS_TOKEN`, `NEXT_PUBLIC_MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET` y
    `CRON_SECRET` (un texto largo al azar).
 
-## Fase 1 — Esquema y precios
+## Fase 1 — Esquema, planes y productos
 
 - `npm test` (vitest): plata en centavos y límites de los planes.
 - `./scripts/test-db.sh`: levanta un Postgres temporal, aplica todas las
   migraciones y corre los tests de base (RLS, constraints, idempotencia).
-- Manual: abrí `/precios` → se ven Básico ($15.000) y Pro ($30.000) con sus
-  límites, y el kit ($25.000), chip ($3.000) y envío ($5.000).
+- Manual: `/precios` redirige a `/sumate` (los precios ya no son públicos).
+- Manual: ya registrado, en `/panel/facturacion` se ven Básico ($15.000) y Pro
+  ($30.000) con todo lo que incluye cada uno.
 - Manual: `/admin` → crear un local → queda con su comercio en cortesía Pro.
 
 ## Fase 2 — Registro y alta con prueba gratis
@@ -85,12 +86,12 @@ Después ingresás con la contraseña en `/panel/ingresar`: el comercio y el loc
 crean en ese primer ingreso, igual que si hubieras tocado el link.
 
 ### Caso: alta con prueba gratis (feliz)
-1. Abrí `/precios` → "Probar 14 días gratis" en Pro.
+1. Abrí la landing → "Empezar" (lleva a `/sumate`).
 2. Completá el registro con un email tuyo real (para recibir la confirmación).
 3. Abrí el link del email **en el mismo navegador** → te lleva a `/panel/facturacion`.
    - Si lo abrís en otro navegador: te pide ingresar con la contraseña (el email ya
      quedó confirmado).
-4. Pro ya viene elegido. En la tarjeta: número de prueba, titular `APRO`, y en el
+4. Elegí Pro (viene marcado por defecto). En la tarjeta: número de prueba, titular `APRO`, y en el
    email del formulario **el del usuario de prueba comprador**.
 5. "Empezar prueba gratis" → te lleva al panel del local.
 6. Volvé a `/panel/facturacion`: "Plan Pro · prueba gratis. Tu prueba termina el …".

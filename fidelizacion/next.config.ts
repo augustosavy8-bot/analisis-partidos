@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     "/t/[local]/franja": ["./assets/**"],
     "/t/[local]/cabecera": ["./assets/**"],
   },
+  // Los precios sólo se ven dentro del panel, una vez registrado (ver /panel/facturacion).
+  async redirects() {
+    return [{ source: "/precios", destination: "/sumate", permanent: false }];
+  },
   experimental: {
     // Ícono de notificaciones del panel: PNG de hasta 2 MB + lo que suma el multipart.
     serverActions: { bodySizeLimit: "2200kb" },

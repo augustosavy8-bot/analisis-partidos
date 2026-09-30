@@ -108,7 +108,15 @@ export function Suscribirse({
                     <span className="text-[13px] text-pt-ink-2"> / mes</span>
                   </span>
                 </span>
-                <span className="mt-1 block text-[13px] leading-snug text-pt-ink-2">{p.beneficios.slice(0, 3).join(" · ")}</span>
+                <ul className="mt-2 grid gap-1">
+                  {p.beneficios.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-[13px] leading-snug text-pt-ink-2">
+                      <Icono nombre="check" tamaño={14} className="mt-0.5 shrink-0 text-pt-accent-ink" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+                {p.diasPrueba > 0 && <span className="mt-2 block text-[12px] font-semibold text-pt-accent-ink">{p.diasPrueba} días de prueba gratis</span>}
               </span>
             </label>
           );

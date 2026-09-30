@@ -7,7 +7,7 @@ import { LogoPoint } from "./LogoPoint";
 const LINKS = [
   { href: "/#como-funciona", texto: "Cómo funciona" },
   { href: "/#beneficios", texto: "Beneficios" },
-  { href: "/precios", texto: "Precios" },
+  { href: "/#panel", texto: "Panel" },
   { href: "/#preguntas", texto: "Preguntas" },
 ];
 

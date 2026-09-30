@@ -584,11 +584,17 @@ insert into public.eventos_pago (topic, data_id, firma_valida, raw) values ('pay
 insert into public.avisos_comercio (comercio_id, tipo, titulo, texto)
 values ('00000000-0000-4000-8000-0000000000cf', 'prueba', 'Aviso', 'Sólo para Otro Bar');
 
--- Anónimo: ve el catálogo (precios, productos, envío), nada más.
+-- Anónimo: no ve precios (sólo se muestran dentro del panel, con sesión).
 set role anon;
-select pg_temp.check((select count(*) from public.planes) = 2 and (select count(*) from public.productos) = 2
-  and (select count(*) from public.config_facturacion) = 1,
-  'facturación: la página de precios lee planes, productos y envío sin sesión');
+do $$ begin
+  perform 1 from public.planes;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform 1 from public.productos;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'facturación: sin sesión no se ven planes ni productos');
 select pg_temp.check((select count(*) from public.comercios) = 0 and (select count(*) from public.suscripciones) = 0,
   'facturación: sin sesión no se ven comercios ni suscripciones');
 do $$ begin
@@ -607,6 +613,8 @@ select pg_temp.check((select count(*) from public.comercios) = 1
   and (select count(*) from public.pagos_suscripcion) = 0
   and (select count(*) from public.avisos_comercio) = 0,
   'facturación: el dueño ve sólo su comercio, su suscripción y sus avisos');
+select pg_temp.check((select count(*) from public.planes) = 2 and (select count(*) from public.productos) = 2,
+  'facturación: el dueño logueado ve los planes y productos');
 do $$ begin
   update public.suscripciones set estado = 'authorized';
   raise exception 'debía fallar';

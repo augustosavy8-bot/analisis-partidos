@@ -209,3 +209,31 @@ escribió el navegador, así que el servidor los vuelve a validar al usarlos.
 (`cc_rejected_insufficient_amount`, `Card token was used`). Al comercio le mostramos
 algo accionable ("La tarjeta fue rechazada, probá con otra"); el detalle técnico va
 a los logs, sin datos de la tarjeta.
+
+### Anexo fase 2 — Los emails de Auth y por qué hace falta un SMTP propio
+
+El registro depende de un mail (la confirmación). Si ese mail no llega, el comercio
+no puede pagar: el email es parte del embudo de cobro, no un detalle.
+
+**El SMTP que trae Supabase no sirve para producción:**
+- Es un servidor compartido para que pruebes: tiene un límite muy bajo de envíos
+  por hora (del orden de un par de mails) y sólo entrega a direcciones autorizadas
+  (los miembros del equipo del proyecto). A un comercio real directamente no le llega.
+- El remitente es de Supabase, no tuyo. Eso resta confianza ("¿quién me escribe?") y
+  sube la chance de spam.
+- No controlás la reputación del dominio que envía ni ves qué pasó con cada mail
+  (entregado, rebotado, marcado como spam).
+
+**Con un SMTP propio (Resend) el mail sale desde tu dominio**, con límites que se
+ajustan a tu volumen y un registro de cada envío. Para que Gmail y Outlook confíen
+en tu dominio hay que publicar en el DNS:
+- **SPF**: qué servidores pueden mandar mails "de" tu dominio.
+- **DKIM**: una firma criptográfica en cada mail. El receptor la verifica con una
+  clave pública que está en tu DNS, y así sabe que el mail no fue alterado.
+- **DMARC** (recomendado): qué hacer si falla lo anterior, y a quién avisar.
+
+**Lo que aprendimos depurando:** Supabase no manda el mail de confirmación si el
+email ya está registrado, y responde "OK" igual. Es a propósito (evita la
+*enumeración de usuarios*: que alguien pruebe emails para saber quién tiene cuenta).
+Por eso la pantalla de "Revisá tu email" avisa que, si ya tenías cuenta, tenés que
+ingresar o recuperar la contraseña.

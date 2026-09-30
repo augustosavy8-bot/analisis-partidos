@@ -25,7 +25,13 @@ export function FormRegistro({ plan }: { plan: string | null }) {
           Te mandamos un link a <strong className="text-white">{estado.enviado}</strong> para confirmar tu cuenta. Abrilo desde este mismo
           navegador y seguís con la activación.
         </p>
-        <p className="mt-4 text-sm text-white/50">¿No llegó? Mirá en spam o promociones.</p>
+        <p className="mt-4 max-w-sm text-sm text-white/50">
+          ¿No llegó? Mirá en spam o promociones. Si ese email ya tenía una cuenta de Point, no te mandamos nada:{" "}
+          <Link href="/panel/ingresar" className="text-white underline underline-offset-4">
+            ingresá con tu contraseña
+          </Link>{" "}
+          o recuperala.
+        </p>
       </div>
     );
   }

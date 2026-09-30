@@ -58,6 +58,32 @@ entorno) y en tu panel de Mercado Pago.
 El **nombre del titular** decide el resultado: `APRO` aprobado, `OTHE` rechazado,
 `FUND` fondos insuficientes, `CONT` pendiente.
 
+### Paso 0: verificar que el mail de confirmación llega
+Hacelo cada vez que cambies algo de emails (SMTP, plantilla, dominio).
+1. Registrate en `/sumate` con un email **que no exista todavía** en Supabase. Con
+   Gmail podés usar alias: `tunombre+prueba7@gmail.com` llega a tu misma casilla
+   pero para Supabase es otro usuario.
+2. En Supabase → Authentication → Users tiene que aparecer el usuario "Waiting for
+   verification". Si no aparece, el registro falló antes (mirá el mensaje en pantalla).
+3. En Resend → Emails (o Logs) tiene que figurar el envío como *Delivered*.
+   - *Bounced*: el email no existe.
+   - Nada en Resend: Supabase no está usando el SMTP propio; revisá SMTP Settings.
+4. El mail llega en menos de un minuto, en castellano y con la marca Point, desde la
+   dirección que configuraste como remitente (no desde `noreply@mail.app.supabase.io`).
+   Si cae en spam, falta verificar el dominio (SPF/DKIM) en Resend.
+5. El botón "Confirmar mi cuenta" te lleva a `/panel/facturacion` con la sesión abierta.
+
+**Si no llega, en este orden:**
+- ¿El email ya tenía cuenta? Supabase no manda nada y responde "OK" igual (para no
+  revelar quién está registrado). En los logs de Auth aparece `user_repeated_signup`.
+- Logs de Auth (Supabase → Logs → Auth): errores de SMTP o `rate limit exceeded`.
+- Límite de envíos: Authentication → Rate Limits → *Rate limit for sending emails*.
+
+**Destrabar una prueba sin mail:** en Supabase → Authentication → Users → el usuario →
+"Confirm email" (o `update auth.users set email_confirmed_at = now() where email = '...'`).
+Después ingresás con la contraseña en `/panel/ingresar`: el comercio y el local se
+crean en ese primer ingreso, igual que si hubieras tocado el link.
+
 ### Caso: alta con prueba gratis (feliz)
 1. Abrí `/precios` → "Probar 14 días gratis" en Pro.
 2. Completá el registro con un email tuyo real (para recibir la confirmación).

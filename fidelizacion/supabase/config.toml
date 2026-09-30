@@ -242,6 +242,12 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Mail de confirmación del registro (/sumate), en castellano y con la marca Point.
+# En el proyecto de Supabase se pega a mano: Authentication → Emails → Templates → Confirm signup.
+[auth.email.template.confirmation]
+subject = "Confirmá tu cuenta de Point"
+content_path = "./supabase/templates/confirmacion.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

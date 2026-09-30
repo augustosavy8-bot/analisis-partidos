@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<!--
+  Plantilla "Confirm signup" de Supabase Auth (pegar en Authentication → Emails → Templates).
+  Asunto sugerido: Confirmá tu cuenta de Point
+  Variables de Supabase: {{ .ConfirmationURL }} (link de confirmación), {{ .Data.nombre }} (lo que cargó en /sumate).
+  HTML de email: tablas y estilos en línea, porque Gmail/Outlook ignoran <style> y flexbox.
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light only" />
+  <title>Confirmá tu cuenta de Point</title>
+</head>
+<body style="margin:0;padding:0;background:#f7f8f6;">
+  <span style="display:none;max-height:0;overflow:hidden;opacity:0;">Un click y activás tu cuenta de Point.</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f8f6;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+          <tr>
+            <td style="padding:0 4px 20px;font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;letter-spacing:3px;color:#111311;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:#36d477;margin-right:8px;vertical-align:middle;"></span>POINT
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:20px;padding:32px 28px;font-family:Arial,Helvetica,sans-serif;color:#111311;">
+              <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;font-weight:bold;">
+                Hola{{ if .Data.nombre }} {{ .Data.nombre }}{{ end }}, confirmá tu email
+              </h1>
+              <p style="margin:0 0 24px;font-size:16px;line-height:1.5;color:#4a4f4a;">
+                Ya casi está: tocá el botón para confirmar tu cuenta. Después elegís el plan y arrancás tu prueba gratis.
+              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:999px;background:#36d477;">
+                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:bold;color:#111311;text-decoration:none;border-radius:999px;">
+                      Confirmar mi cuenta
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#656a65;">
+                Abrilo desde el mismo navegador donde te registraste. Si el botón no funciona, copiá este link:<br />
+                <a href="{{ .ConfirmationURL }}" style="color:#0d7a3e;word-break:break-all;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#949994;">
+              Recibiste este mail porque alguien creó una cuenta de Point con esta dirección. Si no fuiste vos, ignoralo: sin confirmar, la cuenta no se activa.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -14,7 +14,8 @@ insert into auth.users (id, email) values
   ('aaaaaaaa-0000-4000-8000-000000000002', 'dueno.aurora@test'),
   ('aaaaaaaa-0000-4000-8000-000000000003', 'dueno.otro@test');
 insert into public.superadmins values ('aaaaaaaa-0000-4000-8000-000000000001');
-insert into public.locales (id, slug, nombre) values ('00000000-0000-4000-8000-00000000000f', 'otro-bar', 'Otro Bar');
+insert into public.comercios (id, nombre, origen) values ('00000000-0000-4000-8000-0000000000cf', 'Otro Bar', 'admin');
+insert into public.locales (id, slug, nombre, comercio_id) values ('00000000-0000-4000-8000-00000000000f', 'otro-bar', 'Otro Bar', '00000000-0000-4000-8000-0000000000cf');
 insert into public.mozos (id, local_id, nombre) values ('00000000-0000-4000-8000-0000000001ff', '00000000-0000-4000-8000-00000000000f', 'Mozo Otro');
 insert into public.miembros_local (user_id, local_id) values
   ('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001'),
@@ -512,5 +513,143 @@ select pg_temp.check(
   (select count(*) from public.tarjetas where id = 'dddddddd-0000-4000-8000-0000000000ee') = 0
   and (select count(*) from public.dispositivos where token_hash = encode(sha256('app-eliminar-cuenta'::bytea), 'hex')) = 0,
   'app: eliminar la cuenta borra tarjetas y celulares');
+
+-- ---------------------------------------------------------------- facturación
+select pg_temp.check((select count(*) from public.planes where activo) = 2
+  and (select precio_centavos from public.planes where codigo = 'basico') = 1500000
+  and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 300
+  and (select limites->'clientes' from public.planes where codigo = 'pro') = 'null'::jsonb,
+  'facturación: planes Básico ($15.000, 300 clientes) y Pro (ilimitados) cargados en centavos');
+select pg_temp.check((select stock from public.productos where codigo = 'kit_inicial') = 5
+  and (select chips_por_unidad from public.productos where codigo = 'kit_inicial') = 10
+  and (select costo_envio_centavos from public.config_facturacion) = 500000,
+  'facturación: kit (10 chips, 5 en stock), chip suelto y envío fijo cargados');
+select pg_temp.check((select s.estado from public.suscripciones s where s.comercio_id = '00000000-0000-4000-8000-0000000000c1') = 'cortesia',
+  'facturación: el comercio demo arranca en cortesía');
+
+do $$ begin
+  insert into public.locales (slug, nombre) values ('sin-comercio', 'Sin comercio');
+  raise exception 'debía fallar';
+exception when not_null_violation then null; end $$;
+select pg_temp.check(true, 'facturación: todo local pertenece a un comercio');
+
+do $$ begin
+  insert into public.suscripciones (comercio_id, plan_id, estado)
+  values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'basico'), 'cortesia');
+  raise exception 'debía fallar';
+exception when unique_violation then null; end $$;
+select pg_temp.check(true, 'facturación: una sola suscripción vigente por comercio');
+
+do $$ begin
+  insert into public.suscripciones (comercio_id, plan_id, estado)
+  values ('00000000-0000-4000-8000-0000000000cf', (select id from public.planes where codigo = 'basico'), 'authorized');
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+do $$ begin
+  insert into public.suscripciones (comercio_id, plan_id, estado, mp_preapproval_id)
+  values ('00000000-0000-4000-8000-0000000000cf', (select id from public.planes where codigo = 'basico'), 'cortesia', 'mp-x');
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+select pg_temp.check(true, 'facturación: una suscripción paga exige id de MP y la cortesía no tiene');
+
+insert into public.suscripciones (id, comercio_id, plan_id, estado, mp_preapproval_id, precio_centavos)
+values ('eeeeeeee-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000cf',
+        (select id from public.planes where codigo = 'basico'), 'authorized', 'mp-pre-1', 1500000);
+insert into public.pagos_suscripcion (suscripcion_id, mp_authorized_payment_id, mp_payment_id, monto_centavos, estado)
+values ('eeeeeeee-0000-4000-8000-000000000001', 'ap-1', 'pay-1', 1500000, 'processed');
+do $$ begin
+  insert into public.pagos_suscripcion (suscripcion_id, mp_authorized_payment_id, monto_centavos, estado)
+  values ('eeeeeeee-0000-4000-8000-000000000001', 'ap-1', 1500000, 'processed');
+  raise exception 'debía fallar';
+exception when unique_violation then null; end $$;
+select pg_temp.check(true, 'facturación: la misma cuota de MP no se registra dos veces (webhook duplicado)');
+
+do $$ begin
+  insert into public.pedidos (comercio_id, entrega, subtotal_centavos, costo_envio_centavos, total_centavos)
+  values ('00000000-0000-4000-8000-0000000000cf', 'retiro', 2500000, 0, 100);
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+do $$ begin
+  insert into public.pedidos (comercio_id, entrega, subtotal_centavos, costo_envio_centavos, total_centavos)
+  values ('00000000-0000-4000-8000-0000000000cf', 'envio', 2500000, 500000, 3000000);
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+do $$ begin
+  update public.productos set stock = -1 where codigo = 'kit_inicial';
+  raise exception 'debía fallar';
+exception when check_violation then null; end $$;
+select pg_temp.check(true, 'facturación: total = subtotal + envío, envío con dirección y stock nunca negativo');
+
+insert into public.eventos_pago (topic, data_id, firma_valida, raw) values ('payment', '1', false, '{}');
+insert into public.avisos_comercio (comercio_id, tipo, titulo, texto)
+values ('00000000-0000-4000-8000-0000000000cf', 'prueba', 'Aviso', 'Sólo para Otro Bar');
+
+-- Anónimo: ve el catálogo (precios, productos, envío), nada más.
+set role anon;
+select pg_temp.check((select count(*) from public.planes) = 2 and (select count(*) from public.productos) = 2
+  and (select count(*) from public.config_facturacion) = 1,
+  'facturación: la página de precios lee planes, productos y envío sin sesión');
+select pg_temp.check((select count(*) from public.comercios) = 0 and (select count(*) from public.suscripciones) = 0,
+  'facturación: sin sesión no se ven comercios ni suscripciones');
+do $$ begin
+  perform 1 from public.eventos_pago;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'facturación: el log de webhooks no es accesible sin sesión');
+reset role;
+
+-- Dueño de Café Aurora: ve lo suyo, no lo de Otro Bar, y no escribe nada.
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check((select count(*) from public.comercios) = 1
+  and (select id from public.comercios) = '00000000-0000-4000-8000-0000000000c1'
+  and (select count(*) from public.suscripciones) = 1
+  and (select count(*) from public.pagos_suscripcion) = 0
+  and (select count(*) from public.avisos_comercio) = 0,
+  'facturación: el dueño ve sólo su comercio, su suscripción y sus avisos');
+do $$ begin
+  update public.suscripciones set estado = 'authorized';
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  update public.planes set precio_centavos = 1;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform 1 from public.eventos_pago;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'facturación: el dueño no cambia su suscripción ni los precios, ni lee el log de webhooks');
+reset role;
+
+-- Dueño de Otro Bar: ve su suscripción paga y su cobro.
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000003"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000003', false);
+select pg_temp.check((select count(*) from public.pagos_suscripcion) = 1 and (select count(*) from public.avisos_comercio) = 1,
+  'facturación: el otro dueño ve su cobro y su aviso');
+reset role;
+
+-- Alta de comercio: atómica, con cortesía opcional, sólo desde el servidor.
+do $$
+declare v_con uuid; v_sin uuid;
+begin
+  v_con := public.crear_comercio('Nuevo Bar', null, null, 'admin', 'pro');
+  v_sin := public.crear_comercio('Bar Registrado', 'Bar', null, 'registro');
+  perform pg_temp.check((
+    select s.estado = 'cortesia' and s.cortesia_hasta is null and p.codigo = 'pro'
+    from public.suscripciones s join public.planes p on p.id = s.plan_id where s.comercio_id = v_con
+  ) and (select count(*) from public.historial_suscripcion h join public.suscripciones s on s.id = h.suscripcion_id where s.comercio_id = v_con) = 1,
+  'facturación: crear_comercio deja el comercio en cortesía Pro sin fin (con historial)');
+  perform pg_temp.check((select count(*) from public.suscripciones where comercio_id = v_sin) = 0,
+    'facturación: sin cortesía, el comercio registrado arranca sin suscripción');
+end $$;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+do $$ begin
+  perform public.crear_comercio('Trucho', null, null, 'admin', 'pro');
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'facturación: un dueño no puede darse una cortesía a sí mismo');
+reset role;
 
 \echo 'TODOS LOS TESTS DE BASE PASARON'

@@ -8,7 +8,13 @@
 -- PIN de los mozos (QR de respaldo): Lucía 1234, Martín 5678.
 -- =============================================================================
 
-insert into public.locales (id, slug, nombre, rubro, color_primario, color_secundario, minutos_entre_puntos)
+-- Comercio (la cuenta que paga) del local demo: en cortesía con plan Pro.
+insert into public.comercios (id, nombre, rubro, origen)
+values ('00000000-0000-4000-8000-0000000000c1', 'Café Aurora', 'Cafetería de especialidad', 'admin');
+insert into public.suscripciones (comercio_id, plan_id, estado)
+values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'pro'), 'cortesia');
+
+insert into public.locales (id, slug, nombre, rubro, color_primario, color_secundario, minutos_entre_puntos, comercio_id)
 values (
   '00000000-0000-4000-8000-000000000001',
   'cafe-aurora',
@@ -16,7 +22,8 @@ values (
   'Cafetería de especialidad',
   '#3b2a20',
   '#e0a458',
-  2  -- 2 minutos para poder probar seguido; en un local real, p. ej. 240 (4 h).
+  2,  -- 2 minutos para poder probar seguido; en un local real, p. ej. 240 (4 h).
+  '00000000-0000-4000-8000-0000000000c1'
 );
 
 insert into public.mozos (id, local_id, nombre, pin_hash) values

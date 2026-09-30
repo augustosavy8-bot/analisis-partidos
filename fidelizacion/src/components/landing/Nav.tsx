@@ -6,10 +6,10 @@ import { LogoPoint } from "./LogoPoint";
 import { linkWhatsappPoint } from "./contacto";
 
 const LINKS = [
-  { href: "#como-funciona", texto: "Cómo funciona" },
-  { href: "#beneficios", texto: "Beneficios" },
-  { href: "#panel", texto: "Panel" },
-  { href: "#preguntas", texto: "Preguntas" },
+  { href: "/#como-funciona", texto: "Cómo funciona" },
+  { href: "/#beneficios", texto: "Beneficios" },
+  { href: "/precios", texto: "Precios" },
+  { href: "/#preguntas", texto: "Preguntas" },
 ];
 
 export function Nav() {

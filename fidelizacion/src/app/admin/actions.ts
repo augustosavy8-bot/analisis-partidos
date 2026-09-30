@@ -60,9 +60,21 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
   const { data: existe } = await db.from("locales").select("id").eq("slug", slug).maybeSingle();
   if (existe) return { error: `Ya existe un local con la dirección /${slug}. Elegí otra.` };
 
+  // Cada local pertenece a un comercio (la cuenta que paga). Los que se crean
+  // desde acá arrancan en cortesía con plan Pro, sin fecha de fin (se edita en /admin).
+  const { data: comercioId, error: errorComercio } = await db.rpc("crear_comercio", {
+    p_nombre: nombre,
+    p_rubro: rubro ?? "",
+    p_owner: null,
+    p_origen: "admin",
+    p_cortesia_plan: "pro",
+  });
+  if (errorComercio || !comercioId) return { error: "No se pudo crear el comercio." };
+
   const { data: local, error } = await db
     .from("locales")
     .insert({
+      comercio_id: comercioId,
       nombre,
       slug,
       rubro,
@@ -73,7 +85,10 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
     })
     .select("id, slug")
     .single();
-  if (error || !local) return { error: "No se pudo crear el local." };
+  if (error || !local) {
+    await db.from("comercios").delete().eq("id", comercioId);
+    return { error: "No se pudo crear el local." };
+  }
 
   after(() => notificarCambioLocal(local.id)); // clase del local en Google Wallet (Apple todavía no tiene pases)
   const creado: NonNullable<EstadoLocal["creado"]> = { slug: local.slug, nombre };
@@ -82,6 +97,7 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
     try {
       const u = await usuarioPorEmail(email);
       await db.from("miembros_local").upsert({ user_id: u.id, local_id: local.id, rol: "dueno" });
+      await db.from("comercios").update({ owner_user_id: u.id }).eq("id", comercioId).is("owner_user_id", null);
       creado.password = u.password;
     } catch (e) {
       creado.errorDueno = e instanceof Error ? e.message : "error";

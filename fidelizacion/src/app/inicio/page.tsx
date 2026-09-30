@@ -6,7 +6,7 @@ import { HomeTarjetas } from "./HomeTarjetas";
 import s from "./inicio.module.css";
 
 export const metadata: Metadata = {
-  title: "Mis tarjetas · Point",
+  title: "Mis tarjetas",
   robots: { index: false },
   appleWebApp: { capable: true, title: "Point", statusBarStyle: "black-translucent" },
 };

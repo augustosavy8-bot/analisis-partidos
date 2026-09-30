@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import { ProveedorSesion, useSesion } from "@/lib/sesion";
 import { color } from "@/lib/tema";
@@ -34,6 +35,7 @@ function Navegacion() {
         <Stack.Screen name="ingresar" options={{ headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={conSesion}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="tarjetas/index" options={{ title: "Mis tarjetas", headerLargeTitle: true }} />
         <Stack.Screen name="tarjetas/[slug]" options={{ title: "" }} />
         <Stack.Screen name="ajustes" options={{ title: "Ajustes", presentation: "modal" }} />
@@ -44,9 +46,11 @@ function Navegacion() {
 
 export default function Raiz() {
   return (
-    <ProveedorSesion>
-      <StatusBar style="dark" />
-      <Navegacion />
-    </ProveedorSesion>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ProveedorSesion>
+        <StatusBar style="dark" />
+        <Navegacion />
+      </ProveedorSesion>
+    </GestureHandlerRootView>
   );
 }

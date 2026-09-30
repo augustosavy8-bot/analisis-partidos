@@ -52,7 +52,7 @@ export default function Toque() {
   }
 
   function verTarjeta(slug: string) {
-    router.replace("/tarjetas");
+    router.replace("/");
     router.push({ pathname: "/tarjetas/[slug]", params: { slug } });
   }
 

@@ -78,7 +78,19 @@ export function VistaTarjeta(p: Props) {
 
   const pestanaTarjeta = (
     <>
-      <Encabezado sobre="Hola," titulo={primerNombre} />
+      <Encabezado
+        sobre="Hola,"
+        titulo={primerNombre}
+        accion={
+          <Link
+            href="/inicio"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-pt-ink px-3.5 text-[13px] font-semibold text-pt-pure transition-transform duration-150 active:scale-95"
+          >
+            <Icono nombre="tarjeta" tamaño={16} />
+            Mis tarjetas
+          </Link>
+        }
+      />
 
       {p.promoAhora && (
         <Aviso tono="acento" icono="sumar-punto" className="mb-4">

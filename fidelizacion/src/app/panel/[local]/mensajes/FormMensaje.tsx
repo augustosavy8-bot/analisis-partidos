@@ -18,10 +18,12 @@ type Props = {
   destinatarios: { google: number; apple: number };
   /** Fecha y hora (ya formateada) desde la que se puede mandar el próximo; null = ya se puede. */
   proximo: string | null;
+  /** Horas mínimas entre mensajes (0 = sin límite). */
+  horas: number;
   enviando: boolean;
 };
 
-export function FormMensaje({ slug, comercio, logo, destinatarios, proximo, enviando }: Props) {
+export function FormMensaje({ slug, comercio, logo, destinatarios, proximo, horas, enviando }: Props) {
   const [estado, accion, pendiente] = useActionState<EstadoMensaje, FormData>(enviarMensaje.bind(null, slug), {});
   const [, startTransition] = useTransition();
   const [titulo, setTitulo] = useState("");
@@ -48,7 +50,7 @@ export function FormMensaje({ slug, comercio, logo, destinatarios, proximo, envi
       titulo: "¿Mandar el mensaje?",
       texto:
         total > 0
-          ? `Les llega como notificación a ${total} ${total === 1 ? "cliente" : "clientes"}. Después no se puede borrar y el próximo lo vas a poder mandar en 24 horas.`
+          ? `Les llega como notificación a ${total} ${total === 1 ? "cliente" : "clientes"}. Después no se puede borrar${horas > 0 ? ` y el próximo lo vas a poder mandar en ${horas} horas` : ""}.`
           : "Todavía nadie tiene tu tarjeta en la billetera: el mensaje queda en el historial y va a aparecer en las tarjetas de Apple Wallet que se agreguen.",
       confirmar: "Mandar",
     });
@@ -58,7 +60,7 @@ export function FormMensaje({ slug, comercio, logo, destinatarios, proximo, envi
   if (proximo) {
     return (
       <Aviso tono="suave" icono="historial">
-        Ya mandaste el mensaje de hoy. Vas a poder mandar el próximo el <strong className="text-pt-ink">{proximo}</strong>.
+        Ya mandaste un mensaje hace poco. Vas a poder mandar el próximo el <strong className="text-pt-ink">{proximo}</strong>.
       </Aviso>
     );
   }

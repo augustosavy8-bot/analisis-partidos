@@ -10,7 +10,7 @@ export const metadata = { title: "Mensajes" };
 export default async function Mensajes({ params }: PageProps<"/panel/[local]/mensajes">) {
   const { local: slug } = await params;
   const { db, local } = await requerirLocal(slug);
-  const [{ data: proximo }, { data: historial }, destinatarios] = await Promise.all([
+  const [{ data: proximo }, { data: historial }, destinatarios, { data: limite }] = await Promise.all([
     db.rpc("proximo_mensaje_local", { p_local_id: local.id }),
     db
       .from("mensajes_local")
@@ -19,7 +19,9 @@ export default async function Mensajes({ params }: PageProps<"/panel/[local]/men
       .order("created_at", { ascending: false })
       .limit(30),
     alcanceBilleteras(local.id),
+    db.from("locales").select("horas_entre_mensajes").eq("id", local.id).single(),
   ]);
+  const horas: number = limite?.horas_entre_mensajes ?? 24;
   const mensajes = (historial ?? []) as MensajeLocal[];
 
   return (
@@ -29,7 +31,12 @@ export default async function Mensajes({ params }: PageProps<"/panel/[local]/men
       <Tarjeta className="mb-4">
         <h2 className="pt-app-seccion text-pt-ink">Enviar mensaje a clientes</h2>
         <p className="mb-4 mt-1 pt-app-detalle text-pt-ink-2">
-          Un mensaje por día, para no cansar a tus clientes. Ideal para avisar una promo o una novedad del local.
+          {horas === 0
+            ? "Sin límite de mensajes. Igual, mandá sólo lo importante para no cansar a tus clientes."
+            : horas === 24
+              ? "Un mensaje por día, para no cansar a tus clientes."
+              : `Un mensaje cada ${horas} horas, para no cansar a tus clientes.`}{" "}
+          Ideal para avisar una promo o una novedad del local.
         </p>
         <FormMensaje
           slug={slug}
@@ -37,6 +44,7 @@ export default async function Mensajes({ params }: PageProps<"/panel/[local]/men
           logo={local.logo_url}
           destinatarios={destinatarios}
           proximo={proximo ? fechaHora(proximo, local.zona_horaria) : null}
+          horas={horas}
           enviando={mensajes.some((m) => m.estado === "enviando")}
         />
       </Tarjeta>

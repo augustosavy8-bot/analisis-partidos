@@ -719,4 +719,24 @@ exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'alta: las funciones de alta sólo las usa el servidor');
 reset role;
 
+-- ---------------------------------------------------------------- límite de mensajes por local
+insert into public.mensajes_local (local_id, titulo, texto, estado)
+values ('00000000-0000-4000-8000-00000000000f', 'Hola', 'Primer mensaje', 'enviado');
+select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-00000000000f') is not null,
+  'mensajes: por defecto, 1 cada 24 horas');
+update public.locales set horas_entre_mensajes = 0 where id = '00000000-0000-4000-8000-00000000000f';
+select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-00000000000f') is null,
+  'mensajes: con 0 horas, sin límite');
+update public.locales set horas_entre_mensajes = 2 where id = '00000000-0000-4000-8000-00000000000f';
+select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-00000000000f') between now() + interval '1 hour 59 minutes' and now() + interval '2 hours',
+  'mensajes: con 2 horas, el próximo es 2 horas después del último');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000003"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000003', false);
+do $$ begin
+  update public.locales set horas_entre_mensajes = 0 where id = '00000000-0000-4000-8000-00000000000f';
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'mensajes: el dueño no puede sacarse el límite');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

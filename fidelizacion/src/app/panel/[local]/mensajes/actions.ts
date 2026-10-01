@@ -16,10 +16,10 @@ export async function enviarMensaje(slug: string, _prev: EstadoMensaje, form: Fo
   if (titulo.length < 2 || titulo.length > LIMITES_MENSAJE.titulo) return { error: `El título va de 2 a ${LIMITES_MENSAJE.titulo} caracteres.` };
   if (texto.length < 2 || texto.length > LIMITES_MENSAJE.texto) return { error: `El mensaje va de 2 a ${LIMITES_MENSAJE.texto} caracteres.` };
 
-  // Límite de 1 por día: lo controla la base (atómico).
+  // Límite de mensajes (por defecto 1 por día, configurable por local): lo controla la base (atómico).
   const { data, error } = await db.rpc("registrar_mensaje_local", { p_local_id: local.id, p_titulo: titulo, p_texto: texto });
   if (error || !data) return { error: "No se pudo enviar. Probá de nuevo." };
-  if (!data.ok) return { error: "Ya mandaste un mensaje en las últimas 24 horas.", proximo: data.proximo };
+  if (!data.ok) return { error: "Todavía no podés mandar otro mensaje.", proximo: data.proximo };
 
   after(() => enviarMensajeLocal({ id: data.id, localId: local.id, titulo, texto }));
   refresh();

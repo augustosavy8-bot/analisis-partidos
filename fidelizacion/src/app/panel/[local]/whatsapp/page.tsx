@@ -96,6 +96,7 @@ export default async function Whatsapp({ params, searchParams }: PageProps<"/pan
           slug={slug}
           segmento={segmento}
           plantillaGuardada={local.plantillas_whatsapp?.[segmento] ?? null}
+          iaDias={segmento === "inactivos" && env.iaConfigurada ? valor : null}
           local={local.nombre}
           link={`${env.appUrl}/t/${slug}`}
           filas={filas}

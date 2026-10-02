@@ -8,8 +8,8 @@ export const SEGMENTOS: Record<
   inactivos: {
     titulo: "No vienen hace tiempo",
     descripcion: (v) => `Vinieron alguna vez y no volvieron en ${v} días o más.`,
-    valores: [15, 30, 60, 90],
-    porDefecto: 30,
+    valores: [14, 30, 60, 90],
+    porDefecto: 14,
     etiquetaValor: (v) => `${v} días`,
     plantilla:
       "¡Hola {nombre}! Te extrañamos en {local} 🙌 Tenés {puntos} puntos en tu tarjeta y te faltan {faltan} para {premio}. ¡Te esperamos! {link}",

@@ -93,6 +93,10 @@ export const env = {
   get mpWebhookSecret() {
     return requerida("MP_WEBHOOK_SECRET");
   },
+  /** ¿Está cargada la clave de la API de Claude (mensajes escritos con IA)? */
+  get iaConfigurada() {
+    return !!process.env.ANTHROPIC_API_KEY;
+  },
   /** Protege /api/cron/* (Vercel Cron manda "Authorization: Bearer <CRON_SECRET>"). */
   get cronSecret() {
     return requerida("CRON_SECRET");

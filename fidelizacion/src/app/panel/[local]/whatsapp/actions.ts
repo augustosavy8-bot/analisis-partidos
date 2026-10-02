@@ -2,7 +2,10 @@
 
 import { refresh } from "next/cache";
 import { requerirLocal } from "@/lib/panel";
-import { esSegmento } from "@/lib/reactivar";
+import { esSegmento, SEGMENTOS } from "@/lib/reactivar";
+import { redactarMensajeReactivar } from "@/lib/ia";
+import { promosDelLocal, premiosDelLocal } from "@/lib/tarjeta";
+import { describirPromo } from "@/lib/promos";
 
 const UUID = /^[0-9a-f-]{36}$/;
 
@@ -31,4 +34,28 @@ export async function marcarNoContactar(slug: string, clienteId: string, valor: 
   if (!UUID.test(clienteId)) return;
   await db.from("tarjetas").update({ no_contactar: valor }).eq("local_id", local.id).eq("cliente_id", clienteId);
   refresh();
+}
+
+/**
+ * La IA escribe el mensaje para los que no vienen hace `dias` días. Devuelve una
+ * plantilla (con {nombre}, {link}…) que el dueño revisa antes de usar.
+ */
+export async function escribirConIA(slug: string, dias: number, pedido: string): Promise<{ texto?: string; error?: string }> {
+  const { db, local } = await requerirLocal(slug);
+  if (!SEGMENTOS.inactivos.valores.includes(dias)) return { error: "Elegí un período válido." };
+  const pedidoLimpio = pedido.trim().slice(0, 200) || null;
+  const [premios, promos, { data: lista }] = await Promise.all([
+    premiosDelLocal(local.id),
+    promosDelLocal(local.id),
+    db.rpc("panel_reactivar", { p_local_id: local.id, p_segmento: "inactivos", p_valor: dias }),
+  ]);
+  return redactarMensajeReactivar(local.id, {
+    local: local.nombre,
+    rubro: local.rubro,
+    dias,
+    cantidad: (lista ?? []).length,
+    premios: premios.map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
+    promos: promos.map((p) => `${p.nombre}: ${describirPromo(p)}`),
+    pedido: pedidoLimpio,
+  });
 }

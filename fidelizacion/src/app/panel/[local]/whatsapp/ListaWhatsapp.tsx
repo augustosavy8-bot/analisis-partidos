@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { guardarPlantilla, marcarNoContactar, registrarContacto } from "./actions";
+import { escribirConIA, guardarPlantilla, marcarNoContactar, registrarContacto } from "./actions";
 import { BotonSecundario, EtiquetaPanel, Tarjeta } from "@/components/Panel";
 import { claseBoton } from "@/components/app/Boton";
 import { claseTextarea } from "@/components/app/Campos";
@@ -26,16 +26,34 @@ type Props = {
   slug: string;
   segmento: Segmento;
   plantillaGuardada: string | null;
+  /** Si está, se ofrece "Escribir con IA" para los que no vienen hace estos días. */
+  iaDias?: number | null;
   local: string;
   link: string;
   filas: FilaReactivar[];
 };
 
-export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, filas }: Props) {
+export function ListaWhatsapp({ slug, segmento, plantillaGuardada, iaDias, local, link, filas }: Props) {
   const original = plantillaGuardada ?? SEGMENTOS[segmento].plantilla;
   const [plantilla, setPlantilla] = useState(original);
   const [error, setError] = useState<string | null>(null);
   const [enviados, setEnviados] = useState<Set<string>>(new Set());
+  const [pedidoIA, setPedidoIA] = useState("");
+  const [escribiendo, startIA] = useTransition();
+
+  function conIA() {
+    if (!iaDias) return;
+    startIA(async () => {
+      const r = await escribirConIA(slug, iaDias, pedidoIA);
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
+      setError(null);
+      setPlantilla(r.texto!);
+      avisar("Listo: revisalo y guardalo si te gusta");
+    });
+  }
   const [pendiente, start] = useTransition();
 
   const mensaje = (f: FilaReactivar) =>
@@ -53,6 +71,26 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, local, link, 
   return (
     <>
       <Tarjeta className="mb-4">
+        {iaDias ? (
+          <div className="mb-4 rounded-pt-sm bg-pt-surface p-3">
+            <p className="text-[14px] font-semibold text-pt-ink">✨ Escribir con IA</p>
+            <p className="mt-0.5 pt-app-detalle text-pt-ink-2">
+              Arma un mensaje para los que no vienen hace {iaDias} días, con tus premios y promos. Lo revisás antes de mandarlo.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                value={pedidoIA}
+                onChange={(e) => setPedidoIA(e.target.value)}
+                maxLength={200}
+                placeholder="Opcional: ej. ofreceles un shot gratis el viernes"
+                className={`${claseTextarea} min-w-0 flex-1 !py-2`}
+              />
+              <BotonSecundario onClick={conIA} disabled={escribiendo}>
+                {escribiendo ? "Escribiendo…" : "Escribir con IA"}
+              </BotonSecundario>
+            </div>
+          </div>
+        ) : null}
         <label className="block">
           <EtiquetaPanel>Mensaje</EtiquetaPanel>
           <textarea

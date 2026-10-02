@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { BotonLink } from "@/components/app/Boton";
 import { GraficoVisitas } from "./GraficoVisitas";
+import { AvisosHoy } from "./AvisosHoy";
 import { formasTermino } from "@/lib/terminos";
 import { Icono, type NombreIcono } from "@/components/Icono";
 import { MejorarPlan } from "@/components/app/MejorarPlan";
@@ -39,6 +40,8 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
   return (
     <>
       <Titulo detalle="Últimos 30 días, salvo que diga otra cosa.">Resumen</Titulo>
+
+      {m.clientes_total > 0 && <AvisosHoy db={db} localId={local.id} slug={slug} />}
 
       {m.clientes_total === 0 && (
         <div className="mb-4">

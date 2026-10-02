@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Mascota } from "@/components/app/Mascota";
 import { escribirConIA, guardarPlantilla, marcarNoContactar, registrarContacto } from "./actions";
 import { BotonSecundario, EtiquetaPanel, Tarjeta } from "@/components/Panel";
 import { claseBoton } from "@/components/app/Boton";
@@ -73,10 +74,15 @@ export function ListaWhatsapp({ slug, segmento, plantillaGuardada, iaDias, local
       <Tarjeta className="mb-4">
         {iaDias ? (
           <div className="mb-4 rounded-pt-sm bg-pt-surface p-3">
-            <p className="text-[14px] font-semibold text-pt-ink">✨ Escribir con IA</p>
-            <p className="mt-0.5 pt-app-detalle text-pt-ink-2">
-              Arma un mensaje para los que no vienen hace {iaDias} días, con tus premios y promos. Lo revisás antes de mandarlo.
-            </p>
+            <div className="flex items-center gap-3">
+              <Mascota estado={escribiendo ? "pensando" : error ? "error" : "base"} tamaño={52} />
+              <div>
+                <p className="text-[14px] font-semibold text-pt-ink">✨ Escribir con IA</p>
+                <p className="mt-0.5 pt-app-detalle text-pt-ink-2">
+                  Arma un mensaje para los que no vienen hace {iaDias} días, con tus premios y promos. Lo revisás antes de mandarlo.
+                </p>
+              </div>
+            </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <input
                 value={pedidoIA}

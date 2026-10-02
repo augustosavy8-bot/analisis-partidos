@@ -85,22 +85,24 @@ const cacheImagenesRemotas = new Map<string, Promise<string | null>>();
  * se puede: así un logo caído no rompe el pase y caemos al siguiente nivel.
  */
 /**
- * Sólo se bajan imágenes de nuestro Storage de Supabase: el servidor nunca hace
+ * Sólo se bajan imágenes de nuestro Storage de Supabase o de las marcas que
+ * carga Point en /marcas/ (archivos del propio sitio): el servidor nunca hace
  * pedidos a una URL cualquiera (si no, alguien podría usarlo para llegar a
  * direcciones internas).
  */
-export function urlImagenPermitida(url: string, supabaseUrl: string): boolean {
+export function urlImagenPermitida(url: string, supabaseUrl: string, appUrl: string): boolean {
   try {
     const u = new URL(url);
-    const base = new URL(supabaseUrl);
-    return u.protocol === "https:" && u.host === base.host && u.pathname.startsWith("/storage/v1/object/public/");
+    if (u.protocol !== "https:") return false;
+    if (u.host === new URL(supabaseUrl).host && u.pathname.startsWith("/storage/v1/object/public/")) return true;
+    return u.host === new URL(appUrl).host && u.pathname.startsWith("/marcas/");
   } catch {
     return false;
   }
 }
 
 function imagenRemota(url: string): Promise<string | null> {
-  if (!urlImagenPermitida(url, env.supabaseUrl)) {
+  if (!urlImagenPermitida(url, env.supabaseUrl, env.appUrl)) {
     console.warn(`Ícono: URL no permitida ${url.slice(0, 120)}`);
     return Promise.resolve(null);
   }

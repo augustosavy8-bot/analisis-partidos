@@ -278,6 +278,60 @@ body {
   .pt-check-aro, .pt-check-tilde { animation: none; stroke-dashoffset: 0; }
 }
 
+/* --- Mascota ---------------------------------------------------------------- */
+/* Entrada: sube desde abajo con rebote. */
+.mascota-entra { animation: mascotaEntra 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+@keyframes mascotaEntra {
+  0% { transform: translateY(30%) scale(0.4); opacity: 0; }
+  60% { transform: translateY(-6%) scale(1.06); opacity: 1; }
+  80% { transform: translateY(2%) scale(0.98); }
+  100% { transform: none; }
+}
+/* Reposo: flota y "respira" (se aplasta un poco al bajar). */
+.mascota-flota { transform-origin: 50% 100%; animation: mascotaFlota 3.2s ease-in-out 0.7s infinite; }
+@keyframes mascotaFlota {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  45% { transform: translateY(-5%) scale(0.98, 1.02); }
+  70% { transform: translateY(0) scale(1.03, 0.97); }
+  80% { transform: translateY(0) scale(1, 1); }
+}
+/* Festejo: salta con estiramiento y aterriza aplastándose. */
+.mascota-salta { transform-origin: 50% 100%; animation: mascotaSalta 0.95s cubic-bezier(0.3, 0, 0.4, 1) 0.5s infinite; }
+@keyframes mascotaSalta {
+  0% { transform: translateY(0) scale(1.08, 0.9); }
+  15% { transform: translateY(-4%) scale(0.92, 1.1); }
+  45% { transform: translateY(-18%) scale(0.97, 1.04) rotate(-4deg); }
+  70% { transform: translateY(-2%) scale(1, 1) rotate(3deg); }
+  85% { transform: translateY(0) scale(1.1, 0.88); }
+  100% { transform: translateY(0) scale(1.08, 0.9); }
+}
+/* Pensando / buscando: se balancea de costado. */
+.mascota-piensa { transform-origin: 50% 100%; animation: mascotaPiensa 2.4s ease-in-out 0.7s infinite; }
+@keyframes mascotaPiensa {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  25% { transform: rotate(-5deg) translateY(-2%); }
+  50% { transform: rotate(0) translateY(0); }
+  75% { transform: rotate(5deg) translateY(-2%); }
+}
+/* Error: tiembla una vez. */
+.mascota-tiembla { animation: mascotaTiembla 0.6s ease-in-out 0.2s both; }
+@keyframes mascotaTiembla {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5%) rotate(-3deg); }
+  40%, 80% { transform: translateX(5%) rotate(3deg); }
+}
+/* Confeti que cae en loop detrás de la mascota (celebración de canje). */
+.confeti { animation: confeti var(--dur, 2.4s) linear var(--delay, 0s) infinite; }
+@keyframes confeti {
+  0% { transform: translate(0, -20px) rotate(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate(var(--dx, 0), 260px) rotate(var(--giro, 540deg)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascota-entra, .mascota-flota, .mascota-salta, .mascota-piensa, .mascota-tiembla { animation: none; }
+  .confeti { display: none; }
+}
+
 /* --- Tarjeta POINT (landing y app) ----------------------------------------- */
 /* Grano microscópico de la tarjeta (2–3%). */
 .pt-grano {

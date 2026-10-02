@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCanje, SelloAnimado } from "@/components/Animaciones";
 import { TarjetaCompletaAnimada } from "./TarjetaCompletaAnimada";
 import { claseBoton } from "@/components/app/Boton";
+import { Mascota } from "@/components/app/Mascota";
 
 type Props = {
   tipo: "suma" | "canje";
@@ -50,8 +51,13 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
     >
       <div className="relative flex min-h-44 items-center justify-center">
         {tipo === "canje" ? (
-          <div className="anim-pop flex h-44 w-44 items-center justify-center rounded-full bg-white shadow-pt-flotante">
-            <CheckCanje color="var(--color-pt-accent-dark)" tamaño={140} />
+          <div className="relative">
+            <Confeti />
+            <Mascota estado="festejo" tamaño={200} />
+            {/* El check sigue a la vista: es lo que mira el personal para entregar el premio. */}
+            <span className="anim-pop absolute -bottom-1 -right-3 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-pt-flotante" style={{ animationDelay: "350ms" }}>
+              <CheckCanje color="var(--color-pt-accent-dark)" tamaño={56} />
+            </span>
           </div>
         ) : completo ? (
           <TarjetaCompletaAnimada meta={completo.meta} premio={completo.premio} comercio={comercio} logo={logo} />
@@ -187,5 +193,37 @@ function Reloj() {
       {ahora.toLocaleDateString("es-AR", { day: "numeric", month: "short" })} ·{" "}
       {ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })}
     </p>
+  );
+}
+
+const COLORES_CONFETI = ["#FFC21A", "#FF4FA3", "#2EC5F2", "#1E6BFF", "#7B6CFF", "#FFFFFF"];
+
+/** Confeti cayendo en loop detrás de la mascota (posiciones fijas para que no cambie entre renders). */
+function Confeti() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute -inset-x-16 -top-10 bottom-0 overflow-visible">
+      {Array.from({ length: 18 }, (_, i) => {
+        const x = (i * 37) % 100;
+        const ancho = 6 + (i % 3) * 2;
+        return (
+          <span
+            key={i}
+            className="confeti absolute top-0 rounded-[2px]"
+            style={
+              {
+                left: `${x}%`,
+                width: ancho,
+                height: ancho * (i % 2 ? 2.2 : 1),
+                background: COLORES_CONFETI[i % COLORES_CONFETI.length],
+                "--dx": `${((i * 53) % 60) - 30}px`,
+                "--giro": `${i % 2 ? 540 : -480}deg`,
+                "--dur": `${2 + (i % 5) * 0.3}s`,
+                "--delay": `${(i * 0.17) % 2}s`,
+              } as React.CSSProperties
+            }
+          />
+        );
+      })}
+    </div>
   );
 }

@@ -49,20 +49,19 @@ export async function cumpleDelCliente(clienteId: string): Promise<{ dia: number
 
 export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const db = crearClienteAdmin();
-  const { data: tarjeta } = await db
+  // Una sola consulta (tarjeta + últimos movimientos): es el camino del toque, cada ida a la base suma.
+  const { data } = await db
     .from("tarjetas")
-    .select("id, puntos, serial, wallet_auth_token, created_at, ultimo_toque_en")
+    .select(
+      "id, puntos, serial, wallet_auth_token, created_at, ultimo_toque_en, movimientos(id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre)))",
+    )
     .eq("cliente_id", clienteId)
     .eq("local_id", localId)
+    .order("created_at", { referencedTable: "movimientos", ascending: false })
+    .limit(20, { referencedTable: "movimientos" })
     .maybeSingle();
-  if (!tarjeta) return null;
-
-  const { data: movs } = await db
-    .from("movimientos")
-    .select("id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre))")
-    .eq("tarjeta_id", tarjeta.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
+  if (!data) return null;
+  const { movimientos: movs, ...tarjeta } = data;
 
   const movimientos: Movimiento[] = (movs ?? []).map((m) => ({
     id: m.id,

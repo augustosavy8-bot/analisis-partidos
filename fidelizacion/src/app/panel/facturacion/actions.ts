@@ -6,6 +6,9 @@ import { requerirUsuario } from "@/lib/panel";
 import { comercioDelUsuario, suscripcionVigente } from "@/lib/facturacion/comercio";
 import { actualizarSuscripcionMp, asegurarPlanMp, crearSuscripcionMp } from "@/lib/facturacion/mp";
 import { estadoInicial } from "@/lib/facturacion/estado";
+import { decidirCambioPlan } from "@/lib/facturacion/cambio-plan";
+import { leerLimites } from "@/lib/facturacion/planes";
+import { centavosAPesos } from "@/lib/facturacion/dinero";
 import { mensajeErrorMp, resumenErrorMp } from "@/lib/facturacion/errores-mp";
 
 export type ResultadoAlta = { ok: true; destino: string } | { ok: false; error: string };
@@ -178,4 +181,71 @@ export async function cambiarTarjeta(entrada: { comercioId: string; token: strin
     ok: true,
     mensaje: s.estado === "past_due" ? "Listo. Mercado Pago va a reintentar el cobro con la tarjeta nueva." : "Listo, actualizamos tu tarjeta.",
   };
+}
+
+// ---------------------------------------------------------------- fase 5: cambio de plan
+
+/**
+ * Cambio de plan sin prorrateo. Subir: inmediato. Bajar: al fin del período
+ * (en prueba gratis, inmediato). Elegir el plan actual anula una bajada programada.
+ * Primero se cambia el monto en MP (que es quien cobra), después la base.
+ */
+export async function cambiarPlan(entrada: { comercioId: string; plan: string }): Promise<ResultadoGestion> {
+  const { userId } = await requerirUsuario();
+  const comercio = await comercioDelUsuario(entrada.comercioId);
+  if (!comercio) return { ok: false, error: "No encontramos tu comercio." };
+  const s = await suscripcionVigente(comercio.id);
+  if (!s?.mpPreapprovalId) return { ok: false, error: "Tu cuenta no tiene una suscripción paga para cambiar." };
+
+  const admin = crearClienteAdmin();
+  const [{ data: destino }, { data: actual }, { count: locales }] = await Promise.all([
+    admin.from("planes").select("id, codigo, nombre, precio_centavos, limites").eq("codigo", entrada.plan).eq("activo", true).maybeSingle(),
+    admin.from("planes").select("id, precio_centavos").eq("id", s.planId).single(),
+    admin.from("locales").select("id", { count: "exact", head: true }).eq("comercio_id", comercio.id),
+  ]);
+  if (!destino || !actual) return { ok: false, error: "Ese plan no está disponible." };
+
+  const anulando = destino.id === s.planId;
+  if (anulando && !s.planProgramado) return { ok: false, error: "Ya estás en ese plan." };
+  if (anulando && s.estado !== "trialing" && s.estado !== "authorized") return { ok: false, error: "Tu suscripción no permite cambiar de plan ahora." };
+
+  let inmediato = false;
+  if (!anulando) {
+    const d = decidirCambioPlan({
+      estado: s.estado,
+      precioActual: actual.precio_centavos,
+      precioNuevo: destino.precio_centavos,
+      locales: locales ?? 1,
+      localesNuevo: leerLimites(destino.limites).locales,
+    });
+    if (!d.ok) return { ok: false, error: d.error };
+    inmediato = d.inmediato;
+  }
+
+  // El próximo débito se cobra con el precio del plan elegido (sin prorrateo).
+  try {
+    await actualizarSuscripcionMp(s.mpPreapprovalId, {
+      auto_recurring: { transaction_amount: centavosAPesos(destino.precio_centavos), currency_id: "ARS" },
+    });
+  } catch (e) {
+    console.error("Cambio de monto en MP fallido", comercio.id, resumenErrorMp(e));
+    return { ok: false, error: "Mercado Pago no respondió. Probá de nuevo en un momento." };
+  }
+
+  const { data: resultado, error } = await admin.rpc("cambiar_plan_suscripcion", {
+    p_suscripcion_id: s.id,
+    p_plan_id: destino.id,
+    p_inmediato: inmediato,
+    p_precio_centavos: destino.precio_centavos,
+    p_actor: userId,
+  });
+  if (error) {
+    // MP ya tiene el monto nuevo y la base no: lo dejamos registrado para revisarlo.
+    console.error(`CAMBIO DE PLAN A MEDIAS: comercio=${comercio.id} plan=${destino.codigo}`, error.message);
+    return { ok: false, error: "No pudimos terminar el cambio. Ya estamos avisados; probá de nuevo en un rato." };
+  }
+  refresh();
+  if (resultado === "anulado") return { ok: true, mensaje: `Listo: seguís en el plan ${destino.nombre}.` };
+  if (resultado === "programado") return { ok: true, mensaje: `Listo: al terminar tu período pasás al plan ${destino.nombre}.` };
+  return { ok: true, mensaje: `¡Listo! Ya estás en el plan ${destino.nombre}.` };
 }

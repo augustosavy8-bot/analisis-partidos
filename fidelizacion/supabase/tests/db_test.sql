@@ -839,4 +839,62 @@ begin
     'morosidad: reactivar avisa al comercio');
 end $$;
 
+-- ---------------------------------------------------------------- fase 5: cambio de plan
+do $$
+declare
+  v_c uuid := '00000000-0000-4000-8000-0000000000cf';
+  v_local uuid := '00000000-0000-4000-8000-00000000000f';
+  v_pro uuid := (select id from public.planes where codigo = 'pro');
+  v_basico uuid := (select id from public.planes where codigo = 'basico');
+  v_s uuid;
+  v_r text;
+  v_ok boolean;
+begin
+  update public.suscripciones set estado = 'cancelled', cancelada_en = now() where comercio_id = v_c and estado <> 'cancelled';
+  insert into public.suscripciones (comercio_id, plan_id, estado, mp_preapproval_id, precio_centavos, current_period_end)
+  values (v_c, v_pro, 'authorized', 'mp-cambio-plan', 3000000, now() + interval '10 days') returning id into v_s;
+  insert into public.promos (local_id, nombre, dias, desde, hasta, puntos) values (v_local, 'Doble', array[1,2]::smallint[], '10:00', '12:00', 2);
+  update public.locales set puntos_bienvenida = 5 where id = v_local;
+
+  -- Bajar a Básico: programado; hasta el fin del período sigue con Pro y sus promos.
+  v_r := public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+  perform pg_temp.check(v_r = 'programado'
+    and (select plan_id = v_pro and plan_programado_id = v_basico and precio_centavos = 1500000 from public.suscripciones where id = v_s)
+    and (select bool_and(activa) from public.promos where local_id = v_local),
+    'cambio de plan: bajar queda programado y conserva Pro hasta el fin del período');
+  perform pg_temp.check(not public.aplicar_plan_programado(v_s), 'cambio de plan: antes del fin del período no se aplica');
+
+  -- Volver a elegir Pro anula el cambio programado.
+  v_r := public.cambiar_plan_suscripcion(v_s, v_pro, false, 3000000, null);
+  perform pg_temp.check(v_r = 'anulado'
+    and (select plan_programado_id is null from public.suscripciones where id = v_s),
+    'cambio de plan: elegir el plan actual anula el programado');
+
+  -- Programado + llega el fin del período: pasa a Básico y se apagan promos y regalos.
+  perform public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+  update public.suscripciones set current_period_end = now() - interval '1 minute' where id = v_s;
+  v_ok := public.aplicar_plan_programado(v_s);
+  perform pg_temp.check(v_ok
+    and (select plan_id = v_basico and plan_programado_id is null from public.suscripciones where id = v_s)
+    and not (select bool_or(activa) from public.promos where local_id = v_local)
+    and (select puntos_bienvenida = 0 from public.locales where id = v_local),
+    'cambio de plan: al fin del período pasa a Básico y apaga promos y regalos');
+  perform pg_temp.check(not public.aplicar_plan_programado(v_s), 'cambio de plan: aplicar dos veces no hace nada');
+
+  -- Subir a Pro: inmediato.
+  v_r := public.cambiar_plan_suscripcion(v_s, v_pro, true, 3000000, null);
+  perform pg_temp.check(v_r = 'inmediato'
+    and (select plan_id = v_pro from public.suscripciones where id = v_s),
+    'cambio de plan: subir es inmediato');
+
+  -- Impaga: no se puede cambiar de plan.
+  update public.suscripciones set estado = 'past_due', past_due_desde = now() where id = v_s;
+  begin
+    perform public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+    raise exception 'debía fallar';
+  exception when invalid_parameter_value then null;
+  end;
+  perform pg_temp.check(true, 'cambio de plan: con pago pendiente no se puede cambiar');
+end $$;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

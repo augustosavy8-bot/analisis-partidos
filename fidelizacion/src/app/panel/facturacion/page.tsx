@@ -15,6 +15,7 @@ import { beneficiosPlan } from "@/lib/facturacion/planes";
 import { formatearPesos } from "@/lib/facturacion/dinero";
 import { Suscribirse } from "./Suscribirse";
 import { Gestionar } from "./Gestionar";
+import { CambiarPlan } from "./CambiarPlan";
 import { Toasts } from "@/components/app/Toasts";
 import { Dialogos } from "@/components/app/Dialogos";
 
@@ -137,7 +138,8 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
 
   const d = describir(suscripcion);
   const admin = crearClienteAdmin();
-  const [{ data: avisos }, { data: cuotas }] = await Promise.all([
+  const puedeCambiar = !!suscripcion.mpPreapprovalId && (suscripcion.estado === "trialing" || suscripcion.estado === "authorized");
+  const [{ data: avisos }, { data: cuotas }, todosLosPlanes] = await Promise.all([
     admin.from("avisos_comercio").select("id, titulo, texto, created_at").eq("comercio_id", comercio.id).order("created_at", { ascending: false }).limit(5),
     admin
       .from("pagos_suscripcion")
@@ -145,7 +147,9 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
       .eq("suscripcion_id", suscripcion.id)
       .order("fecha_debito", { ascending: false })
       .limit(6),
+    puedeCambiar ? planesPublicos() : Promise.resolve([]),
   ]);
+  const planActual = todosLosPlanes.find((p) => p.codigo === suscripcion.planCodigo);
   return (
     <Marco>
       <Encabezado sobre={comercio.nombre} titulo="Facturación" />
@@ -174,6 +178,31 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
             payerEmail={suscripcion.mpPayerEmail}
             finPeriodo={fecha(suscripcion.currentPeriodEnd)}
           />
+        </div>
+      )}
+      {puedeCambiar && planActual && todosLosPlanes.length > 1 && (
+        <div id="plan">
+          <Seccion titulo="Cambiar de plan">
+            <CambiarPlan
+              comercioId={comercio.id}
+              actual={{
+                codigo: planActual.codigo,
+                nombre: planActual.nombre,
+                precioCentavos: planActual.precioCentavos,
+                tienePromos: planActual.limites.promos,
+              }}
+              planes={todosLosPlanes.map((p) => ({
+                codigo: p.codigo,
+                nombre: p.nombre,
+                precioCentavos: p.precioCentavos,
+                beneficios: beneficiosPlan(p.limites),
+                tienePromos: p.limites.promos,
+              }))}
+              enPrueba={suscripcion.estado === "trialing"}
+              finPeriodo={fecha(suscripcion.currentPeriodEnd)}
+              programado={suscripcion.planProgramado}
+            />
+          </Seccion>
         </div>
       )}
       {suscripcion.estado === "cancelled" && (

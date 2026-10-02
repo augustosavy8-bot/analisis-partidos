@@ -390,3 +390,42 @@ mismos casos (gracia, restringido, sin sumar, pausada, cancelada).
 **6. Cambiar la tarjeta no cobra.** Se manda un token nuevo al `preapproval` (PUT
 `card_token_id`); si había una cuota impaga, MP la reintenta con la tarjeta nueva en
 su próximo intento.
+
+## Fase 5 — Cambio de plan
+
+### Qué se hizo
+- "Cambiar de plan" en Facturación, con un diálogo que explica cuándo se aplica y
+  cuánto se va a cobrar antes de confirmar.
+- Subir: inmediato. Bajar: al fin del período (`plan_programado_id`), con opción de
+  anularlo ("Quedarme en Pro"). En prueba gratis: inmediato.
+- Al pasar a un plan sin promos se apagan las promos y los regalos.
+
+### Conceptos de pagos que aparecieron
+
+**1. Prorrateo (y por qué no lo hacemos).** Prorratear es cobrar o devolver la
+diferencia por los días que quedan del mes ("pasaste a Pro el día 20: te cobro 10
+días de diferencia"). Es lo más justo, pero complica todo: cobros sueltos, notas de
+crédito, explicaciones. Sin prorrateo la regla es simple y se explica en una línea:
+el precio nuevo arranca en el próximo débito. Subir de inmediato regala unos días
+de Pro (bueno para convertir); bajar al fin del período respeta lo que ya pagó.
+
+**2. Upgrade inmediato, downgrade programado.** Es el patrón estándar del SaaS:
+nadie se queja de recibir más antes, y bajar en el momento le sacaría algo que ya
+pagó. Para programarlo guardamos `plan_programado_id` y lo aplicamos cuando llega
+`current_period_end`.
+
+**3. Aplicar algo "en una fecha" sin depender de un único disparador.** El cambio
+programado se aplica desde tres lugares, todos idempotentes: el webhook del cobro
+del mes (justo antes de extender el período), al leer la suscripción, y el cron
+diario (fase 7). Si uno falla, otro lo hace; si los tres lo intentan, sólo el
+primero cambia algo.
+
+**4. En MP, cambiar de plan es cambiar el monto.** La suscripción en MP quedó
+creada con el plan de MP del alta. Para cambiar lo que se cobra hacemos `PUT
+/preapproval/{id}` con `auto_recurring.transaction_amount` (MP le avisa al pagador
+por email). El plan "de verdad" (qué puede usar el comercio) es el de nuestra base.
+
+**5. Lo que el plan nuevo no incluye se apaga, no se borra.** Si bajás a Básico,
+las promos quedan guardadas pero inactivas (si no, `registrar_suma` las seguiría
+aplicando: Básico con puntos dobles). Al volver a Pro se reactivan a mano. Los
+premios de más no se borran: simplemente no se pueden crear nuevos.

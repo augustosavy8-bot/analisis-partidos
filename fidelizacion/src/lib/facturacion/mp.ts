@@ -97,7 +97,15 @@ export async function crearSuscripcionMp(p: {
  * Cambia una suscripción en MP: pausar (`paused`), reactivar (`authorized`),
  * cancelar (`cancelled`, irreversible) o cambiar la tarjeta (`card_token_id`).
  */
-export async function actualizarSuscripcionMp(id: string, body: { status?: "paused" | "authorized" | "cancelled"; card_token_id?: string }) {
+export async function actualizarSuscripcionMp(
+  id: string,
+  body: {
+    status?: "paused" | "authorized" | "cancelled";
+    card_token_id?: string;
+    /** Cambio de plan: el monto de los próximos débitos (MP le avisa al pagador por email). */
+    auto_recurring?: { transaction_amount: number; currency_id: "ARS" };
+  },
+) {
   return new PreApproval(config()).update({ id, body });
 }
 

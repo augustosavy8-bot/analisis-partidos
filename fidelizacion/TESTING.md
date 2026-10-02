@@ -198,3 +198,31 @@ Para volver: `update suscripciones set estado = 'trialing', past_due_desde = nul
 1. **Cambiar la tarjeta** → cargar otra tarjeta de prueba → "Usar esta tarjeta".
 2. Mensaje "Listo, actualizamos tu tarjeta" (si estaba impaga: "MP va a reintentar…").
 3. `historial_suscripcion` tiene "Cambio de tarjeta".
+
+## Fase 5 — Cambio de plan
+
+Reglas: **subir** (Básico → Pro) es inmediato; **bajar** (Pro → Básico) se aplica al
+fin del período pago; **en prueba gratis**, inmediato en los dos sentidos. Sin
+prorrateo: el precio nuevo se cobra desde el próximo débito. Con pago pendiente o
+pausada no se puede cambiar.
+
+### Caso: bajar en prueba gratis (Point Prueba)
+1. `/panel/facturacion` → "Cambiar de plan" → **Pasar a Básico** → el diálogo dice
+   "El cambio es inmediato" y avisa que se apagan promos y regalos.
+2. Confirmar → "¡Listo! Ya estás en el plan Básico". El estado dice "Plan Básico".
+3. En MP (cuenta vendedora de prueba → Suscripciones): el monto pasó a $15.000.
+4. En el panel: Promos y Mensajes muestran "Pasar a Pro"; el resumen, sólo estadísticas básicas.
+5. `promos` del local quedaron con `activa = false` y `locales.puntos_bienvenida = 0`.
+
+### Caso: subir
+1. **Pasar a Pro** → inmediato; Promos y Mensajes vuelven a estar disponibles
+   (las promos apagadas quedan apagadas: se reactivan a mano).
+2. En MP el monto vuelve a $30.000.
+
+### Caso: bajar con la suscripción activa (ya cobrada)
+Simulá que terminó la prueba: `update suscripciones set estado = 'authorized' where …`.
+1. **Pasar a Básico** → el diálogo dice "Seguís con Pro hasta el …".
+2. Aparece el cartel "El … pasás al plan Básico" con **Quedarme en Pro** (lo anula).
+3. Para ver el cambio aplicado sin esperar: `update suscripciones set current_period_end = now() - interval '1 minute' where …`
+   y recargá Facturación → "Plan Básico" (se aplica solo al leer; también lo aplica el
+   webhook del cobro del mes).

@@ -65,6 +65,11 @@ async function recuperarHuerfana(resp: Awaited<ReturnType<typeof obtenerSuscripc
   return suscripcionPorMp(resp.id);
 }
 
+async function aplicarPlanProgramado(suscripcionId: string) {
+  const { error } = await db().rpc("aplicar_plan_programado", { p_suscripcion_id: suscripcionId });
+  if (error) throw new Error(`aplicar_plan_programado: ${error.message}`);
+}
+
 /** topic subscription_preapproval: alta, pausa, reactivación, cancelación, cambio de monto o tarjeta. */
 export async function procesarPreapproval(id: string): Promise<string> {
   const resp = await obtenerSuscripcionMp(id);
@@ -74,6 +79,7 @@ export async function procesarPreapproval(id: string): Promise<string> {
     if (!s) return `preapproval ${id} (${resp.status}) sin comercio conocido: ignorado`;
     return `preapproval ${id} recuperada (no estaba en la base)`;
   }
+  await aplicarPlanProgramado(s.id);
   const nuevo = estadoDesdePreapproval(resp.status, s.estado, s.trial_ends_at);
   const cambios: Record<string, unknown> = {};
   if (resp.payer_email) cambios.mp_payer_email = resp.payer_email;
@@ -112,6 +118,8 @@ export async function procesarCuota(id: string): Promise<string> {
   });
   if (error) throw new Error(`registrar_cuota: ${error.message}`);
 
+  // Antes de extender el período: si había una bajada de plan programada, se aplica ahora.
+  await aplicarPlanProgramado(s.id);
   const efecto = efectoDeCuota(cuota);
   const nuevo = estadoTrasCuota(s.estado, efecto);
   if (efecto.tipo === "sin_cambios") return `cuota ${id} (${cuota.status}): registrada, sin cambios`;

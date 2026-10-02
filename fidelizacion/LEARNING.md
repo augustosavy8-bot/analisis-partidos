@@ -313,20 +313,80 @@ puntos ya ganados nunca se bloquea, pase lo que pase con el pago.
 
 ### Anexo fase 3 — Por qué el alta fallaba en pruebas
 
-Mercado Pago tiene **dos formas de probar**, y no se pueden mezclar:
+En el modo de pruebas de Mercado Pago **los dos lados tienen que ser de prueba**: si
+quien cobra es una cuenta de prueba (y las "credenciales de prueba" de las apps
+nuevas lo son: empiezan con `APP_USR-` y son de un vendedor de prueba que MP crea
+solo), quien paga también tiene que ser una cuenta de prueba, identificada por su
+**email exacto**.
 
-| | Credenciales de prueba de tu cuenta real | Credenciales de una cuenta de prueba vendedora |
-|---|---|---|
-| Para qué | Pagos con tarjeta desde tu web (Bricks, API) | Flujos donde el comprador entra a MP (Checkout Pro) |
-| Quién paga | Cualquier email (que no sea el tuyo de MP) | Tiene que ser otra cuenta de prueba (comprador) |
-| Tarjetas | Las de prueba (titular APRO, OTHE…) | Las de prueba o saldo de la cuenta compradora |
+Lo que fallaba era el email:
+- Con un email real (o uno inventado), MP respondía *"Both payer and collector must
+  be real or test users"*.
+- Con `augustosavy8+prueba1@gmail.com`, *"User bad request"*: Gmail ignora lo que va
+  después del `+`, así que para MP era el mismo dueño de la cuenta pagándose a sí mismo.
+- Con un `test_user_…` armado a mano con el User ID, también *"User bad request"*: el
+  número del email no es el User ID sino el del usuario `TESTUSER…`, y el panel no lo
+  muestra. Hay que entrar con la cuenta compradora y leerlo en el perfil.
 
-Habíamos cargado las de una cuenta de prueba vendedora. Con esas, MP exige que el
-pagador sea un usuario de prueba, pero el formulario de tarjeta (Brick) no soporta
-ese modo: el alta fallaba con "Both payer and collector must be real or test users"
-(email real) o "User bad request" (email de prueba). La documentación de Bricks lo
-dice explícito: para tarjetas, credenciales de prueba de la cuenta real.
+Lecciones:
+1. Ante un error genérico de un proveedor de pagos, no adivinar: mirar el mensaje
+   exacto en los logs (Vercel → Logs) y cambiar **una** variable por vez.
+2. En pruebas, anotar en un lugar seguro (no en el repo) usuario, contraseña,
+   User ID y **email** de cada cuenta de prueba.
 
-Lección: cuando un pago de prueba falla con un error genérico, lo primero es
-revisar **qué tipo de credenciales** usa cada parte (navegador y servidor) y si
-coinciden con el producto que estás probando.
+### Anexo fase 3 — Un bug que dejó a todos "sin suscripción"
+
+`suscripciones` tiene **dos** claves foráneas a `planes` (`plan_id` y
+`plan_programado_id`). Al pedir `planes(...)` embebido, PostgREST no sabe cuál usar
+y devuelve un error; el código lo trataba como "no tiene suscripción" y el control
+de acceso restringía a todos. Arreglo: nombrar la relación
+(`planes!suscripciones_plan_id_fkey(...)`) y **tirar error** si la consulta falla.
+Regla general: en control de acceso, un error de lectura nunca puede convertirse
+en silencio en "no tiene permiso" (ni en "tiene permiso"): tiene que verse.
+
+## Fase 4 — Cobros fallidos, morosidad, pausa y cancelación
+
+### Qué se hizo
+- Cartel arriba del panel según el estado de la cuenta: cobro fallido (gracia),
+  pago pendiente (restringido), programa pausado, pausada, cancelada, cortesía por
+  vencer.
+- Con la cuenta restringida no se pueden crear premios, editar ajustes ni diseño,
+  ni ver estadísticas. Sumar sigue unos días más.
+- Pasado ese plazo, el toque responde **"Este local pausó su programa de puntos"**
+  y no suma. El canje **nunca** se bloquea.
+- Facturación: pausar, reactivar, cancelar y cambiar la tarjeta; historial de
+  cobros y novedades.
+
+### Conceptos de pagos que aparecieron
+
+**1. Dunning (gestión de morosidad).** Cuando un cobro falla no se corta el
+servicio de golpe: MP reintenta hasta 4 veces en 10 días, y nosotros escalonamos.
+Primero **gracia** (todo anda, con aviso), después **restringido** (el dueño pierde
+comodidades pero sus clientes no se enteran), y recién al final se **pausa el
+programa**. La mayoría de los cobros fallidos son tarjetas vencidas o sin fondos:
+el objetivo es que el dueño lo arregle, no castigarlo.
+
+**2. No castigar al cliente final, y nunca quitarle lo que ganó.** Los puntos ya
+ganados son del cliente: el canje no se bloquea en ningún estado. Y el mensaje
+que ve es neutro ("este local pausó su programa"): la deuda del local con Point no
+es asunto del cliente.
+
+**3. Cancelar al final del período.** Si el dueño cancela estando al día, ya pagó
+el mes: conserva todo hasta `current_period_end`. Pero si cancela (o MP cancela)
+estando **impago**, el acceso se corta ya: no se regala un período que no se pagó.
+Esa regla está en la base (`aplicar_cambio_suscripcion`), no en la pantalla.
+
+**4. Primero el proveedor, después nuestra base.** Para pausar o cancelar, primero
+se cambia en MP (que es quien cobra) y sólo si sale bien se registra acá. Al revés,
+podríamos mostrar "cancelada" mientras MP sigue cobrando. El webhook que llega
+después repite el cambio y, por idempotencia, no hace nada nuevo.
+
+**5. Una regla en dos lugares, con tests en los dos.** El panel calcula el acceso
+en TypeScript, pero el toque es una sola llamada a Postgres por velocidad, así que
+"¿puede sumar?" también vive en la base (`suma_habilitada_local`). Duplicar una
+regla es un riesgo: lo mitigamos con un comentario en ambos lados y tests con los
+mismos casos (gracia, restringido, sin sumar, pausada, cancelada).
+
+**6. Cambiar la tarjeta no cobra.** Se manda un token nuevo al `preapproval` (PUT
+`card_token_id`); si había una cuota impaga, MP la reintenta con la tarjeta nueva en
+su próximo intento.

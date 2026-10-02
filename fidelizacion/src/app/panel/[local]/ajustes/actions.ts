@@ -6,6 +6,7 @@ import { notificarCambioLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { esTermino } from "@/lib/terminos";
 import { leerCoordenadas } from "@/lib/coordenadas";
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 
 export type EstadoAjustes = { error?: string; ok?: number };
 
@@ -27,6 +28,8 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   if (rubro && rubro.length > 60) return { error: "El rubro es muy largo." };
   if (!esTermino(termino)) return { error: "Elegí cómo llamás a tu personal." };
   if (!Number.isFinite(horas) || horas < 0 || horas > 168) return { error: "La regla tiene que estar entre 0 y 168 horas." };
+  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  if (bloqueo) return { error: bloqueo };
   if ((latitud === null) !== (longitud === null)) return { error: "Cargá latitud y longitud juntas (o dejá las dos vacías)." };
   if (latitud !== null && (!Number.isFinite(latitud) || latitud < -90 || latitud > 90)) return { error: "La latitud tiene que estar entre -90 y 90." };
   if (longitud !== null && (!Number.isFinite(longitud) || longitud < -180 || longitud > 180)) return { error: "La longitud tiene que estar entre -180 y 180." };

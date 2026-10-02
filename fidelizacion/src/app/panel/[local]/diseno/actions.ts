@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import { requerirLocal } from "@/lib/panel";
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { actualizarDisenoLocal } from "@/lib/wallet";
 import { HEX_COLOR } from "@/lib/colores";
@@ -30,6 +31,8 @@ export type EstadoBorrador = { error?: string; ok?: number };
 export async function subirBorrador(slug: string, tipo: TipoImagen, form: FormData): Promise<EstadoBorrador> {
   if (!TIPOS_IMAGEN.includes(tipo)) return { error: "Tipo de imagen inválido." };
   const { local } = await requerirLocal(slug);
+  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  if (bloqueo) return { error: bloqueo };
   const archivo = form.get("archivo");
   if (!(archivo instanceof File) || archivo.size === 0) return { error: "Elegí un archivo." };
   const datos = new Uint8Array(await archivo.arrayBuffer());
@@ -74,6 +77,8 @@ async function publicarBorrador(localId: string, tipo: TipoImagen): Promise<stri
 
 export async function guardarDiseno(slug: string, _prev: EstadoDiseno, form: FormData): Promise<EstadoDiseno> {
   const { local } = await requerirLocal(slug);
+  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  if (bloqueo) return { error: bloqueo };
   const color = (k: string) => String(form.get(k) ?? "").trim().toLowerCase();
   const fondo = color("color_fondo");
   const texto = color("color_texto");

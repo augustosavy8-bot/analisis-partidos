@@ -6,30 +6,28 @@ fase 8 lo cierra con todos los casos y el checklist para producción.
 
 ## Credenciales para probar
 
-Usamos el formulario de tarjeta de MP (Card Payment Brick). Para pagos con
-tarjeta desde un Brick, Mercado Pago pide **las credenciales de prueba de tu
-cuenta real** (no las de una cuenta de prueba vendedora) y **cualquier email**
-como pagador:
+Lo que funcionó (verificado el 2/10/2026):
 
-1. Mercado Pago Developers → Tus integraciones → **Point26** → **Credenciales de prueba**.
-2. En Vercel → fidelizacion → Settings → Environment Variables, reemplazá:
-   - `MP_ACCESS_TOKEN` → el *Access Token* de prueba de Point26.
-   - `NEXT_PUBLIC_MP_PUBLIC_KEY` → la *Public Key* de prueba de Point26.
-3. Redeploy (la Public Key se incrusta en el build).
-4. Webhooks: Point26 → Webhooks → **modo prueba** → URL
-   `https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago`, eventos *Pagos* y
-   *Planes y suscripciones*. La clave secreta nueva va en `MP_WEBHOOK_SECRET`.
+1. **Credenciales**: las **de prueba de la app Point26** (Tus integraciones → Point26 →
+   Credenciales de prueba). Empiezan con `APP_USR-` y corresponden a una cuenta de
+   prueba *vendedora* que MP crea sola. En Vercel: `MP_ACCESS_TOKEN` y
+   `NEXT_PUBLIC_MP_PUBLIC_KEY` (redeploy después: la Public Key va en el build).
+2. **Pagador**: una cuenta de prueba **compradora** creada en Point26 → Cuentas de
+   prueba. En "Email de tu cuenta de Mercado Pago" va **su email exacto**, que el
+   panel NO muestra: hay que entrar a mercadopago.com.ar con su usuario
+   (`TESTUSER…`) y contraseña y mirarlo en el perfil. Tiene la forma
+   `test_user_<número del usuario TESTUSER>@testuser.com`.
+3. **Tarjeta**: una de prueba con titular `APRO` (ver abajo).
 
-En el formulario de pago:
-- Email: **cualquiera que no sea el de tu cuenta de Mercado Pago ni el de un
-  usuario de prueba** (por ejemplo, el de la cuenta de Point con la que entraste).
-- Tarjeta de prueba y titular `APRO` (ver más abajo).
+Errores típicos y qué significan:
+| Error de MP | Causa |
+|---|---|
+| `Both payer and collector must be real or test users` | El email del pagador no es de una cuenta de prueba (o es de una real). |
+| `User bad request` | El email no corresponde a ningún usuario de prueba, o es el tuyo (MP ignora lo que va después de `+` en Gmail). |
 
-> Por qué: con las credenciales de una cuenta de prueba vendedora, MP exige que el
-> pagador también sea un usuario de prueba, y el Brick no soporta ese modo para
-> tarjetas (el alta falla con "User bad request" o "Both payer and collector must
-> be real or test users"). Las cuentas de prueba (vendedor/comprador) sirven para
-> Checkout Pro (fase 6), donde el comprador inicia sesión en MP.
+Webhooks: Point26 → Webhooks → **modo prueba** → URL
+`https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago`, eventos *Pagos* y
+*Planes y suscripciones*. La clave secreta va en `MP_WEBHOOK_SECRET`.
 
 Las contraseñas y los tokens **no** van en el repo: viven en Vercel y en tu panel
 de Mercado Pago.
@@ -51,9 +49,8 @@ de Mercado Pago.
   esté en *Redirect URLs* (el link de confirmación vuelve a `/auth/callback`).
 - Supabase manda pocos emails por hora con su servidor por defecto: si no llega el de
   confirmación, esperá unos minutos o configurá un SMTP propio.
-- Vercel tiene que tener las **credenciales de prueba de Point26** (ver "Credenciales
-  para probar"). El email del pagador puede ser cualquiera que no sea el de tu cuenta
-  de Mercado Pago.
+- Vercel tiene que tener las **credenciales de prueba de Point26** y tenés que saber
+  el **email de la cuenta compradora de prueba** (ver "Credenciales para probar").
 
 **Tarjetas de prueba de Argentina** (cualquier vencimiento futuro, CVV 123, DNI 12345678):
 | Tarjeta | Número |
@@ -98,7 +95,7 @@ crean en ese primer ingreso, igual que si hubieras tocado el link.
    - Si lo abrís en otro navegador: te pide ingresar con la contraseña (el email ya
      quedó confirmado).
 4. Elegí Pro (viene marcado por defecto). En la tarjeta: número de prueba y titular `APRO`. En
-   "Email de tu cuenta de Mercado Pago" dejá el email de tu cuenta de Point (no uno de prueba).
+   "Email de tu cuenta de Mercado Pago" poné el email de la cuenta compradora de prueba.
 5. "Empezar prueba gratis" → te lleva al panel del local.
 6. Volvé a `/panel/facturacion`: "Plan Pro · prueba gratis. Tu prueba termina el …".
 7. En Supabase: `suscripciones` tiene una fila `trialing` con `mp_preapproval_id`;
@@ -159,3 +156,45 @@ En Mercado Pago → Tus integraciones → "Point Test" → Webhooks → modo **p
 3. Resumen: se ven Clientes, Visitas y Canjes; "Vuelven", el gráfico y el ranking
    aparecen como "del plan Pro".
 4. FairPlay y Café Aurora (cortesía Pro) ven todo como siempre.
+
+## Fase 4 — Cobros fallidos, morosidad, pausa y cancelación
+
+Las fechas se calculan desde `past_due_desde`, así que para probar los niveles sin
+esperar días se puede "viajar en el tiempo" en Supabase (SQL Editor), sólo con
+comercios de prueba (Point Prueba):
+
+```sql
+-- Simular cobro fallido hace N días
+update suscripciones set estado = 'past_due', past_due_desde = now() - interval '3 days'
+ where comercio_id = (select id from comercios where nombre = 'Point Prueba') and estado <> 'cancelled';
+```
+
+| Días desde el cobro fallido | Qué tenés que ver |
+|---|---|
+| 3 (gracia) | Cartel amarillo "No pudimos cobrar…" arriba del panel. Todo funciona. |
+| 12 (restringido) | Cartel rojo "pago pendiente". No se pueden crear premios, ni editar ajustes/diseño, ni ver estadísticas. El toque **suma**. |
+| 20 (sin sumar) | Cartel rojo "programa pausado". El toque muestra **"Este local pausó su programa de puntos"** y no suma. El **canje sigue andando**. |
+
+Para volver: `update suscripciones set estado = 'trialing', past_due_desde = null where …`.
+
+### Caso: canje con el programa pausado
+1. Con el comercio en "sin sumar" (20 días), tocá el llavero en un cliente con puntos.
+2. Ve "Este local pausó su programa de puntos" (no suma).
+3. En su tarjeta, "Canjear" un premio → se canjea normalmente (el toque quedó registrado).
+
+### Caso: pausar y reactivar (Facturación)
+1. `/panel/facturacion` → **Pausar** → confirmar. Mensaje "Pausaste tu suscripción".
+2. En MP (cuenta vendedora de prueba → Suscripciones) figura pausada.
+3. Hasta el fin del período todo funciona; después, cartel "Tu suscripción está pausada".
+4. **Reactivar** → vuelve a prueba gratis (si no terminó) o activa.
+
+### Caso: cancelar
+1. **Cancelar suscripción** → confirmar. Estado "cancelado · todo sigue funcionando hasta el …".
+2. En MP figura cancelada (no se cobra más).
+3. "Volver a activar" muestra de nuevo el formulario de alta.
+4. Si se cancela estando impaga, el acceso se corta en el momento (no conserva un período que no pagó).
+
+### Caso: cambiar la tarjeta
+1. **Cambiar la tarjeta** → cargar otra tarjeta de prueba → "Usar esta tarjeta".
+2. Mensaje "Listo, actualizamos tu tarjeta" (si estaba impaga: "MP va a reintentar…").
+3. `historial_suscripcion` tiene "Cambio de tarjeta".

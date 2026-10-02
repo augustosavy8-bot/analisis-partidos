@@ -93,6 +93,14 @@ export async function crearSuscripcionMp(p: {
   });
 }
 
+/**
+ * Cambia una suscripción en MP: pausar (`paused`), reactivar (`authorized`),
+ * cancelar (`cancelled`, irreversible) o cambiar la tarjeta (`card_token_id`).
+ */
+export async function actualizarSuscripcionMp(id: string, body: { status?: "paused" | "authorized" | "cancelled"; card_token_id?: string }) {
+  return new PreApproval(config()).update({ id, body });
+}
+
 export async function obtenerSuscripcionMp(id: string) {
   return new PreApproval(config()).get({ id });
 }

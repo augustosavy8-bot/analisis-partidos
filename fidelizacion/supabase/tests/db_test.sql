@@ -780,4 +780,63 @@ exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'webhooks: el dueño no puede cambiar el estado de su suscripción');
 reset role;
 
+-- ---------------------------------------------------------------- fase 4: morosidad
+do $$
+declare
+  v_aurora uuid := '00000000-0000-4000-8000-000000000001';
+  v_otro uuid := '00000000-0000-4000-8000-00000000000f';
+  v_cliente uuid := 'cccccccc-0000-4000-8000-0000000000f4';
+  v_tarjeta uuid;
+  v_puntos int; v_r jsonb; v_s uuid;
+begin
+  insert into public.clientes (id, nombre, whatsapp, consentimiento) values (v_cliente, 'Fase Cuatro', '+5493410000444', true);
+  v_tarjeta := public.asegurar_tarjeta(v_cliente, v_aurora);
+  perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: cortesía sin fin suma');
+
+  -- Otro Bar canceló estando al día (fase 3): conserva lo pagado hasta 2030.
+  perform pg_temp.check(public.suma_habilitada_local(v_otro), 'morosidad: cancelada al día suma hasta el fin del período pago');
+  update public.suscripciones set current_period_end = now() - interval '1 day' where comercio_id = '00000000-0000-4000-8000-0000000000cf';
+  perform pg_temp.check(not public.suma_habilitada_local(v_otro), 'morosidad: cancelada y sin período pago no suma');
+
+  -- Cortesía vencida: el toque no suma, responde programa_pausado, y deja el toque marcado (canje al toque).
+  update public.suscripciones set estado = 'cancelled', cancelada_en = now(), current_period_end = null
+   where comercio_id = '00000000-0000-4000-8000-0000000000c1' and estado <> 'cancelled';
+  insert into public.suscripciones (comercio_id, plan_id, estado, cortesia_hasta)
+  values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'pro'), 'cortesia', now() - interval '1 day');
+  update public.tarjetas set ultimo_toque_en = null where id = v_tarjeta;
+  select puntos into v_puntos from public.tarjetas where id = v_tarjeta;
+  v_r := public.aplicar_toque(v_cliente, v_aurora, '00000000-0000-4000-8000-000000000101', null, 'nfc');
+  perform pg_temp.check(v_r->>'motivo' = 'programa_pausado'
+    and (select puntos from public.tarjetas where id = v_tarjeta) = v_puntos
+    and (select ultimo_toque_en is not null from public.tarjetas where id = v_tarjeta),
+    'morosidad: programa pausado no suma pero registra el toque (para poder canjear)');
+
+  -- Morosa: gracia (10) + sumar (7) = 17 días sumando desde el primer cobro fallido.
+  update public.suscripciones set estado = 'cancelled', cancelada_en = now(), current_period_end = null
+   where comercio_id = '00000000-0000-4000-8000-0000000000c1' and estado <> 'cancelled';
+  insert into public.suscripciones (comercio_id, plan_id, estado, mp_preapproval_id, precio_centavos, past_due_desde, current_period_end)
+  values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'pro'), 'past_due', 'mp-moroso', 3000000,
+          now() - interval '5 days', now() + interval '20 days')
+  returning id into v_s;
+  perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: en gracia suma');
+  update public.suscripciones set past_due_desde = now() - interval '16 days' where id = v_s;
+  perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: pasada la gracia, sigue sumando unos días');
+  update public.suscripciones set past_due_desde = now() - interval '18 days' where id = v_s;
+  perform pg_temp.check(not public.suma_habilitada_local(v_aurora), 'morosidad: después de gracia + días de sumar, no suma');
+
+  -- MP la cancela por impaga: no conserva un "período pago" que no pagó.
+  perform public.aplicar_cambio_suscripcion(v_s, 'cancelled', '{"current_period_end":"2031-01-01T00:00:00Z"}', 'MP canceló por 3 cuotas impagas', 'webhook');
+  perform pg_temp.check((select current_period_end <= now() from public.suscripciones where id = v_s),
+    'morosidad: cancelada por falta de pago pierde el acceso en el momento');
+
+  -- Pausada: el panel se restringe pero sumar sigue.
+  insert into public.suscripciones (comercio_id, plan_id, estado, mp_preapproval_id, precio_centavos)
+  values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'pro'), 'paused', 'mp-pausada', 3000000)
+  returning id into v_s;
+  perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: pausada sigue sumando');
+  perform public.aplicar_cambio_suscripcion(v_s, 'authorized', '{}', 'Reactivada', 'panel');
+  perform pg_temp.check((select count(*) from public.avisos_comercio where comercio_id = '00000000-0000-4000-8000-0000000000c1' and tipo = 'suscripcion_reactivada') = 1,
+    'morosidad: reactivar avisa al comercio');
+end $$;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

@@ -47,7 +47,7 @@ export function Suscribirse({
   const [listo, setListo] = useState(false);
   const enviando = useRef(false);
   // Email del pagador en Mercado Pago (puede no ser el de la cuenta de Point).
-  // En pruebas: cualquiera que no sea el de la cuenta de MP del vendedor. Ref: el brick
+  // En pruebas: el email exacto de la cuenta compradora de prueba. Ref: el brick
   // puede quedarse con una versión vieja de onSubmit.
   const [emailPagador, setEmailPagador] = useState(email);
   const emailRef = useRef(email);

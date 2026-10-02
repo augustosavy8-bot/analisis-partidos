@@ -63,9 +63,9 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
       )}
 
       {!basicas ? (
-        <MejorarPlan titulo="Las estadísticas están en pausa" boton="Ver facturación">
-          Tu cuenta tiene un pago pendiente. Tus clientes pueden seguir canjeando sus puntos; regularizá el pago para volver a ver las estadísticas y
-          editar el programa.
+        <MejorarPlan titulo="Las estadísticas no están disponibles" boton="Ver facturación">
+          Mientras tu cuenta esté restringida no se ven las estadísticas ni se puede editar el programa. Tus clientes siguen pudiendo canjear sus
+          puntos.
         </MejorarPlan>
       ) : (
         <>

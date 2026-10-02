@@ -12,6 +12,10 @@
  *  - sin_sumar: pasaron también esos días. Tampoco se suman puntos (el cliente ve
  *    un mensaje neutro). El canje de puntos ya ganados NUNCA se bloquea.
  *  - sin_suscripcion: nunca activó (o se le terminó la cortesía/el período).
+ *
+ * OJO: la regla de "¿puede sumar?" está duplicada en la base
+ * (suma_habilitada_local, migración 026) porque el toque es una sola llamada a
+ * Postgres. Si cambiás una, cambiá la otra (las dos tienen tests).
  */
 import type { LimitesPlan } from "./planes";
 import type { EstadoSuscripcion } from "./estado";
@@ -31,6 +35,8 @@ export type ConfigAcceso = { diasGracia: number; diasSumarTrasGracia: number };
 
 export type Acceso = {
   nivel: NivelAcceso;
+  /** Estado de la suscripción que dio este nivel (para explicarle al comercio por qué). */
+  estado: EstadoSuscripcion | null;
   limites: LimitesPlan | null;
   planNombre: string | null;
   /** Hasta cuándo dura el nivel actual (fin de la gracia, del sumar, de la cortesía o del período). */
@@ -40,13 +46,13 @@ export type Acceso = {
 const DIA = 86_400_000;
 
 export function calcularAcceso(s: SuscripcionAcceso | null, cfg: ConfigAcceso, ahora: Date = new Date()): Acceso {
-  if (!s) return { nivel: "sin_suscripcion", limites: null, planNombre: null, hasta: null };
-  const base = { limites: s.limites, planNombre: s.planNombre };
+  if (!s) return { nivel: "sin_suscripcion", estado: null, limites: null, planNombre: null, hasta: null };
+  const base = { estado: s.estado, limites: s.limites, planNombre: s.planNombre };
   const t = ahora.getTime();
 
   switch (s.estado) {
     case "cortesia":
-      if (s.cortesiaHasta && new Date(s.cortesiaHasta).getTime() <= t) return { nivel: "sin_suscripcion", limites: null, planNombre: null, hasta: null };
+      if (s.cortesiaHasta && new Date(s.cortesiaHasta).getTime() <= t) return { nivel: "sin_suscripcion", estado: s.estado, limites: null, planNombre: null, hasta: null };
       return { ...base, nivel: "completo", hasta: s.cortesiaHasta };
     case "trialing":
     case "authorized":
@@ -61,12 +67,14 @@ export function calcularAcceso(s: SuscripcionAcceso | null, cfg: ConfigAcceso, a
       return { ...base, nivel: "sin_sumar", hasta: null };
     }
     case "paused":
-      // Pausada por el comercio: no se cobra, el panel queda restringido (se reactiva cuando quiera).
+      // Pausada por el comercio: no se cobra. Usa lo que ya pagó hasta el fin del
+      // período; después el panel queda restringido (sumar sigue) hasta que reactive.
+      if (s.currentPeriodEnd && new Date(s.currentPeriodEnd).getTime() > t) return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };
       return { ...base, nivel: "restringido", hasta: null };
     case "cancelled":
       // Cancelada con el período pago vigente: sigue con acceso completo hasta el final.
       if (s.currentPeriodEnd && new Date(s.currentPeriodEnd).getTime() > t) return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };
-      return { nivel: "sin_suscripcion", limites: null, planNombre: null, hasta: null };
+      return { nivel: "sin_suscripcion", estado: s.estado, limites: null, planNombre: null, hasta: null };
   }
 }
 

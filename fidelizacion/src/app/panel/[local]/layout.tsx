@@ -8,12 +8,16 @@ import { MotionProvider } from "@/components/landing/MotionProvider";
 import { salir } from "../ingresar/actions";
 import { NavPanel } from "./NavPanel";
 import { formasTermino } from "@/lib/terminos";
+import { EstadoCuenta } from "@/components/app/EstadoCuenta";
+import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
+import { avisoDeCuenta } from "@/lib/facturacion/aviso-cuenta";
 
 export default async function LayoutPanel({ children, params }: LayoutProps<"/panel/[local]">) {
   const { local: slug } = await params;
   const { local, email } = await requerirLocal(slug);
   const locales = await localesDelUsuario();
   const personal = formasTermino(local.termino_personal).Plural;
+  const aviso = avisoDeCuenta(await accesoDelLocal(local.id));
 
   const cuenta = (
     <div className="flex items-center gap-2">
@@ -49,6 +53,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[calc(var(--spacing-pt-tabbar)+env(safe-area-inset-bottom)+2rem)] md:pb-12">
+          {aviso && <EstadoCuenta aviso={aviso} />}
           {children}
         </main>
         <NavPanel vista="movil" slug={slug} personal={personal} cuenta={cuenta} />

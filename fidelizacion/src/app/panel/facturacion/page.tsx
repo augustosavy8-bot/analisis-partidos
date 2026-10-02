@@ -14,11 +14,23 @@ import { planesPublicos } from "@/lib/facturacion/catalogo";
 import { beneficiosPlan } from "@/lib/facturacion/planes";
 import { formatearPesos } from "@/lib/facturacion/dinero";
 import { Suscribirse } from "./Suscribirse";
+import { Gestionar } from "./Gestionar";
+import { Toasts } from "@/components/app/Toasts";
+import { Dialogos } from "@/components/app/Dialogos";
 
 export const metadata = { title: "Facturación", robots: { index: false } };
 
 const fecha = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", year: "numeric", timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(iso)) : null;
+
+/** Una cuota mensual, en palabras. */
+function estadoCuota(c: { estado: string; estado_pago: string | null }): { texto: string; tono: string } {
+  if (c.estado_pago === "approved") return { texto: "Cobrado", tono: "text-pt-accent-ink" };
+  if (c.estado === "recycling") return { texto: "Reintentando", tono: "text-amber-700" };
+  if (c.estado_pago === "rejected") return { texto: "Rechazado", tono: "text-red-700" };
+  if (c.estado === "scheduled") return { texto: "Programado", tono: "text-pt-ink-2" };
+  return { texto: "En proceso", tono: "text-pt-ink-2" };
+}
 
 /** Cómo se lee el estado de la suscripción para el dueño del comercio. */
 function describir(s: SuscripcionVigente): { titulo: string; detalle: string; tono: "ok" | "aviso" } {
@@ -41,9 +53,26 @@ function describir(s: SuscripcionVigente): { titulo: string; detalle: string; to
     case "pending":
       return { titulo: `Plan ${s.planNombre}`, detalle: "Estamos confirmando tu tarjeta con Mercado Pago. Esto tarda unos minutos.", tono: "aviso" };
     case "paused":
-      return { titulo: `Plan ${s.planNombre} · pausado`, detalle: "No se te cobra mientras esté pausado.", tono: "aviso" };
+      return {
+        titulo: `Plan ${s.planNombre} · pausado`,
+        detalle:
+          s.currentPeriodEnd && new Date(s.currentPeriodEnd) > new Date()
+            ? `No se te cobra mientras esté pausado. Todo sigue funcionando hasta el ${fecha(s.currentPeriodEnd)}.`
+            : "No se te cobra mientras esté pausado. El panel está restringido hasta que lo reactives.",
+        tono: "aviso",
+      };
     case "past_due":
-      return { titulo: `Plan ${s.planNombre} · pago pendiente`, detalle: "No pudimos cobrar la última cuota. Mercado Pago lo reintenta.", tono: "aviso" };
+      return {
+        titulo: `Plan ${s.planNombre} · pago pendiente`,
+        detalle: "No pudimos cobrar la última cuota. Mercado Pago lo reintenta durante unos días: revisá que la tarjeta tenga fondos o cambiala.",
+        tono: "aviso",
+      };
+    case "cancelled":
+      return {
+        titulo: `Plan ${s.planNombre} · cancelado`,
+        detalle: `No se te cobra más. Todo sigue funcionando hasta el ${fecha(s.currentPeriodEnd)}.`,
+        tono: "aviso",
+      };
     default:
       return { titulo: `Plan ${s.planNombre}`, detalle: "", tono: "aviso" };
   }
@@ -74,7 +103,8 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
     crearClienteAdmin().from("locales").select("slug").eq("comercio_id", comercio.id).order("created_at").limit(1).maybeSingle(),
   ]);
 
-  if (!suscripcion) {
+  // Cancelada (con días pagos por delante): puede volver a suscribirse con ?nueva=1.
+  if (!suscripcion || (suscripcion.estado === "cancelled" && sp.nueva === "1")) {
     const planes = await planesPublicos();
     const elegido = (typeof sp.plan === "string" ? sp.plan : null) ?? (await planElegidoAlRegistrarse()) ?? planes[planes.length - 1]?.codigo;
     const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
@@ -106,6 +136,16 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
   }
 
   const d = describir(suscripcion);
+  const admin = crearClienteAdmin();
+  const [{ data: avisos }, { data: cuotas }] = await Promise.all([
+    admin.from("avisos_comercio").select("id, titulo, texto, created_at").eq("comercio_id", comercio.id).order("created_at", { ascending: false }).limit(5),
+    admin
+      .from("pagos_suscripcion")
+      .select("id, monto_centavos, estado, estado_pago, fecha_debito, fecha_pago")
+      .eq("suscripcion_id", suscripcion.id)
+      .order("fecha_debito", { ascending: false })
+      .limit(6),
+  ]);
   return (
     <Marco>
       <Encabezado sobre={comercio.nombre} titulo="Facturación" />
@@ -124,6 +164,51 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
           </div>
         </div>
       </Superficie>
+      {suscripcion.mpPreapprovalId && (
+        <div className="mt-4">
+          <Gestionar
+            comercioId={comercio.id}
+            estado={suscripcion.estado}
+            publicKey={process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? ""}
+            precioCentavos={suscripcion.precioCentavos ?? 0}
+            payerEmail={suscripcion.mpPayerEmail}
+            finPeriodo={fecha(suscripcion.currentPeriodEnd)}
+          />
+        </div>
+      )}
+      {suscripcion.estado === "cancelled" && (
+        <div className="mt-4">
+          <BotonLink href="/panel/facturacion?nueva=1">Volver a activar</BotonLink>
+        </div>
+      )}
+      {cuotas && cuotas.length > 0 && (
+        <Seccion titulo="Tus cobros">
+          <Superficie as="ul" className="divide-y divide-pt-border/60">
+            {cuotas.map((c) => (
+              <li key={c.id} className="flex items-center justify-between gap-3 px-5 py-3 text-[15px] text-pt-ink">
+                <span>{fecha(c.fecha_pago ?? c.fecha_debito)}</span>
+                <span className="flex items-center gap-3">
+                  <span className="tabular-nums">{formatearPesos(c.monto_centavos)}</span>
+                  <span className={`text-[13px] font-semibold ${estadoCuota(c).tono}`}>{estadoCuota(c).texto}</span>
+                </span>
+              </li>
+            ))}
+          </Superficie>
+        </Seccion>
+      )}
+      {avisos && avisos.length > 0 && (
+        <Seccion titulo="Novedades">
+          <Superficie as="ul" className="divide-y divide-pt-border/60">
+            {avisos.map((a) => (
+              <li key={a.id} className="px-5 py-3">
+                <p className="text-[15px] font-semibold text-pt-ink">{a.titulo}</p>
+                <p className="pt-app-detalle text-pt-ink-2">{a.texto}</p>
+                <p className="mt-1 text-[12px] text-pt-ink-3">{fecha(a.created_at)}</p>
+              </li>
+            ))}
+          </Superficie>
+        </Seccion>
+      )}
       <Seccion titulo="Tu plan incluye">
         <Superficie as="ul" className="divide-y divide-pt-border/60">
           {beneficiosPlan(suscripcion.limites).map((b) => (
@@ -160,6 +245,8 @@ function Marco({ children }: { children: React.ReactNode }) {
         </div>
         <div className="mt-8">{children}</div>
       </main>
+      <Toasts />
+      <Dialogos />
     </div>
   );
 }

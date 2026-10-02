@@ -1,9 +1,10 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { requerirUsuario } from "@/lib/panel";
-import { comercioDelUsuario } from "@/lib/facturacion/comercio";
-import { asegurarPlanMp, crearSuscripcionMp } from "@/lib/facturacion/mp";
+import { comercioDelUsuario, suscripcionVigente } from "@/lib/facturacion/comercio";
+import { actualizarSuscripcionMp, asegurarPlanMp, crearSuscripcionMp } from "@/lib/facturacion/mp";
 import { estadoInicial } from "@/lib/facturacion/estado";
 import { mensajeErrorMp, resumenErrorMp } from "@/lib/facturacion/errores-mp";
 
@@ -83,4 +84,98 @@ export async function suscribirse(entrada: { comercioId: string; plan: string; t
 
   const { data: local } = await admin.from("locales").select("slug").eq("comercio_id", comercio.id).order("created_at").limit(1).maybeSingle();
   return { ok: true, destino: local ? `/panel/${local.slug}?bienvenida=1` : "/panel" };
+}
+
+// ---------------------------------------------------------------- fase 4: gestionar
+
+export type ResultadoGestion = { ok: true; mensaje: string } | { ok: false; error: string };
+export type AccionSuscripcion = "pausar" | "reactivar" | "cancelar";
+
+const PUEDE: Record<AccionSuscripcion, string[]> = {
+  pausar: ["trialing", "authorized"],
+  reactivar: ["paused"],
+  cancelar: ["pending", "trialing", "authorized", "past_due", "paused"],
+};
+
+/**
+ * Pausar, reactivar o cancelar. Primero se cambia en Mercado Pago (que es quien
+ * cobra) y recién si sale bien se registra acá; el webhook que llega después
+ * repite el mismo cambio y no hace nada nuevo (idempotente).
+ */
+export async function gestionarSuscripcion(entrada: { comercioId: string; accion: AccionSuscripcion }): Promise<ResultadoGestion> {
+  await requerirUsuario();
+  const comercio = await comercioDelUsuario(entrada.comercioId);
+  if (!comercio) return { ok: false, error: "No encontramos tu comercio." };
+  const accion = entrada.accion;
+  if (!(accion in PUEDE)) return { ok: false, error: "Acción inválida." };
+
+  const s = await suscripcionVigente(comercio.id);
+  if (!s?.mpPreapprovalId || !PUEDE[accion].includes(s.estado)) {
+    return { ok: false, error: "Tu suscripción cambió. Recargá la página y probá de nuevo." };
+  }
+
+  const statusMp = accion === "pausar" ? "paused" : accion === "reactivar" ? "authorized" : "cancelled";
+  try {
+    await actualizarSuscripcionMp(s.mpPreapprovalId, { status: statusMp });
+  } catch (e) {
+    console.error(`No se pudo ${accion} en MP`, comercio.id, resumenErrorMp(e));
+    return { ok: false, error: "Mercado Pago no respondió. Probá de nuevo en un momento." };
+  }
+
+  const nuevo =
+    accion === "pausar"
+      ? "paused"
+      : accion === "cancelar"
+        ? "cancelled"
+        : s.trialEndsAt && new Date(s.trialEndsAt) > new Date()
+          ? "trialing"
+          : "authorized";
+  const { error } = await crearClienteAdmin().rpc("aplicar_cambio_suscripcion", {
+    p_suscripcion_id: s.id,
+    p_estado: nuevo,
+    p_cambios: {},
+    p_motivo: `El dueño eligió ${accion} desde Facturación`,
+    p_origen: "panel",
+  });
+  // Ya está hecho en MP: si falla acá, el webhook lo termina de registrar.
+  if (error) console.error(`aplicar_cambio_suscripcion (${accion})`, comercio.id, error.message);
+  refresh();
+  const mensajes: Record<AccionSuscripcion, string> = {
+    pausar: "Pausaste tu suscripción. No se te va a cobrar mientras esté pausada.",
+    reactivar: "Reactivaste tu suscripción.",
+    cancelar: "Cancelaste tu suscripción. No se te va a cobrar más.",
+  };
+  return { ok: true, mensaje: mensajes[accion] };
+}
+
+/**
+ * Cambiar la tarjeta del débito. Si había un cobro fallido, Mercado Pago lo
+ * reintenta con la tarjeta nueva en sus próximos intentos.
+ */
+export async function cambiarTarjeta(entrada: { comercioId: string; token: string }): Promise<ResultadoGestion> {
+  await requerirUsuario();
+  const comercio = await comercioDelUsuario(entrada.comercioId);
+  if (!comercio) return { ok: false, error: "No encontramos tu comercio." };
+  const token = String(entrada.token ?? "");
+  if (!/^[A-Za-z0-9-]{16,100}$/.test(token)) return { ok: false, error: "Los datos de la tarjeta no llegaron bien. Cargala de nuevo." };
+
+  const s = await suscripcionVigente(comercio.id);
+  if (!s?.mpPreapprovalId || !["pending", "trialing", "authorized", "past_due", "paused"].includes(s.estado)) {
+    return { ok: false, error: "Tu suscripción cambió. Recargá la página y probá de nuevo." };
+  }
+  try {
+    await actualizarSuscripcionMp(s.mpPreapprovalId, { card_token_id: token });
+  } catch (e) {
+    console.error("Cambio de tarjeta fallido", comercio.id, resumenErrorMp(e));
+    return { ok: false, error: mensajeErrorMp(e) };
+  }
+  const { error } = await crearClienteAdmin()
+    .from("historial_suscripcion")
+    .insert({ suscripcion_id: s.id, de_estado: s.estado, a_estado: s.estado, motivo: "Cambio de tarjeta", origen: "panel" });
+  if (error) console.error("historial cambio de tarjeta", error.message);
+  refresh();
+  return {
+    ok: true,
+    mensaje: s.estado === "past_due" ? "Listo. Mercado Pago va a reintentar el cobro con la tarjeta nueva." : "Listo, actualizamos tu tarjeta.",
+  };
 }

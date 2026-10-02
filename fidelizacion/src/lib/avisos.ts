@@ -12,6 +12,12 @@ export const MENSAJES_AVISO: Record<string, { titulo: string; texto: string }> =
     titulo: "Llavero de prueba",
     texto: "Este llavero es de prueba y ya no se puede usar para sumar puntos.",
   },
+  // El comercio dejó de pagar Point. Mensaje neutro: el cliente no tiene por qué
+  // enterarse de la facturación del local. Sus puntos siguen siendo suyos.
+  programa_pausado: {
+    titulo: "Este local pausó su programa de puntos",
+    texto: "Por ahora no se suman puntos acá. Los puntos que ya tenés siguen siendo tuyos y los podés canjear.",
+  },
   local_inactivo: {
     titulo: "Local no disponible",
     texto: "Este local no está sumando puntos en este momento.",

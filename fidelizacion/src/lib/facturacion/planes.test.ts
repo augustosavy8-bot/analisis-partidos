@@ -30,6 +30,7 @@ describe("límites de los planes", () => {
       "Hasta 2 premios",
       "Estadísticas básicas: clientes, puntos y canjes del mes",
       "Tarjeta con tus colores (sin logo propio)",
+      "1 llavero NFC incluido",
     ]);
     const pro = beneficiosPlan(leerLimites(PRO));
     expect(pro).toContain("Hasta 3 locales");

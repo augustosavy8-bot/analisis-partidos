@@ -64,5 +64,6 @@ export function beneficiosPlan(l: LimitesPlan): string[] {
   if (l.promos) lista.push("Promos: puntos dobles y de cumpleaños");
   if (l.mensajes) lista.push("Mensajes a tus clientes en la Wallet");
   lista.push(l.diseno ? "Tarjeta con tu logo e imágenes" : "Tarjeta con tus colores (sin logo propio)");
+  lista.push("1 llavero NFC incluido");
   return lista;
 }

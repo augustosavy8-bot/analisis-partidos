@@ -44,7 +44,7 @@ export function FormKit({
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoPedido, FormData>(crearPedidoKit.bind(null, comercioId), {});
   const [cantidades, setCantidades] = useState<Record<string, number>>(() =>
-    Object.fromEntries(productos.map((p) => [p.codigo, p.codigo === "kit_inicial" && p.stock > 0 ? 1 : 0])),
+    Object.fromEntries(productos.map((p, i) => [p.codigo, i === 0 && p.stock > 0 ? 1 : 0])),
   );
   const [entrega, setEntrega] = useState<"envio" | "retiro">("envio");
 

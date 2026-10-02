@@ -58,7 +58,7 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
       {acceso.limites && !dentroDelLimite(acceso, "clientes", m.clientes_total) && (
         <MejorarPlan titulo="Superaste los clientes de tu plan" className="mb-4">
           Tenés {m.clientes_total} clientes con tarjeta y tu plan {acceso.planNombre} incluye {acceso.limites.clientes}. Tus clientes siguen sumando
-          igual; pasá a Pro para tener clientes ilimitados.
+          igual; pasá a un plan con más clientes.
         </MejorarPlan>
       )}
 

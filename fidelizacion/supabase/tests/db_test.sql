@@ -519,8 +519,9 @@ select pg_temp.check((select count(*) from public.planes where activo) = 3
   and (select precio_centavos from public.planes where codigo = 'basico') = 2500000
   and (select precio_centavos from public.planes where codigo = 'pro') = 4000000
   and (select precio_centavos from public.planes where codigo = 'max') = 8000000
-  and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 100
-  and (select limites->'clientes' from public.planes where codigo = 'pro') = 'null'::jsonb
+  and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 50
+  and (select (limites->>'clientes')::int from public.planes where codigo = 'pro') = 200
+  and (select limites->'clientes' from public.planes where codigo = 'max') = 'null'::jsonb
   and (select destacado from public.planes where codigo = 'pro'),
   'facturación: Básico $25.000 (austero), Pro $40.000 (recomendado) y Max $80.000, en centavos');
 select pg_temp.check((select stock from public.productos where codigo = 'kit_inicial') = 5
@@ -616,7 +617,7 @@ select pg_temp.check((select count(*) from public.comercios) = 1
   and (select count(*) from public.pagos_suscripcion) = 0
   and (select count(*) from public.avisos_comercio) = 0,
   'facturación: el dueño ve sólo su comercio, su suscripción y sus avisos');
-select pg_temp.check((select count(*) from public.planes) = 3 and (select count(*) from public.productos) = 2,
+select pg_temp.check((select count(*) from public.planes) = 3 and (select count(*) from public.productos) = 1,
   'facturación: el dueño logueado ve los planes y productos');
 do $$ begin
   update public.suscripciones set estado = 'authorized';
@@ -696,6 +697,9 @@ begin
     and (select count(*) from public.avisos_comercio where comercio_id = v_c and tipo = 'suscripcion_alta') = 1
     and (select count(*) from public.historial_suscripcion where suscripcion_id = v_s) = 1,
     'alta: registrar la misma suscripción de MP dos veces no duplica nada (webhook + panel)');
+  perform pg_temp.check((select count(*) from public.pedidos p join public.pedido_items i on i.pedido_id = p.id
+                          where p.comercio_id = v_c and p.regalo and p.estado = 'pagado' and p.total_centavos = 0 and i.cantidad = 1) = 1,
+    'alta: el plan incluye 1 llavero (pedido sin cargo, una sola vez)');
   perform pg_temp.check(not public.reservar_alta_suscripcion(v_c), 'alta: con una suscripción paga vigente no se puede dar otra de alta');
 
   -- Pasar de cortesía a pago: la cortesía se cierra en la misma transacción.
@@ -906,7 +910,9 @@ declare
   v_c uuid := '00000000-0000-4000-8000-0000000000cf';
   v_r jsonb; v_r2 jsonb; v_p uuid; v_stock_kit int; v_estado text; v_res text;
 begin
-  update public.productos set stock = 5 where codigo = 'kit_inicial';
+  -- El kit ya no se vende; se reactiva sólo para probar el mecanismo de pedidos.
+  update public.productos set stock = 5, activo = true, precio_centavos = 2500000 where codigo = 'kit_inicial';
+  update public.productos set precio_centavos = 300000 where codigo = 'chip';
   update public.productos set stock = 50 where codigo = 'chip';
 
   -- Pedido: precios y envío desde la base, stock reservado.

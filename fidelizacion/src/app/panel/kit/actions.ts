@@ -19,7 +19,7 @@ export async function crearPedidoKit(comercioId: string, _prev: EstadoPedido, fo
   const comercio = await comercioDelUsuario(comercioId);
   if (!comercio) return { error: "No encontramos tu comercio." };
 
-  const items = ["kit_inicial", "chip"]
+  const items = ["chip", "kit_inicial"]
     .map((codigo) => ({ codigo, cantidad: Number(form.get(`cantidad_${codigo}`) ?? 0) }))
     .filter((i) => Number.isInteger(i.cantidad) && i.cantidad > 0);
   if (items.length === 0) return { error: "Elegí al menos un producto." };

@@ -26,7 +26,7 @@ export default async function PedidosAdmin({ searchParams }: PageProps<"/admin/f
   const db = crearClienteAdmin();
   let q = db
     .from("pedidos")
-    .select("id, numero, estado, entrega, direccion, total_centavos, costo_envio_centavos, created_at, pagado_en, comercios(nombre), pedido_items(cantidad, productos(nombre))")
+    .select("id, numero, estado, entrega, direccion, total_centavos, costo_envio_centavos, regalo, created_at, pagado_en, comercios(nombre), pedido_items(cantidad, productos(nombre))")
     .order("created_at", { ascending: false })
     .limit(100);
   if (!todos) q = q.in("estado", ["pagado", "preparando", "enviado", "listo_retiro"]);
@@ -57,6 +57,7 @@ export default async function PedidosAdmin({ searchParams }: PageProps<"/admin/f
                     #{p.numero} · {(p.comercios as unknown as { nombre: string } | null)?.nombre}
                   </p>
                   <p className="text-sm">
+                    {p.regalo && <span className="mr-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-800">incluido en el plan</span>}
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium">{p.estado}</span>{" "}
                     <span className="tabular-nums">{formatearPesos(p.total_centavos)}</span>
                   </p>
@@ -65,7 +66,9 @@ export default async function PedidosAdmin({ searchParams }: PageProps<"/admin/f
                 <p className="mt-1 text-xs text-stone-500">
                   {p.entrega === "envio" && d
                     ? `Envío a ${d.nombre} · ${d.telefono} · ${d.calle} ${d.numero}${d.piso ? ` (${d.piso})` : ""}, ${d.ciudad}, ${d.provincia} (${d.cp})`
-                    : "Retira en persona"}
+                    : p.regalo
+                      ? "Coordinar la entrega con el dueño (envío o retiro)"
+                      : "Retira en persona"}
                   {" · "}pedido {fechaHora(p.created_at, TZ)}
                   {p.pagado_en && ` · pagado ${fechaHora(p.pagado_en, TZ)}`}
                 </p>
@@ -75,7 +78,7 @@ export default async function PedidosAdmin({ searchParams }: PageProps<"/admin/f
                       {texto}
                     </BotonAccion>
                   ))}
-                  {pagado && (
+                  {pagado && p.total_centavos > 0 && (
                     <BotonAccion
                       peligro
                       confirmar={`¿Devolver ${formatearPesos(p.total_centavos)} del pedido #${p.numero}? ${p.estado === "enviado" || p.estado === "entregado" ? "Ya se despachó: el stock NO vuelve." : "El stock vuelve."}`}

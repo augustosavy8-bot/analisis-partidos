@@ -545,15 +545,15 @@ select pg_temp.check(
 
 -- ---------------------------------------------------------------- facturación
 select pg_temp.check((select count(*) from public.planes where activo) = 3
-  and (select precio_centavos from public.planes where codigo = 'basico') = 5000000
-  and (select precio_centavos from public.planes where codigo = 'pro') = 8000000
-  and (select precio_centavos from public.planes where codigo = 'max') = 16000000
-  and (select precio_lista_centavos from public.planes where codigo = 'basico') = 5750000
+  and (select precio_centavos from public.planes where codigo = 'basico') = 3000000
+  and (select precio_centavos from public.planes where codigo = 'pro') = 5000000
+  and (select precio_centavos from public.planes where codigo = 'max') = 10000000
+  and (select precio_lista_centavos from public.planes where codigo = 'pro') = 5750000
   and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 50
   and (select (limites->>'clientes')::int from public.planes where codigo = 'pro') = 200
   and (select limites->'clientes' from public.planes where codigo = 'max') = 'null'::jsonb
   and (select destacado from public.planes where codigo = 'pro'),
-  'facturación: Básico $50.000 (lista $57.500), Pro $80.000 (recomendado) y Max $160.000, en centavos');
+  'facturación: Básico $30.000, Pro $50.000 (recomendado, lista $57.500) y Max $100.000, en centavos');
 select pg_temp.check((select stock from public.productos where codigo = 'kit_inicial') = 5
   and (select chips_por_unidad from public.productos where codigo = 'kit_inicial') = 10
   and (select costo_envio_centavos from public.config_facturacion) = 500000,

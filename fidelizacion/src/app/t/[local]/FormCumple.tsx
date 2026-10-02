@@ -1,5 +1,6 @@
 "use client";
 
+import { Mascota } from "@/components/app/Mascota";
 import { useActionState, useEffect } from "react";
 import { guardarCumple, type EstadoCumple } from "./actions";
 import { SelectorCumple } from "@/components/SelectorCumple";
@@ -15,11 +16,14 @@ export function FormCumple({ slug, puntos }: { slug: string; puntos: number }) {
   if (estado.ok) return null;
   return (
     <Superficie as="form" className="mt-5 space-y-3 p-5">
-      <div>
-        <p className="pt-app-seccion text-pt-ink">¿Cuándo es tu cumple?</p>
-        <p className="mt-1 pt-app-detalle text-pt-ink-2">
-          La semana de tu cumple te regalamos {puntos} puntos en tu visita. Se carga una sola vez.
-        </p>
+      <div className="flex items-center gap-3">
+        <Mascota estado="cumple" tamaño={64} />
+        <div>
+          <p className="pt-app-seccion text-pt-ink">¿Cuándo es tu cumple?</p>
+          <p className="mt-1 pt-app-detalle text-pt-ink-2">
+            La semana de tu cumple te regalamos {puntos} puntos en tu visita. Se carga una sola vez.
+          </p>
+        </div>
       </div>
       <SelectorCumple requerido />
       <ErrorForm mensaje={estado.error} />

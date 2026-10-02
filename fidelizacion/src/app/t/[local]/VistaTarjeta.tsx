@@ -1,3 +1,4 @@
+import { Mascota } from "@/components/app/Mascota";
 import Link from "next/link";
 import type { Local } from "@/lib/locales";
 import { cuandoFuturo, type Movimiento, type Premio } from "@/lib/tarjeta";
@@ -65,6 +66,7 @@ export function VistaTarjeta(p: Props) {
   const primerNombre = p.nombre.split(" ")[0];
   const termino = formasTermino(local.termino_personal).singular;
   const alcanzaAlguno = p.premios.some((pr) => tarjeta.puntos >= pr.puntos_necesarios);
+  const faltan = p.objetivo ? Math.max(0, p.objetivo.puntos_necesarios - tarjeta.puntos) : 0;
 
   const tarjetaPoint = (
     <PointCard3D
@@ -107,14 +109,12 @@ export function VistaTarjeta(p: Props) {
         <span className="shrink-0 tabular-nums">Desde {formatearMesAnio(tarjeta.created_at, local.zona_horaria)}</span>
       </p>
 
-      {alcanzaAlguno && (
+      {alcanzaAlguno ? (
         <a
           href="#premios"
-          className="pt-subir mt-5 flex items-center gap-3 rounded-pt-card bg-pt-accent-soft px-4 py-3.5 text-pt-ink transition-colors duration-150 hover:bg-pt-accent/25"
+          className="pt-subir mt-5 flex items-center gap-2 rounded-pt-card bg-pt-accent-soft py-2 pl-2 pr-4 text-pt-ink transition-colors duration-150 hover:bg-pt-accent/25"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-ink" aria-hidden>
-            <Icono nombre="premio" tamaño={18} />
-          </span>
+          <Mascota estado={p.alToque ? "festejo" : "premio"} tamaño={64} />
           <span className="min-w-0 flex-1 pt-app-detalle">
             {/* Recién apoyaron el llavero: puede canjear ya mismo (también si el toque no sumó por la regla de horas). */}
             <strong className="block text-[15px] font-semibold">{p.alToque ? "¡Podés canjear ahora!" : "Tenés un premio para canjear"}</strong>
@@ -122,6 +122,25 @@ export function VistaTarjeta(p: Props) {
           </span>
           <Icono nombre="chevron" tamaño={18} className="text-pt-accent-ink" />
         </a>
+      ) : (
+        <div className="pt-subir mt-5 flex items-center gap-2 rounded-pt-card bg-pt-surface py-2 pl-2 pr-4 text-pt-ink">
+          <Mascota estado={p.objetivo ? "base" : "tranqui"} tamaño={64} />
+          <p className="min-w-0 flex-1 pt-app-detalle">
+            {p.objetivo ? (
+              <>
+                <strong className="block text-[15px] font-semibold">
+                  {faltan === 1 ? "¡Te falta 1 punto!" : `Te faltan ${faltan} puntos`}
+                </strong>
+                <span className="text-pt-ink-2">para {p.objetivo.nombre.toLowerCase()}. ¡Te esperamos!</span>
+              </>
+            ) : (
+              <>
+                <strong className="block text-[15px] font-semibold">¡Hola, {primerNombre}!</strong>
+                <span className="text-pt-ink-2">Sumás puntos cada vez que venís a {local.nombre}.</span>
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       {p.pedirCumple && <FormCumple slug={local.slug} puntos={local.puntos_cumple} />}

@@ -139,6 +139,8 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
               codigo: p.codigo,
               nombre: p.nombre,
               precioCentavos: p.precioCentavos,
+              precioListaCentavos: p.precioListaCentavos,
+              promoTexto: p.promoTexto,
               diasPrueba: (pagasAntes ?? 0) > 0 ? 0 : p.diasPrueba,
               destacado: p.destacado,
               beneficios: beneficiosPlan(p.limites),
@@ -212,6 +214,8 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
                 codigo: p.codigo,
                 nombre: p.nombre,
                 precioCentavos: p.precioCentavos,
+                precioListaCentavos: p.precioListaCentavos,
+                promoTexto: p.promoTexto,
                 beneficios: beneficiosPlan(p.limites),
                 tienePromos: p.limites.promos,
               }))}

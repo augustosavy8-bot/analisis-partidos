@@ -8,6 +8,10 @@ export type PlanPublico = {
   nombre: string;
   descripcion: string | null;
   precioCentavos: number;
+  /** Precio "de lista" que se muestra tachado (promo). null = sin promo. */
+  precioListaCentavos: number | null;
+  /** Texto del cartel de promo ("Precio de lanzamiento"). */
+  promoTexto: string | null;
   diasPrueba: number;
   limites: LimitesPlan;
   /** El plan recomendado (se muestra marcado y elegido por defecto). */
@@ -37,7 +41,7 @@ export type ConfigFacturacion = {
 export async function planesPublicos(): Promise<PlanPublico[]> {
   const { data, error } = await crearClienteAdmin()
     .from("planes")
-    .select("id, codigo, nombre, descripcion, precio_centavos, dias_prueba, limites, destacado")
+    .select("id, codigo, nombre, descripcion, precio_centavos, precio_lista_centavos, promo_texto, dias_prueba, limites, destacado")
     .eq("activo", true)
     .order("orden");
   if (error) throw new Error(`No se pudieron leer los planes: ${error.message}`);
@@ -47,6 +51,9 @@ export async function planesPublicos(): Promise<PlanPublico[]> {
     nombre: p.nombre,
     descripcion: p.descripcion,
     precioCentavos: p.precio_centavos,
+    // Sólo si de verdad es más alto que el precio real (si no, el tachado mentiría).
+    precioListaCentavos: p.precio_lista_centavos && p.precio_lista_centavos > p.precio_centavos ? p.precio_lista_centavos : null,
+    promoTexto: p.promo_texto,
     diasPrueba: p.dias_prueba,
     limites: leerLimites(p.limites),
     destacado: p.destacado,

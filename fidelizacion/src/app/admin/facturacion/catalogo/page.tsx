@@ -13,7 +13,7 @@ export default async function CatalogoAdmin() {
   await requerirSuperadmin();
   const db = crearClienteAdmin();
   const [{ data: planes }, { data: productos }, { data: cfg }] = await Promise.all([
-    db.from("planes").select("id, codigo, nombre, precio_centavos, dias_prueba, limites, activo, destacado").order("orden"),
+    db.from("planes").select("id, codigo, nombre, precio_centavos, precio_lista_centavos, promo_texto, dias_prueba, limites, activo, destacado").order("orden"),
     db.from("productos").select("id, codigo, nombre, descripcion, precio_centavos, stock, max_por_pedido, activo").order("orden"),
     db.from("config_facturacion").select("costo_envio_centavos, minutos_reserva_stock, dias_gracia, dias_sumar_tras_gracia, direccion_retiro").single(),
   ]);
@@ -39,6 +39,8 @@ export default async function CatalogoAdmin() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <Campo etiqueta="Nombre" name="nombre" defaultValue={p.nombre} />
                   <Campo etiqueta="Precio ($/mes)" name="precio" defaultValue={String(centavosAPesos(p.precio_centavos))} />
+                  <Campo etiqueta="Precio tachado ($, vacío = sin promo)" name="precio_lista" defaultValue={p.precio_lista_centavos ? String(centavosAPesos(p.precio_lista_centavos)) : ""} />
+                  <Campo etiqueta="Texto de la promo" name="promo_texto" defaultValue={p.promo_texto ?? ""} />
                   <Campo etiqueta="Días de prueba" name="dias_prueba" type="number" defaultValue={String(p.dias_prueba)} />
                   <Campo etiqueta="Locales" name="locales" defaultValue={l.locales?.toString() ?? ""} />
                   <Campo etiqueta="Clientes" name="clientes" defaultValue={l.clientes?.toString() ?? ""} />

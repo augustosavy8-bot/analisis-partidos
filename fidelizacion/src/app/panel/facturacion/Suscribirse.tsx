@@ -6,11 +6,14 @@ import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 import { Icono } from "@/components/Icono";
 import { formatearPesos } from "@/lib/facturacion/dinero";
 import { reportarErrorBrick, suscribirse } from "./actions";
+import { CartelPromo, PrecioPlan } from "./PrecioPlan";
 
 export type PlanOpcion = {
   codigo: string;
   nombre: string;
   precioCentavos: number;
+  precioListaCentavos?: number | null;
+  promoTexto?: string | null;
   diasPrueba: number;
   beneficios: string[];
   destacado?: boolean;
@@ -114,11 +117,9 @@ export function Suscribirse({
                       <span className="ml-2 rounded-full bg-pt-accent px-2 py-0.5 align-middle text-[11px] font-semibold text-pt-ink">Recomendado</span>
                     )}
                   </span>
-                  <span className="tabular-nums text-pt-ink">
-                    <strong className="text-[17px]">{formatearPesos(p.precioCentavos)}</strong>
-                    <span className="text-[13px] text-pt-ink-2"> / mes</span>
-                  </span>
+                  <PrecioPlan precioCentavos={p.precioCentavos} precioListaCentavos={p.precioListaCentavos} />
                 </span>
+                <CartelPromo texto={p.promoTexto} precioCentavos={p.precioCentavos} precioListaCentavos={p.precioListaCentavos} />
                 <ul className="mt-2 grid gap-1">
                   {p.beneficios.map((b) => (
                     <li key={b} className="flex items-start gap-2 text-[13px] leading-snug text-pt-ink-2">

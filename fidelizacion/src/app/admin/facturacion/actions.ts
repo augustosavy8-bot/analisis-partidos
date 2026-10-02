@@ -146,6 +146,9 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
   const nombre = String(form.get("nombre") ?? "").trim();
   const precio = leerPesos(String(form.get("precio") ?? ""));
   const dias = Number(form.get("dias_prueba"));
+  const listaTexto = String(form.get("precio_lista") ?? "").trim();
+  const lista = listaTexto ? leerPesos(listaTexto) : null;
+  const promoTexto = String(form.get("promo_texto") ?? "").trim() || null;
   const limites = {
     locales: LIMITE(form.get("locales")),
     clientes: LIMITE(form.get("clientes")),
@@ -158,6 +161,8 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
   if (nombre.length < 2 || nombre.length > 40) return { error: "Nombre entre 2 y 40 letras." };
   if (precio === null || precio <= 0) return { error: "Precio inválido." };
   if (!Number.isInteger(dias) || dias < 0 || dias > 90) return { error: "Días de prueba entre 0 y 90." };
+  if (listaTexto && (lista === null || lista <= precio)) return { error: "El precio tachado tiene que ser mayor que el precio." };
+  if (promoTexto && (promoTexto.length < 2 || promoTexto.length > 40)) return { error: "Texto de la promo entre 2 y 40 letras." };
   if ([limites.locales, limites.clientes, limites.premios].some((x) => Number.isNaN(x))) return { error: "Límites: un número o vacío (= ilimitado)." };
 
   const { data: actual } = await db.from("planes").select("precio_centavos, dias_prueba").eq("id", planId).single();
@@ -168,6 +173,8 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
     .update({
       nombre,
       precio_centavos: precio,
+      precio_lista_centavos: lista,
+      promo_texto: promoTexto,
       dias_prueba: dias,
       limites,
       activo: form.get("activo") === "on",

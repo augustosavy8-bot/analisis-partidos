@@ -2,13 +2,22 @@
 
 import { useTransition } from "react";
 import { Boton } from "@/components/app/Boton";
+import { CartelPromo, PrecioPlan } from "./PrecioPlan";
 import { Icono } from "@/components/Icono";
 import { avisar } from "@/components/app/Toasts";
 import { confirmar } from "@/components/app/Dialogos";
 import { formatearPesos } from "@/lib/facturacion/dinero";
 import { cambiarPlan } from "./actions";
 
-export type OpcionPlan = { codigo: string; nombre: string; precioCentavos: number; beneficios: string[]; tienePromos: boolean };
+export type OpcionPlan = {
+  codigo: string;
+  nombre: string;
+  precioCentavos: number;
+  precioListaCentavos?: number | null;
+  promoTexto?: string | null;
+  beneficios: string[];
+  tienePromos: boolean;
+};
 
 /**
  * Cambio de plan. El texto del diálogo explica qué pasa (cuándo, cuánto) antes
@@ -76,11 +85,9 @@ export function CambiarPlan({
           <div key={p.codigo} className="rounded-pt-card bg-pt-pure p-4 ring-1 ring-inset ring-pt-border">
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-[17px] font-semibold text-pt-ink">{p.nombre}</span>
-              <span className="tabular-nums text-pt-ink">
-                <strong className="text-[17px]">{formatearPesos(p.precioCentavos)}</strong>
-                <span className="text-[13px] text-pt-ink-2"> / mes</span>
-              </span>
+              <PrecioPlan precioCentavos={p.precioCentavos} precioListaCentavos={p.precioListaCentavos} />
             </div>
+            <CartelPromo texto={p.promoTexto} precioCentavos={p.precioCentavos} precioListaCentavos={p.precioListaCentavos} />
             <ul className="mt-2 grid gap-1">
               {p.beneficios.map((b) => (
                 <li key={b} className="flex items-start gap-2 text-[13px] leading-snug text-pt-ink-2">

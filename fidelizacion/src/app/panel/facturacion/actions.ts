@@ -262,3 +262,13 @@ export async function cambiarPlan(entrada: { comercioId: string; plan: string })
   if (resultado === "programado") return { ok: true, mensaje: `Listo: al terminar tu período pasás al plan ${destino.nombre}.` };
   return { ok: true, mensaje: `¡Listo! Ya estás en el plan ${destino.nombre}.` };
 }
+
+/**
+ * Errores del formulario de tarjeta de MP (Brick). Pasan en el navegador, antes
+ * de llegar a nosotros: los registramos acá para poder verlos en los logs.
+ * Sólo el tipo y el mensaje (nunca datos de la tarjeta).
+ */
+export async function reportarErrorBrick(detalle: { type?: string; cause?: string; message?: string }) {
+  const limpio = (v: unknown) => String(v ?? "").slice(0, 200);
+  console.error("Brick de tarjeta (navegador):", limpio(detalle?.type), limpio(detalle?.cause), limpio(detalle?.message));
+}

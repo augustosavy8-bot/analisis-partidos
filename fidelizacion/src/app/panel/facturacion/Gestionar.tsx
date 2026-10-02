@@ -5,7 +5,7 @@ import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 import { Boton } from "@/components/app/Boton";
 import { avisar } from "@/components/app/Toasts";
 import { confirmar } from "@/components/app/Dialogos";
-import { cambiarTarjeta, gestionarSuscripcion, type AccionSuscripcion } from "./actions";
+import { cambiarTarjeta, gestionarSuscripcion, reportarErrorBrick, type AccionSuscripcion } from "./actions";
 
 let mpIniciado = false;
 
@@ -155,7 +155,10 @@ function CambiarTarjeta({
           paymentMethods: { maxInstallments: 1, types: { excluded: ["prepaid_card"] } },
           visual: { texts: { formSubmit: "Usar esta tarjeta" } },
         }}
-        onError={(e) => console.error("Brick de tarjeta", e)}
+        onError={(e) => {
+              console.error("Brick de tarjeta", e);
+              void reportarErrorBrick({ type: e?.type, cause: e?.cause, message: e?.message });
+            }}
         onSubmit={alEnviar}
       />
       <p className="mt-2 text-center text-[12px] text-pt-ink-3">Hoy no se cobra nada: la tarjeta nueva se usa en el próximo débito.</p>

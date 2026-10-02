@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CardPayment, initMercadoPago } from "@mercadopago/sdk-react";
 import { Icono } from "@/components/Icono";
 import { formatearPesos } from "@/lib/facturacion/dinero";
-import { suscribirse } from "./actions";
+import { reportarErrorBrick, suscribirse } from "./actions";
 
 export type PlanOpcion = {
   codigo: string;
@@ -180,7 +180,10 @@ export function Suscribirse({
               visual: { texts: { formSubmit: plan.diasPrueba > 0 ? "Empezar prueba gratis" : "Suscribirme" } },
             }}
             onReady={() => setListo(true)}
-            onError={(e) => console.error("Brick de tarjeta", e)}
+            onError={(e) => {
+              console.error("Brick de tarjeta", e);
+              void reportarErrorBrick({ type: e?.type, cause: e?.cause, message: e?.message });
+            }}
             onSubmit={alEnviar}
           />
         </div>

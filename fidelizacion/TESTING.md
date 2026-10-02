@@ -226,3 +226,44 @@ Simulá que terminó la prueba: `update suscripciones set estado = 'authorized' 
 3. Para ver el cambio aplicado sin esperar: `update suscripciones set current_period_end = now() - interval '1 minute' where …`
    y recargá Facturación → "Plan Básico" (se aplica solo al leer; también lo aplica el
    webhook del cobro del mes).
+
+## Fase 6 — Kit NFC (Checkout Pro)
+
+Precios y stock iniciales: kit (10 chips) $25.000, chip suelto $3.000, envío $5.000,
+retiro gratis. Stock: 5 kits y 50 chips. Reserva: 30 minutos.
+
+**Para pagar en Checkout Pro con credenciales de prueba hay que entrar a Mercado
+Pago con la cuenta compradora de prueba** (`TESTUSER…`): abrí una ventana de
+incógnito, iniciá sesión en mercadopago.com.ar con esa cuenta y recién ahí hacé el
+pedido en Point (en la misma ventana). Pagá con tarjeta de prueba y titular `APRO`.
+
+### Caso: compra feliz (envío)
+1. Panel → "Comprar chips" (menú "Más" en el celu, o Facturación → Chips NFC).
+2. 1 kit + 2 chips, envío, completá la dirección → total $36.000 → "Pagar con Mercado Pago".
+3. En Supabase: `pedidos` tiene el pedido `pendiente_pago` con `reserva_hasta`;
+   `productos.stock` bajó (kit 4, chip 48).
+4. Pagá en MP (titular `APRO`) → volvés a "¡Gracias por tu compra!" con estado **Pagado**.
+5. `pagos` tiene el pago `approved`; `avisos_comercio`, "Recibimos el pago de tu pedido".
+
+### Caso: pago rechazado
+- Igual, con titular `OTHE` → "El pago no se aprobó". El pedido sigue
+  `pendiente_pago` (el stock sigue reservado hasta que venza o armes otro).
+
+### Caso: no paga a tiempo
+- Armá el pedido y no pagues. Pasados 30 minutos (o forzándolo:
+  `update pedidos set reserva_hasta = now() - interval '1 minute' where numero = …`),
+  al entrar a "Comprar chips" el pedido figura "Venció sin pagar" y el stock volvió.
+- El link de pago de MP también vence a los 30 minutos (`expiration_date_to`).
+
+### Caso: armar otro pedido
+- Con un pedido impago, armá otro: el anterior queda "cancelado" y su stock vuelve
+  (no se puede acaparar stock con pedidos sin pagar).
+
+### Caso: sin stock
+- `update productos set stock = 0 where codigo = 'kit_inicial'` → el kit figura
+  "Agotado"; pedirlo igual (forzando el form) devuelve "está agotado por ahora".
+
+### Caso: la vuelta sin webhook
+- Aunque el webhook no llegue, al volver de MP la página consulta el pago a MP
+  con el `payment_id` y lo registra. Abrir esa URL a mano con otro `payment_id`
+  no marca nada (se verifica que el pago sea de ESE pedido).

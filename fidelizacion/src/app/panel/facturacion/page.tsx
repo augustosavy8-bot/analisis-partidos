@@ -238,6 +238,15 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
           </Superficie>
         </Seccion>
       )}
+      <Seccion titulo="Chips NFC">
+        <Superficie className="flex items-center gap-4 p-5">
+          <Icono nombre="nfc" tamaño={24} className="shrink-0 text-pt-ink" />
+          <p className="flex-1 pt-app-detalle text-pt-ink-2">Kit de 10 llaveros o chips sueltos, con envío o retiro.</p>
+          <BotonLink href="/panel/kit" variante="secundario" tamaño="sm">
+            Comprar
+          </BotonLink>
+        </Superficie>
+      </Seccion>
       <Seccion titulo="Tu plan incluye">
         <Superficie as="ul" className="divide-y divide-pt-border/60">
           {beneficiosPlan(suscripcion.limites).map((b) => (

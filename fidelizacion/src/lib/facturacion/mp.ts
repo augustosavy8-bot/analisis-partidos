@@ -1,5 +1,5 @@
 import "server-only";
-import { Invoice, MercadoPagoConfig, Payment, PreApproval, PreApprovalPlan } from "mercadopago";
+import { Invoice, MercadoPagoConfig, Payment, PreApproval, PreApprovalPlan, Preference } from "mercadopago";
 import { env } from "@/lib/env";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { centavosAPesos } from "./dinero";
@@ -126,4 +126,50 @@ export async function obtenerPagoMp(id: string) {
 export function esNoEncontradoMp(e: unknown): boolean {
   const x = e as { status?: number; message?: string } | null;
   return x?.status === 404 || /not.?found|no encontrad/i.test(x?.message ?? "");
+}
+
+/**
+ * Checkout Pro para un pedido del kit: el comercio paga en la página de MP
+ * (tarjeta, dinero en cuenta, etc.) y vuelve a /panel/kit/resultado.
+ *  - external_reference = id del pedido: así el pago se asocia aunque se pierda todo lo demás.
+ *  - binary_mode: aprobado o rechazado al instante, sin "pendiente" (un Rapipago
+ *    que se paga en 3 días no sirve con una reserva de stock de 30 minutos).
+ *  - expiration_date_to = fin de la reserva: después MP no deja pagar ese link.
+ */
+export async function crearPreferenciaMp(p: {
+  pedidoId: string;
+  numero: number;
+  items: { codigo: string; nombre: string; cantidad: number; precioCentavos: number }[];
+  envioCentavos: number;
+  email: string | null;
+  reservaHasta: string;
+}) {
+  const vuelta = `${env.appUrl}/panel/kit/resultado?pedido=${p.pedidoId}`;
+  const items = p.items.map((i) => ({
+    id: i.codigo,
+    title: i.nombre,
+    quantity: i.cantidad,
+    unit_price: centavosAPesos(i.precioCentavos),
+    currency_id: "ARS",
+  }));
+  if (p.envioCentavos > 0) {
+    items.push({ id: "envio", title: "Envío", quantity: 1, unit_price: centavosAPesos(p.envioCentavos), currency_id: "ARS" });
+  }
+  return new Preference(config()).create({
+    body: {
+      items,
+      external_reference: p.pedidoId,
+      ...(p.email ? { payer: { email: p.email } } : {}),
+      back_urls: { success: vuelta, failure: vuelta, pending: vuelta },
+      auto_return: "approved",
+      binary_mode: true,
+      payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }], installments: 1 },
+      notification_url: `${env.appUrl}/api/webhooks/mercadopago?source_news=webhooks`,
+      statement_descriptor: "POINT",
+      expires: true,
+      expiration_date_to: p.reservaHasta,
+      metadata: { pedido_numero: p.numero },
+    },
+    requestOptions: { idempotencyKey: `pedido-${p.pedidoId}` },
+  });
 }

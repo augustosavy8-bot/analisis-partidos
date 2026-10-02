@@ -134,7 +134,11 @@ export async function procesarCuota(id: string): Promise<string> {
   return `cuota ${id} (${efecto.tipo}): ${s.estado} → ${nuevo}`;
 }
 
-/** topic payment: por ahora sólo actualiza el estado del pago de una cuota (los del kit llegan en la fase 6). */
+/**
+ * topic payment: puede ser el cobro de una cuota de la suscripción o el pago de
+ * un pedido del kit (Checkout Pro, external_reference = id del pedido).
+ * Se consulta el pago a MP: lo que diga la notificación no se usa.
+ */
 export async function procesarPago(id: string): Promise<string> {
   const pago = await obtenerPagoMp(id);
   const { data } = await db()
@@ -143,7 +147,26 @@ export async function procesarPago(id: string): Promise<string> {
     .eq("mp_payment_id", String(id))
     .select("id");
   if (data?.length) return `pago ${id} (${pago.status}): cuota actualizada`;
-  return `pago ${id} (${pago.status}) sin cuota asociada: queda para la fase 6 (kit)`;
+  return registrarPagoDePedido(pago);
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Registra un pago de MP en su pedido (lo usan el webhook y la vuelta desde Checkout Pro). */
+export async function registrarPagoDePedido(pago: Awaited<ReturnType<typeof obtenerPagoMp>>): Promise<string> {
+  const pedidoId = pago.external_reference ?? "";
+  if (!pago.id || !UUID.test(pedidoId)) return `pago ${pago.id} sin pedido asociado: ignorado`;
+  const { data, error } = await db().rpc("registrar_pago_pedido", {
+    p_pedido_id: pedidoId,
+    p_mp_payment_id: String(pago.id),
+    p_estado: pago.status ?? "desconocido",
+    p_status_detail: pago.status_detail ?? null,
+    p_monto_centavos: pesosACentavos(pago.transaction_amount ?? 0),
+    p_medio: pago.payment_type_id ?? null,
+  });
+  if (error) throw new Error(`registrar_pago_pedido: ${error.message}`);
+  if (data === "monto_distinto") console.error(`PAGO CON MONTO DISTINTO: pago=${pago.id} pedido=${pedidoId}`);
+  return `pago ${pago.id} (${pago.status}) del pedido ${pedidoId}: ${data}`;
 }
 
 export async function procesarEvento(topic: string | null, dataId: string | null): Promise<string> {

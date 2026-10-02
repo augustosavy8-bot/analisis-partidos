@@ -897,4 +897,61 @@ begin
   perform pg_temp.check(true, 'cambio de plan: con pago pendiente no se puede cambiar');
 end $$;
 
+-- ---------------------------------------------------------------- fase 6: kit
+do $$
+declare
+  v_c uuid := '00000000-0000-4000-8000-0000000000cf';
+  v_r jsonb; v_r2 jsonb; v_p uuid; v_stock_kit int; v_estado text; v_res text;
+begin
+  update public.productos set stock = 5 where codigo = 'kit_inicial';
+  update public.productos set stock = 50 where codigo = 'chip';
+
+  -- Pedido: precios y envío desde la base, stock reservado.
+  v_r := public.crear_pedido(v_c, '[{"codigo":"kit_inicial","cantidad":1},{"codigo":"chip","cantidad":2}]', 'envio', '{"calle":"San Martín 123"}');
+  v_p := (v_r->>'pedido_id')::uuid;
+  perform pg_temp.check((v_r->>'ok')::boolean and (v_r->>'total_centavos')::int = 2500000 + 2 * 300000 + 500000
+    and (select stock from public.productos where codigo = 'kit_inicial') = 4
+    and (select stock from public.productos where codigo = 'chip') = 48,
+    'kit: el pedido calcula el total en la base y reserva el stock');
+
+  -- Más de lo que hay: no crea nada.
+  v_r2 := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":31}]', 'retiro', null);
+  perform pg_temp.check(not (v_r2->>'ok')::boolean and v_r2->>'motivo' like 'max_por_pedido:%', 'kit: más del máximo por pedido no crea nada');
+  update public.productos set stock = 1 where codigo = 'chip';
+  v_r2 := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":4}]', 'retiro', null);  -- 1 + 2 que libera el anterior = 3
+  update public.productos set stock = 48 where codigo = 'chip';
+  perform pg_temp.check(not (v_r2->>'ok')::boolean and v_r2->>'motivo' like 'sin_stock:%', 'kit: sin stock suficiente no se crea el pedido');
+
+  -- Un nuevo pedido cancela el impago anterior y le devuelve el stock.
+  perform pg_temp.check((select estado from public.pedidos where id = v_p) = 'pendiente_pago', 'kit: un pedido fallido no toca el anterior');
+  v_r2 := public.crear_pedido(v_c, '[{"codigo":"kit_inicial","cantidad":1}]', 'retiro', null);
+  perform pg_temp.check((select estado from public.pedidos where id = v_p) = 'cancelado'
+    and (select stock from public.productos where codigo = 'chip') = 50
+    and (select stock from public.productos where codigo = 'kit_inicial') = 4
+    and (v_r2->>'total_centavos')::int = 2500000,
+    'kit: el pedido nuevo cancela el impago anterior (sin acaparar stock); retiro no paga envío');
+  v_p := (v_r2->>'pedido_id')::uuid;
+
+  -- Pago rechazado: el pedido sigue esperando. Monto distinto: no se marca.
+  v_res := public.registrar_pago_pedido(v_p, 'pay-kit-1', 'rejected', 'cc_rejected_other_reason', 2500000, 'credit_card');
+  perform pg_temp.check(v_res = 'registrado' and (select estado from public.pedidos where id = v_p) = 'pendiente_pago', 'kit: pago rechazado no cambia el pedido');
+  v_res := public.registrar_pago_pedido(v_p, 'pay-kit-2', 'approved', 'accredited', 100, 'credit_card');
+  perform pg_temp.check(v_res = 'monto_distinto' and (select estado from public.pedidos where id = v_p) = 'pendiente_pago', 'kit: un pago por otro monto no marca el pedido');
+
+  -- Aprobado: pagado, idempotente.
+  v_res := public.registrar_pago_pedido(v_p, 'pay-kit-3', 'approved', 'accredited', 2500000, 'credit_card');
+  perform pg_temp.check(v_res = 'pagado' and (select estado from public.pedidos where id = v_p) = 'pagado', 'kit: pago aprobado marca el pedido');
+  v_res := public.registrar_pago_pedido(v_p, 'pay-kit-3', 'approved', 'accredited', 2500000, 'credit_card');
+  perform pg_temp.check(v_res = 'ya_pagado' and (select count(*) from public.pagos where mp_payment_id = 'pay-kit-3') = 1, 'kit: el mismo pago dos veces no duplica');
+
+  -- Reserva vencida: el stock vuelve.
+  v_r := public.crear_pedido(v_c, '[{"codigo":"kit_inicial","cantidad":2}]', 'retiro', null);
+  select stock into v_stock_kit from public.productos where codigo = 'kit_inicial';
+  update public.pedidos set reserva_hasta = now() - interval '1 minute' where id = (v_r->>'pedido_id')::uuid;
+  perform public.liberar_reservas_vencidas();
+  perform pg_temp.check((select estado from public.pedidos where id = (v_r->>'pedido_id')::uuid) = 'expirado'
+    and (select stock from public.productos where codigo = 'kit_inicial') = v_stock_kit + 2,
+    'kit: la reserva vencida devuelve el stock');
+end $$;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

@@ -429,3 +429,49 @@ por email). El plan "de verdad" (qué puede usar el comercio) es el de nuestra b
 las promos quedan guardadas pero inactivas (si no, `registrar_suma` las seguiría
 aplicando: Básico con puntos dobles). Al volver a Pro se reactivan a mano. Los
 premios de más no se borran: simplemente no se pueden crear nuevos.
+
+## Fase 6 — Kit NFC con Checkout Pro
+
+### Qué se hizo
+- `/panel/kit`: elegir kit y chips sueltos, envío (con dirección) o retiro, total,
+  y "Pagar con Mercado Pago". También la lista de pedidos del comercio.
+- `crear_pedido` (Postgres): reserva el stock por 30 minutos, todo o nada.
+- Preferencia de Checkout Pro con vuelta a `/panel/kit/resultado`, que verifica el
+  pago con la API de MP.
+- El webhook `payment` reconoce los pagos de pedidos por `external_reference`.
+
+### Conceptos de pagos que aparecieron
+
+**1. Checkout Pro vs. formulario propio.** Para la suscripción usamos el formulario
+de tarjeta (Brick) en nuestra página. Para el kit, Checkout Pro: armamos una
+"preferencia" (qué se vende, a cuánto, a dónde volver) y mandamos al comprador a la
+página de MP, que ofrece todos los medios (tarjeta, dinero en cuenta, cuotas). Es lo
+más simple y seguro para un pago único.
+
+**2. Reserva de stock.** Entre "armé el pedido" y "pagué" pasan minutos. Si no
+reservamos, dos comercios pueden pagar el último kit. Por eso el stock se descuenta
+al crear el pedido (con `FOR UPDATE`: dos pedidos simultáneos se ordenan) y vuelve
+si no se paga en 30 minutos. La preferencia vence a la misma hora
+(`expiration_date_to`), así no se puede pagar un pedido cuya reserva ya se liberó.
+
+**3. Anti-acaparamiento.** Un comercio puede tener un solo pedido impago: armar
+otro cancela el anterior y devuelve su stock.
+
+**4. `binary_mode`.** Sin él, un pago puede quedar "pendiente" días (efectivo en
+Rapipago). Con una reserva de 30 minutos eso no sirve: pedimos aprobado o rechazado
+al instante y excluimos los medios en efectivo.
+
+**5. La vuelta desde MP no prueba nada, pero sirve.** MP redirige con
+`?payment_id=…&status=approved`, y eso lo puede escribir cualquiera. No lo creemos:
+con el `payment_id` consultamos el pago a la API, verificamos que su
+`external_reference` sea ESTE pedido y que el monto sea EXACTAMENTE el total. Si
+todo coincide, se registra igual que con el webhook (misma función, idempotente).
+Así el comercio ve "Pagado" al instante aunque el webhook tarde.
+
+**6. El monto exacto.** Un pago aprobado por otro monto (un error, o alguien que
+reutiliza un link) no marca el pedido: queda registrado como `monto_distinto` para
+que lo revise el superadmin.
+
+**7. Pagar tarde.** Si alguien paga después de que venció la reserva (raro, porque
+el link vence), el pedido se marca pagado igual (la plata entró) y se vuelve a tomar
+el stock que haya. El superadmin lo ve en los pedidos (fase 7).

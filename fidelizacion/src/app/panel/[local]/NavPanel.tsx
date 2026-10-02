@@ -21,6 +21,7 @@ function secciones(personal: string): SeccionPanel[] {
     { ruta: "/diseno", nombre: "Diseño", icono: "tarjeta" },
     { ruta: "/mozos", nombre: personal, icono: "mozo" },
     { ruta: "/ajustes", nombre: "Ajustes", icono: "configuracion" },
+    { ruta: "/panel/kit", nombre: "Comprar chips", icono: "nfc", absoluta: true },
     { ruta: "/panel/facturacion", nombre: "Facturación", icono: "wallet", absoluta: true },
   ];
 }

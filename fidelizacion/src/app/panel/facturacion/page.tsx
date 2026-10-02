@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { LogoPoint } from "@/components/landing/LogoPoint";
 import { Encabezado, Seccion, Superficie } from "@/components/app/Superficie";
-import { BotonLink } from "@/components/app/Boton";
+import { BotonLink, claseBoton } from "@/components/app/Boton";
+import { salir } from "../ingresar/actions";
 import { Vacio } from "@/components/Panel";
 import { Icono } from "@/components/Icono";
 import { requerirUsuario } from "@/lib/panel";
@@ -146,9 +147,17 @@ function Marco({ children }: { children: React.ReactNode }) {
   return (
     <div className="pt-app flex flex-1 flex-col">
       <main className="mx-auto w-full max-w-lg flex-1 px-5 py-10">
-        <Link href="/panel" aria-label="Volver al panel">
-          <LogoPoint alto={24} />
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/panel" aria-label="Volver al panel">
+            <LogoPoint alto={24} />
+          </Link>
+          {/* Sin suscripción, /panel vuelve acá: la única salida es cerrar sesión. */}
+          <form action={salir}>
+            <button className={claseBoton("fantasma", "sm")}>
+              <Icono nombre="salir" tamaño={16} /> Salir
+            </button>
+          </form>
+        </div>
         <div className="mt-8">{children}</div>
       </main>
     </div>

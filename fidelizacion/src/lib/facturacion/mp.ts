@@ -1,5 +1,5 @@
 import "server-only";
-import { Invoice, MercadoPagoConfig, Payment, PaymentRefund, PreApproval, PreApprovalPlan, Preference } from "mercadopago";
+import { Invoice, MercadoPagoConfig, Payment, PaymentRefund, PreApproval, PreApprovalPlan, Preference, User } from "mercadopago";
 import { env } from "@/lib/env";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { centavosAPesos } from "./dinero";
@@ -120,6 +120,16 @@ export async function obtenerSuscripcionMp(id: string) {
 /** Cuota de una suscripción ("authorized payment" / factura). */
 export async function obtenerCuotaMp(id: string) {
   return new Invoice(config()).get({ id });
+}
+
+/**
+ * ¿Con qué cuenta de MP estamos cobrando? Las cuentas de prueba tienen la
+ * etiqueta "test_user" (y el usuario TESTUSER…): con ellas los cobros no son reales.
+ */
+export async function cuentaMp(): Promise<{ id: number | null; nickname: string | null; esPrueba: boolean }> {
+  const u = await new User(config()).get();
+  const esPrueba = (u.tags ?? []).includes("test_user") || /^TEST/i.test(u.nickname ?? "");
+  return { id: u.id ?? null, nickname: u.nickname ?? null, esPrueba };
 }
 
 /** Pagos de un pedido (Checkout Pro), por external_reference: para conciliar si el webhook no llegó. */

@@ -6,6 +6,7 @@ import { formatearPesos } from "@/lib/facturacion/dinero";
 import { BotonAccion, FormAdmin, claseCampo } from "./Componentes";
 import { consultarPago, correrConciliacion } from "./actions";
 import { Subnav } from "./Subnav";
+import { EstadoConfig } from "./EstadoConfig";
 
 export const metadata = { title: "Facturación" };
 
@@ -59,6 +60,7 @@ export default async function FacturacionAdmin() {
     <>
       <Titulo accion={<BotonAccion accion={correrConciliacion}>Conciliar con MP ahora</BotonAccion>}>Facturación</Titulo>
       <Subnav actual="/admin/facturacion" />
+      <EstadoConfig />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Dato etiqueta="Ingreso mensual (MRR)" valor={formatearPesos(mrr)} detalle={`+ ${formatearPesos(enPrueba)} cuando terminen las pruebas`} />

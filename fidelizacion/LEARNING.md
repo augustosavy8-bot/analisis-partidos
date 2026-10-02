@@ -513,3 +513,35 @@ para corregirlo a mano; al revés (marcar devuelto sin devolver) sería peor.
 **6. La prueba gratis una sola vez.** Sin esto, cancelar y volver a suscribirse
 daría 14 días gratis cada vez. Si el comercio ya tuvo una suscripción paga, la nueva
 se crea sin plan de MP (que trae la prueba) y con el monto directo: arranca cobrando.
+
+## Fase 8 — Listo para cobrar de verdad
+
+### Qué se hizo
+- `PRODUCCION.md`: la lista, en orden, para pasar de prueba a cobros reales
+  (precios, AFIP, textos legales, SMTP, credenciales, limpieza, primer cobro
+  controlado, cortesías, seguridad y monitoreo).
+- `TESTING.md`: índice y un recorrido completo de 14 pasos.
+- `/admin/facturacion` muestra si MP está en **modo prueba o real** (consultando la
+  cuenta a la API) y si falta alguna clave.
+- Revisión de seguridad con el linter de Supabase.
+
+### Conceptos que aparecieron
+
+**1. Prueba y producción son dos mundos que no se mezclan.** Credenciales, cuentas,
+planes de MP, suscripciones y webhooks de prueba no existen en producción. Por eso
+el cambio es una lista ordenada (y reversible), no "cambiar una variable".
+
+**2. El primer cobro real, controlado.** Antes de abrirlo al público se hace un ciclo
+completo con plata real y montos chicos: alta, cancelación, compra y reembolso. Es la
+única forma de probar lo que el sandbox no prueba (el banco real, la acreditación,
+los mails de MP).
+
+**3. Cobrar no es facturar.** MP mueve la plata; la factura (AFIP) es otra obligación
+y otro sistema. Conviene decidir cómo se emite antes del primer cobro, no después.
+
+**4. Mostrar el modo en pantalla.** Un cartel "Modo prueba / Modo real" evita el error
+más caro: creer que se está cobrando cuando no (o al revés).
+
+**5. Seguridad en capas.** Ninguna medida sola alcanza: RLS en la base, escrituras sólo
+desde el servidor, firma de webhooks, verificación contra la API, montos calculados en
+el servidor, idempotencia y conciliación. Si una falla, las otras contienen el daño.

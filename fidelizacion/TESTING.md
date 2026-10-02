@@ -4,6 +4,43 @@ Todo se prueba en el **sandbox de Mercado Pago**, con usuarios de prueba. Nunca
 con tarjetas ni cuentas reales. Este documento se completa fase por fase; la
 fase 8 lo cierra con todos los casos y el checklist para producción.
 
+## Índice
+
+1. [Credenciales para probar](#credenciales-para-probar) (leer primero)
+2. [Recorrido completo en 20 minutos](#recorrido-completo-en-20-minutos) (antes de cada cambio grande)
+3. Casos por fase: [1](#fase-1--esquema-planes-y-productos) ·
+   [2 registro y alta](#fase-2--registro-y-alta-con-prueba-gratis) ·
+   [3 webhooks](#fase-3--webhooks-y-control-de-acceso) ·
+   [4 morosidad](#fase-4--cobros-fallidos-morosidad-pausa-y-cancelación) ·
+   [5 cambio de plan](#fase-5--cambio-de-plan) ·
+   [6 kit](#fase-6--kit-nfc-checkout-pro) ·
+   [7 admin](#fase-7--panel-del-superadmin-y-conciliación-diaria)
+4. Pruebas automáticas: `npm test` (lógica en TypeScript) y `./scripts/test-db.sh`
+   (base de datos: RLS, funciones de pagos). Las dos tienen que pasar antes de cada deploy.
+5. Para cobrar de verdad: `PRODUCCION.md`.
+
+## Recorrido completo en 20 minutos
+
+Con credenciales de prueba, en este orden. Si algo falla, el caso detallado está
+en la fase correspondiente.
+
+| # | Qué hacer | Qué tiene que pasar |
+|---|---|---|
+| 1 | `/sumate` → registrar un comercio nuevo con un email real | Llega el mail de confirmación (si no: SMTP, fase 2 paso 0) |
+| 2 | Confirmar → `/panel/facturacion` → Pro, email del comprador de prueba, tarjeta `APRO` | "Empezar prueba gratis" → panel del local; Facturación dice "prueba gratis" |
+| 3 | `/admin/facturacion/eventos` | Llegan eventos `subscription_preapproval` con firma válida y procesados |
+| 4 | Facturación → Pasar a Básico | Inmediato (en prueba); Promos y Mensajes piden "Pasar a Pro" |
+| 5 | Facturación → Pasar a Pro | Vuelve todo |
+| 6 | SQL: simular cobro fallido hace 20 días (fase 4) | Cartel rojo en el panel; el toque dice "Este local pausó su programa de puntos"; el canje anda |
+| 7 | SQL: volver a `trialing` | El cartel desaparece; el toque suma |
+| 8 | Facturación → Cambiar la tarjeta (Visa de prueba, `APRO`) | "Listo, actualizamos tu tarjeta" |
+| 9 | Comprar chips → 1 kit, retiro → pagar logueado como comprador de prueba (`APRO`) | "¡Gracias por tu compra!" · stock baja |
+| 10 | `/admin/facturacion/pedidos` → Preparando → Listo para retirar → Entregado | El comercio ve cada paso en Novedades |
+| 11 | Facturación → Pausar → Reactivar | Avisos "pausada" / "reactivaste" |
+| 12 | Facturación → Cancelar | "Cancelado · todo sigue hasta el …"; en MP figura cancelada |
+| 13 | "Volver a activar" | Ya no ofrece prueba gratis |
+| 14 | `/admin/facturacion` → Conciliar con MP ahora | Resumen sin errores |
+
 ## Credenciales para probar
 
 Lo que funcionó (verificado el 2/10/2026):

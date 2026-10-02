@@ -11,7 +11,7 @@ import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 export type EstadoAjustes = { error?: string; ok?: number };
 
 export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: FormData): Promise<EstadoAjustes> {
-  const { db, local } = await requerirLocal(slug);
+  const { admin, local } = await requerirLocal(slug);
   const nombre = String(form.get("nombre") ?? "").trim();
   const rubro = String(form.get("rubro") ?? "").trim() || null;
   const termino = String(form.get("termino_personal") ?? "mozo");
@@ -34,7 +34,7 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   if (latitud !== null && (!Number.isFinite(latitud) || latitud < -90 || latitud > 90)) return { error: "La latitud tiene que estar entre -90 y 90." };
   if (longitud !== null && (!Number.isFinite(longitud) || longitud < -180 || longitud > 180)) return { error: "La longitud tiene que estar entre -180 y 180." };
 
-  const { error } = await db
+  const { error } = await admin
     .from("locales")
     .update({
       nombre,

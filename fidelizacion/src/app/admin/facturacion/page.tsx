@@ -39,7 +39,7 @@ export default async function FacturacionAdmin() {
     db.from("pagos_suscripcion").select("monto_centavos").eq("estado_pago", "approved").gte("fecha_pago", hace30),
     db.from("pagos").select("monto_centavos, reembolsado_centavos").eq("estado", "approved").gte("created_at", hace30),
     db.from("pedidos").select("id", { count: "exact", head: true }).in("estado", ["pagado", "preparando"]),
-    db.from("eventos_pago").select("id", { count: "exact", head: true }).is("procesado_en", null),
+    db.from("eventos_pago").select("id", { count: "exact", head: true }).is("procesado_en", null).eq("firma_valida", true),
     db.from("solicitudes_arrepentimiento").select("id, codigo, nombre, email, tipo, referencia, motivo, created_at").eq("estado", "nueva").order("created_at"),
   ]);
 

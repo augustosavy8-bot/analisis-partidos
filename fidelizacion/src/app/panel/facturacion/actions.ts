@@ -75,25 +75,39 @@ export async function suscribirse(entrada: { comercioId: string; plan: string; t
     if (!mpId) throw new Error("Mercado Pago no devolvió el id de la suscripción");
 
     const inicial = estadoInicial(resp, yaUsoPrueba ? 0 : plan.dias_prueba);
-    const { error } = await admin.rpc("registrar_alta_suscripcion", {
-      p_comercio_id: comercio.id,
-      p_plan_id: plan.id,
-      p_mp_preapproval_id: mpId,
-      p_payer_email: email,
-      p_precio_centavos: plan.precio_centavos,
-      p_estado: inicial.estado,
-      p_trial_ends_at: inicial.trialEndsAt,
-      p_current_period_end: inicial.currentPeriodEnd,
-      p_actor: userId,
-    });
+    const registrar = () =>
+      admin.rpc("registrar_alta_suscripcion", {
+        p_comercio_id: comercio.id,
+        p_plan_id: plan.id,
+        p_mp_preapproval_id: mpId,
+        p_payer_email: email,
+        p_precio_centavos: plan.precio_centavos,
+        p_estado: inicial.estado,
+        p_trial_ends_at: inicial.trialEndsAt,
+        p_current_period_end: inicial.currentPeriodEnd,
+        p_actor: userId,
+      });
+    // Un reintento: casi siempre es un corte momentáneo con la base (y es idempotente).
+    let { error } = await registrar();
+    if (error) ({ error } = await registrar());
     if (error) throw new Error(`registrar_alta_suscripcion: ${error.message}`);
   } catch (e) {
-    await admin.rpc("liberar_alta_suscripcion", { p_comercio_id: comercio.id });
     if (mpId) {
-      // Quedó creada en MP pero no en nuestra base: lo va a recuperar el webhook.
+      // Quedó creada en MP pero no en nuestra base. Si la dejáramos así y el
+      // comercio reintentara, MP cobraría DOS suscripciones. Se cancela en MP.
       console.error(`SUSCRIPCIÓN SIN REGISTRAR: mp=${mpId} comercio=${comercio.id}`, e);
-      return { ok: false, error: "Tu tarjeta quedó registrada y estamos terminando de activar tu cuenta. Recargá en un minuto." };
+      try {
+        await actualizarSuscripcionMp(mpId, { status: "cancelled" });
+      } catch (eCancelar) {
+        // No se pudo cancelar: NO se libera la reserva (no puede crear otra); el
+        // webhook o la conciliación la recuperan y la registran.
+        console.error(`No se pudo cancelar la suscripción huérfana ${mpId}`, resumenErrorMp(eCancelar));
+        return { ok: false, error: "Tu tarjeta quedó registrada y estamos terminando de activar tu cuenta. Recargá en unos minutos." };
+      }
+      await admin.rpc("liberar_alta_suscripcion", { p_comercio_id: comercio.id });
+      return { ok: false, error: "No pudimos terminar de activar tu cuenta y anulamos el intento (no se te va a cobrar). Probá de nuevo en un rato." };
     }
+    await admin.rpc("liberar_alta_suscripcion", { p_comercio_id: comercio.id });
     console.error("Alta de suscripción fallida", comercio.id, resumenErrorMp(e));
     return { ok: false, error: mensajeErrorMp(e) };
   }
@@ -108,7 +122,9 @@ export type ResultadoGestion = { ok: true; mensaje: string } | { ok: false; erro
 export type AccionSuscripcion = "pausar" | "reactivar" | "cancelar";
 
 const PUEDE: Record<AccionSuscripcion, string[]> = {
-  pausar: ["trialing", "authorized"],
+  // En la prueba gratis no se pausa (no hay nada pago que "guardar"): pausar
+  // dejaría sumar puntos sin que MP cobre nunca. Se cancela y listo.
+  pausar: ["authorized"],
   reactivar: ["paused"],
   cancelar: ["pending", "trialing", "authorized", "past_due", "paused"],
 };

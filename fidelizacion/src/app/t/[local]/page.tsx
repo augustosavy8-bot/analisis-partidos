@@ -116,6 +116,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
         alToque={!!canjeAlToqueHasta(tarjeta.ultimo_toque_en)}
         pedirCumple={local.puntos_cumple > 0 && !cumple}
         limite={limite}
+        pausado={sp.pausado === "1"}
         urlPase={urlPase}
         qrPase={qrPase}
         googleWallet={(esAndroid || esCompu) && googleWalletActivo() ? `/t/${local.slug}/google-wallet` : undefined}

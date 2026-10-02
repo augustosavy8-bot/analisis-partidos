@@ -1,6 +1,6 @@
 import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
-import { esNoEncontradoMp, obtenerCuotaMp, obtenerPagoMp, obtenerSuscripcionMp } from "./mp";
+import { actualizarSuscripcionMp, esNoEncontradoMp, obtenerCuotaMp, obtenerPagoMp, obtenerSuscripcionMp } from "./mp";
 import { estadoInicial, type EstadoSuscripcion } from "./estado";
 import { efectoDeCuota, estadoDesdePreapproval, estadoTrasCuota } from "./transiciones";
 import { pesosACentavos } from "./dinero";
@@ -37,25 +37,53 @@ async function aplicarCambio(s: Suscripcion, estado: EstadoSuscripcion, cambios:
 /**
  * Suscripción que existe en MP pero no en nuestra base (el alta se cortó entre
  * "MP la creó" y "la guardamos"). La reconstruimos con external_reference
- * (= id del comercio) y el plan de MP.
+ * (= id del comercio) y el plan: por el plan de MP o, si se creó sin plan
+ * (re-suscripción sin prueba), por el monto.
+ *
+ * Si el comercio YA tiene otra suscripción vigente, la huérfana sobra: se
+ * cancela en MP (si no, se le cobrarían dos).
  */
 async function recuperarHuerfana(resp: Awaited<ReturnType<typeof obtenerSuscripcionMp>>): Promise<Suscripcion | null> {
   const comercioId = resp.external_reference;
   const planMpId = (resp as { preapproval_plan_id?: string }).preapproval_plan_id;
-  if (!resp.id || !comercioId || !planMpId || !["authorized", "pending"].includes(resp.status ?? "")) return null;
+  if (!resp.id || !comercioId || !["authorized", "pending"].includes(resp.status ?? "")) return null;
   const admin = db();
-  const [{ data: comercio }, { data: plan }] = await Promise.all([
+  const monto = resp.auto_recurring?.transaction_amount != null ? pesosACentavos(resp.auto_recurring.transaction_amount) : null;
+  const consultaPlan = planMpId
+    ? admin.from("planes").select("id, precio_centavos, dias_prueba").eq("mp_preapproval_plan_id", planMpId).maybeSingle()
+    : monto != null
+      ? admin.from("planes").select("id, precio_centavos, dias_prueba").eq("precio_centavos", monto).eq("activo", true).limit(1).maybeSingle()
+      : Promise.resolve({ data: null });
+  const [{ data: comercio }, { data: plan }, { data: otra }] = await Promise.all([
     admin.from("comercios").select("id").eq("id", comercioId).maybeSingle(),
-    admin.from("planes").select("id, precio_centavos, dias_prueba").eq("mp_preapproval_plan_id", planMpId).maybeSingle(),
+    consultaPlan,
+    admin
+      .from("suscripciones")
+      .select("id")
+      .eq("comercio_id", comercioId)
+      .not("mp_preapproval_id", "is", null)
+      .neq("mp_preapproval_id", resp.id)
+      .not("estado", "in", "(cancelled,cortesia)")
+      .limit(1)
+      .maybeSingle(),
   ]);
-  if (!comercio || !plan) return null;
-  const inicial = estadoInicial(resp, plan.dias_prueba);
+  if (!comercio) return null;
+  if (otra) {
+    await actualizarSuscripcionMp(resp.id, { status: "cancelled" });
+    console.error(`Suscripción duplicada ${resp.id} del comercio ${comercioId}: cancelada en MP`);
+    return null;
+  }
+  if (!plan) {
+    console.error(`SUSCRIPCIÓN HUÉRFANA SIN PLAN: mp=${resp.id} comercio=${comercioId} monto=${monto}`);
+    return null;
+  }
+  const inicial = estadoInicial(resp, planMpId ? plan.dias_prueba : 0);
   const { error } = await admin.rpc("registrar_alta_suscripcion", {
     p_comercio_id: comercio.id,
     p_plan_id: plan.id,
     p_mp_preapproval_id: resp.id,
     p_payer_email: resp.payer_email ?? null,
-    p_precio_centavos: resp.auto_recurring?.transaction_amount != null ? pesosACentavos(resp.auto_recurring.transaction_amount) : plan.precio_centavos,
+    p_precio_centavos: monto ?? plan.precio_centavos,
     p_estado: inicial.estado,
     p_trial_ends_at: inicial.trialEndsAt,
     p_current_period_end: inicial.currentPeriodEnd,

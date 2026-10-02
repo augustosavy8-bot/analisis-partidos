@@ -35,6 +35,38 @@ export async function registrarIntento(req: Request, exitoso: boolean) {
   await crearClienteAdmin().from("intentos_app").insert({ ip_hash: hashIp(req), exitoso });
 }
 
+// --- Límite por número ----------------------------------------------------------------------
+// Entrar con un WhatsApp no pide código (todavía no hay OTP): además del límite
+// por IP, cada número admite pocos ingresos por día, venga de donde venga.
+// Se guarda en la misma tabla, con el hash del número en vez del de la IP.
+
+export const LIMITE_POR_NUMERO = { ventanaHoras: 24, maximo: 5 } as const;
+
+const hashNumero = (whatsapp: string) => createHash("sha256").update(`wa:${whatsapp}|${env.hmacSecret}`).digest("hex");
+
+export async function numeroPermitido(whatsapp: string) {
+  const desde = new Date(Date.now() - LIMITE_POR_NUMERO.ventanaHoras * 3_600_000).toISOString();
+  const { count } = await crearClienteAdmin()
+    .from("intentos_app")
+    .select("id", { count: "exact", head: true })
+    .eq("ip_hash", hashNumero(whatsapp))
+    .gte("created_at", desde);
+  return (count ?? 0) < LIMITE_POR_NUMERO.maximo;
+}
+
+export async function registrarIntentoNumero(whatsapp: string, exitoso: boolean) {
+  await crearClienteAdmin().from("intentos_app").insert({ ip_hash: hashNumero(whatsapp), exitoso });
+}
+
+/** Límite por IP para las Server Actions (no tienen un Request a mano). */
+export async function ingresoPermitidoIp(ip: string | null) {
+  return ingresoPermitido(new Request("http://x", { headers: ip ? { "x-forwarded-for": ip } : {} }));
+}
+
+export async function registrarIntentoIp(ip: string | null, exitoso: boolean) {
+  await registrarIntento(new Request("http://x", { headers: ip ? { "x-forwarded-for": ip } : {} }), exitoso);
+}
+
 /** Da un token de dispositivo nuevo al cliente (como vincularCelular en la web). */
 export async function nuevoDispositivoApp(clienteId: string, userAgent: string) {
   const { token, hash } = nuevoTokenDispositivo();

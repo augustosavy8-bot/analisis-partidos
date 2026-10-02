@@ -41,7 +41,10 @@ export function FilaPremio({ slug, premio }: { slug: string; premio: Premio }) {
       </div>
       <div className="flex w-full justify-end gap-2 sm:w-auto">
         <BotonSecundario onClick={() => setEditando(true)}>Editar</BotonSecundario>
-        <BotonSecundario disabled={pendiente} onClick={() => start(() => alternarPremio(slug, premio.id, !premio.activo))}>
+        <BotonSecundario disabled={pendiente} onClick={() => start(async () => {
+              const r = await alternarPremio(slug, premio.id, !premio.activo);
+              if (r.error) avisar(r.error, "error");
+            })}>
           {premio.activo ? "Ocultar" : "Mostrar"}
         </BotonSecundario>
         <button

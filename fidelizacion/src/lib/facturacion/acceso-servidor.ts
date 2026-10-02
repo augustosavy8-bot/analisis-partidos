@@ -22,6 +22,7 @@ export const accesoDelLocal = cache(async (localId: string): Promise<Acceso> => 
       pastDueDesde: s.pastDueDesde,
       currentPeriodEnd: s.currentPeriodEnd,
       cortesiaHasta: s.cortesiaHasta,
+      creadaEn: s.creadaEn,
     },
     cfg,
   );
@@ -44,6 +45,13 @@ export async function exigirFuncion(localId: string, f: Funcion): Promise<string
   const a = await accesoDelLocal(localId);
   if (puedeUsar(a, f)) return null;
   if (a.nivel === "sin_suscripcion") return "Activá tu cuenta en Facturación para usar esta función.";
+  // Cuenta restringida por falta de pago: el problema no es el plan (no decirle
+  // "pasá a Pro" a alguien que ya es Pro), es regularizar.
+  if (a.nivel === "restringido" || a.nivel === "sin_sumar") {
+    return a.estado === "paused"
+      ? "Tu suscripción está pausada: reactivala en Facturación para usar esta función."
+      : "Tu cuenta está restringida: regularizá el pago en Facturación para usar esta función.";
+  }
   return MENSAJES[f];
 }
 

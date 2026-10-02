@@ -37,7 +37,9 @@ export async function solicitarCanje(slug: string, premioId: string) {
     after(() => notificarCambioTarjeta(tarjeta.serial));
     redirect(`/t/${slug}?m=${alToque.movimiento_id}`);
   }
-  if (alToque && alToque.motivo !== "sin_toque") redirect(`/aviso?m=${alToque.motivo}`);
+  // El dueño desactivó el premio mientras el cliente tenía la tarjeta abierta: se recarga.
+  if (alToque?.motivo === "premio_invalido") return refresh();
+  if (alToque && alToque.motivo !== "sin_toque") redirect(`/aviso?m=${alToque.motivo}&l=${encodeURIComponent(slug)}`);
   // Sin toque reciente no hay canje (ni canje pendiente): la pantalla vuelve a
   // pedir que apoyen el llavero.
   refresh();

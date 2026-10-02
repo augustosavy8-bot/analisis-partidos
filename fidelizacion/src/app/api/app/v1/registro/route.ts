@@ -1,3 +1,4 @@
+import { cumpleValido } from "@/lib/promos";
 import { headers } from "next/headers";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { nuevoTokenDispositivo } from "@/lib/dispositivo";
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
   const whatsapp = typeof c?.whatsapp === "string" ? normalizarWhatsapp(c.whatsapp) : null;
   const dia = Number(c?.cumple?.dia);
   const mes = Number(c?.cumple?.mes);
-  const cumple = c?.cumple ? (Number.isInteger(dia) && Number.isInteger(mes) && dia >= 1 && dia <= 31 && mes >= 1 && mes <= 12 ? { dia, mes } : "invalido") : null;
+  const cumple = c?.cumple ? (Number.isInteger(dia) && Number.isInteger(mes) && cumpleValido(dia, mes) ? { dia, mes } : "invalido") : null;
 
   if (nombre.length < 2 || nombre.length > 80) return error("Poné tu nombre.", 400);
   if (!whatsapp) return error("Revisá el número de WhatsApp (con código de área).", 400);

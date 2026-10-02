@@ -7,7 +7,9 @@ export const metadata = { title: "Aviso" };
 const GENERICO = { titulo: "Algo salió mal", texto: "Probá de nuevo en un ratito." };
 
 export default async function Aviso({ searchParams }: PageProps<"/aviso">) {
-  const { m } = await searchParams;
+  const { m, l } = await searchParams;
+  // Si venía de la tarjeta de un local, el botón vuelve ahí (sólo un slug, nunca una URL).
+  const slug = typeof l === "string" && /^[a-z0-9-]{1,60}$/.test(l) ? l : null;
   const msg = (typeof m === "string" && MENSAJES[m]) || GENERICO;
   return (
     <div className="pt-app flex flex-1 flex-col">
@@ -17,8 +19,8 @@ export default async function Aviso({ searchParams }: PageProps<"/aviso">) {
         </span>
         <h1 className="pt-app-titulo mt-5 text-pt-ink">{msg.titulo}</h1>
         <p className="mt-2 pt-app-texto text-pt-ink-2">{msg.texto}</p>
-        <BotonLink href="/" variante="secundario" className="mt-8">
-          Volver al inicio
+        <BotonLink href={slug ? `/t/${slug}` : "/"} variante="secundario" className="mt-8">
+          {slug ? "Volver a mi tarjeta" : "Volver al inicio"}
         </BotonLink>
       </main>
     </div>

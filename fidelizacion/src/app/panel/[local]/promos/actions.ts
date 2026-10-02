@@ -9,15 +9,18 @@ export type EstadoForm = { error?: string; ok?: number };
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function guardarRegalos(slug: string, _prev: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const { db, local } = await requerirLocal(slug);
-  const bloqueo = await exigirFuncion(local.id, "promos");
-  if (bloqueo) return { error: bloqueo };
+  const { admin, local } = await requerirLocal(slug);
   const bienvenida = Number(form.get("puntos_bienvenida") || 0);
   const cumple = Number(form.get("puntos_cumple") || 0);
   for (const n of [bienvenida, cumple]) {
     if (!Number.isInteger(n) || n < 0 || n > 50) return { error: "Los puntos de regalo van de 0 a 50." };
   }
-  const { error } = await db
+  // Apagar los regalos (0 y 0) siempre se puede, aunque el plan o la cuenta no tengan promos.
+  if (bienvenida > 0 || cumple > 0) {
+    const bloqueo = await exigirFuncion(local.id, "promos");
+    if (bloqueo) return { error: bloqueo };
+  }
+  const { error } = await admin
     .from("locales")
     .update({ puntos_bienvenida: bienvenida, puntos_cumple: cumple })
     .eq("id", local.id);
@@ -27,7 +30,7 @@ export async function guardarRegalos(slug: string, _prev: EstadoForm, form: Form
 }
 
 export async function crearPromo(slug: string, _prev: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const { db, local } = await requerirLocal(slug);
+  const { admin, local } = await requerirLocal(slug);
   const bloqueo = await exigirFuncion(local.id, "promos");
   if (bloqueo) return { error: bloqueo };
   const nombre = String(form.get("nombre") ?? "").trim();
@@ -45,7 +48,7 @@ export async function crearPromo(slug: string, _prev: EstadoForm, form: FormData
   if (hasta <= desde) return { error: "El horario de fin tiene que ser después del de inicio (no puede pasar la medianoche)." };
   if (![2, 3].includes(puntos)) return { error: "Elegí puntos dobles o triples." };
 
-  const { error } = await db
+  const { error } = await admin
     .from("promos")
     .insert({ local_id: local.id, nombre, dias: [...new Set(dias)], desde, hasta, puntos });
   if (error) return { error: "No se pudo guardar. Probá de nuevo." };
@@ -53,15 +56,20 @@ export async function crearPromo(slug: string, _prev: EstadoForm, form: FormData
   return { ok: Date.now() };
 }
 
-export async function alternarPromo(slug: string, id: string, activa: boolean) {
-  const { db, local } = await requerirLocal(slug);
-  if (activa && (await exigirFuncion(local.id, "promos"))) return;
-  await db.from("promos").update({ activa }).eq("id", id).eq("local_id", local.id);
+export async function alternarPromo(slug: string, id: string, activa: boolean): Promise<{ error?: string }> {
+  const { admin, local } = await requerirLocal(slug);
+  // Pausar siempre se puede; activar necesita un plan con promos y la cuenta al día.
+  if (activa) {
+    const bloqueo = await exigirFuncion(local.id, "promos");
+    if (bloqueo) return { error: bloqueo };
+  }
+  await admin.from("promos").update({ activa }).eq("id", id).eq("local_id", local.id);
   refresh();
+  return {};
 }
 
 export async function borrarPromo(slug: string, id: string) {
-  const { db, local } = await requerirLocal(slug);
-  await db.from("promos").delete().eq("id", id).eq("local_id", local.id);
+  const { admin, local } = await requerirLocal(slug);
+  await admin.from("promos").delete().eq("id", id).eq("local_id", local.id);
   refresh();
 }

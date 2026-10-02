@@ -8,7 +8,8 @@ import { crearClienteServidor } from "@/lib/supabase/server";
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const next = req.nextUrl.searchParams.get("next") ?? "/panel";
-  const destino = next.startsWith("/") && !next.startsWith("//") ? next : "/panel";
+  // Sólo rutas propias: "/\\evil.com" o "//evil.com" el navegador los toma como otro sitio.
+  const destino = /^\/(?![\/\\])/.test(next) && new URL(next, req.url).origin === req.nextUrl.origin ? next : "/panel";
 
   if (code) {
     const db = await crearClienteServidor();

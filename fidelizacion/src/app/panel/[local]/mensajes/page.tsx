@@ -12,9 +12,9 @@ export const metadata = { title: "Mensajes" };
 
 export default async function Mensajes({ params }: PageProps<"/panel/[local]/mensajes">) {
   const { local: slug } = await params;
-  const { db, local } = await requerirLocal(slug);
+  const { db, admin, local } = await requerirLocal(slug);
   const [{ data: proximo }, { data: historial }, destinatarios, { data: limite }] = await Promise.all([
-    db.rpc("proximo_mensaje_local", { p_local_id: local.id }),
+    admin.rpc("proximo_mensaje_local", { p_local_id: local.id }),
     db
       .from("mensajes_local")
       .select("id, titulo, texto, estado, google_enviados, google_fallidos, apple_pases, created_at")

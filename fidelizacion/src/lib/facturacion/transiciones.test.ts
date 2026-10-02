@@ -48,6 +48,16 @@ describe("transiciones de la suscripción", () => {
 });
 
 describe("control de acceso por plan", () => {
+  it("pending tiene tope: 48 h completo, después restringido y al final no suma", () => {
+    const creada = (horas: number) => new Date(AHORA.getTime() - horas * 3_600_000).toISOString();
+    expect(calcularAcceso(susc({ estado: "pending", creadaEn: creada(1) }), CFG, AHORA).nivel).toBe("completo");
+    expect(calcularAcceso(susc({ estado: "pending", creadaEn: creada(49) }), CFG, AHORA).nivel).toBe("restringido");
+    const vieja = calcularAcceso(susc({ estado: "pending", creadaEn: creada(48 + 8 * 24) }), CFG, AHORA);
+    expect(vieja.nivel).toBe("sin_sumar");
+    expect(puedeUsar(vieja, "sumar_puntos")).toBe(false);
+    expect(puedeUsar(vieja, "canjear")).toBe(true);
+  });
+
   it("activa o en prueba: todo lo del plan", () => {
     const a = calcularAcceso(susc({ estado: "trialing" }), CFG, AHORA);
     expect(a.nivel).toBe("completo");

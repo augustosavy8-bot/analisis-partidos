@@ -1,5 +1,6 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
+import { env } from "@/lib/env";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { colorTextoSobre, type Local } from "@/lib/locales";
@@ -83,12 +84,31 @@ const cacheImagenesRemotas = new Map<string, Promise<string | null>>();
  * Baja una imagen (PNG o JPEG, hasta 5 MB) y la devuelve como data URI. null si no
  * se puede: así un logo caído no rompe el pase y caemos al siguiente nivel.
  */
+/**
+ * Sólo se bajan imágenes de nuestro Storage de Supabase: el servidor nunca hace
+ * pedidos a una URL cualquiera (si no, alguien podría usarlo para llegar a
+ * direcciones internas).
+ */
+export function urlImagenPermitida(url: string, supabaseUrl: string): boolean {
+  try {
+    const u = new URL(url);
+    const base = new URL(supabaseUrl);
+    return u.protocol === "https:" && u.host === base.host && u.pathname.startsWith("/storage/v1/object/public/");
+  } catch {
+    return false;
+  }
+}
+
 function imagenRemota(url: string): Promise<string | null> {
+  if (!urlImagenPermitida(url, env.supabaseUrl)) {
+    console.warn(`Ícono: URL no permitida ${url.slice(0, 120)}`);
+    return Promise.resolve(null);
+  }
   let p = cacheImagenesRemotas.get(url);
   if (!p) {
     p = (async () => {
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000), redirect: "error" });
         const tipo = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
         if (!res.ok || !TIPOS_IMAGEN.has(tipo)) {
           console.warn(`Ícono: no se pudo usar ${url} (status ${res.status}, tipo "${tipo}")`);

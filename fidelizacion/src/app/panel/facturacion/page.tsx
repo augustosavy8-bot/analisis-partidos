@@ -104,8 +104,15 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
     crearClienteAdmin().from("locales").select("slug").eq("comercio_id", comercio.id).order("created_at").limit(1).maybeSingle(),
   ]);
 
-  // Cancelada (con días pagos por delante): puede volver a suscribirse con ?nueva=1.
-  if (!suscripcion || (suscripcion.estado === "cancelled" && sp.nueva === "1")) {
+  // Cancelada (con días pagos por delante) o en cortesía: puede suscribirse con
+  // ?nueva=1. Con la cortesía vencida, el formulario va directo.
+  const cortesiaVencida =
+    suscripcion?.estado === "cortesia" && !!suscripcion.cortesiaHasta && new Date(suscripcion.cortesiaHasta) <= new Date();
+  if (
+    !suscripcion ||
+    cortesiaVencida ||
+    ((suscripcion.estado === "cancelled" || suscripcion.estado === "cortesia") && sp.nueva === "1")
+  ) {
     const planes = await planesPublicos();
     // La prueba gratis es una vez por comercio (el servidor lo vuelve a verificar al suscribir).
     const { count: pagasAntes } = await crearClienteAdmin()
@@ -212,9 +219,9 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
           </Seccion>
         </div>
       )}
-      {suscripcion.estado === "cancelled" && (
+      {(suscripcion.estado === "cancelled" || suscripcion.estado === "cortesia") && (
         <div className="mt-4">
-          <BotonLink href="/panel/facturacion?nueva=1">Volver a activar</BotonLink>
+          <BotonLink href="/panel/facturacion?nueva=1">{suscripcion.estado === "cortesia" ? "Activar mi suscripción" : "Volver a activar"}</BotonLink>
         </div>
       )}
       {cuotas && cuotas.length > 0 && (

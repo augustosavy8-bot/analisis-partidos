@@ -107,6 +107,9 @@ export async function guardarDiseno(slug: string, _prev: EstadoDiseno, form: For
   for (const tipo of TIPOS_IMAGEN) {
     const accion = String(form.get(`imagen_${tipo}`) ?? "igual");
     if (accion === "borrador") {
+      // Una imagen subida estando en Pro no se publica si después bajó de plan.
+      const sinDiseno = await exigirFuncion(local.id, "diseno_personalizado");
+      if (sinDiseno) return { error: sinDiseno };
       const r = await publicarBorrador(local.id, tipo);
       if (typeof r !== "string") return r;
       cambios[COLUMNA[tipo]] = r;

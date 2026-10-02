@@ -29,7 +29,12 @@ export type SuscripcionAcceso = {
   pastDueDesde: string | null;
   currentPeriodEnd: string | null;
   cortesiaHasta: string | null;
+  /** Alta de la suscripción: pone un tope a "pending" (tarjeta sin confirmar). */
+  creadaEn?: string | null;
 };
+
+/** Cuánto puede quedar en "pending" (MP no confirmó la tarjeta) con todo andando. */
+export const HORAS_PENDIENTE = 48;
 
 export type ConfigAcceso = { diasGracia: number; diasSumarTrasGracia: number };
 
@@ -56,8 +61,17 @@ export function calcularAcceso(s: SuscripcionAcceso | null, cfg: ConfigAcceso, a
       return { ...base, nivel: "completo", hasta: s.cortesiaHasta };
     case "trialing":
     case "authorized":
-    case "pending":
       return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };
+    case "pending": {
+      // MP todavía no confirmó la tarjeta. Sin tope, una suscripción que nunca se
+      // confirma daría el plan gratis para siempre.
+      if (!s.creadaEn) return { ...base, nivel: "completo", hasta: null };
+      const finPendiente = new Date(s.creadaEn).getTime() + HORAS_PENDIENTE * 3_600_000;
+      const finSumar = finPendiente + cfg.diasSumarTrasGracia * DIA;
+      if (t < finPendiente) return { ...base, nivel: "completo", hasta: new Date(finPendiente).toISOString() };
+      if (t < finSumar) return { ...base, nivel: "restringido", hasta: new Date(finSumar).toISOString() };
+      return { ...base, nivel: "sin_sumar", hasta: null };
+    }
     case "past_due": {
       const desde = s.pastDueDesde ? new Date(s.pastDueDesde).getTime() : t;
       const finGracia = desde + cfg.diasGracia * DIA;

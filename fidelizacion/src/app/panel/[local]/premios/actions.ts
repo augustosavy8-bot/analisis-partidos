@@ -2,14 +2,14 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
-import { notificarCambioLocal } from "@/lib/wallet";
+import { actualizarDisenoLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { exigirFuncion, exigirLimite } from "@/lib/facturacion/acceso-servidor";
 
 export type EstadoPremio = { error?: string; ok?: number };
 
 export async function guardarPremio(slug: string, id: string | null, _prev: EstadoPremio, form: FormData): Promise<EstadoPremio> {
-  const { db, local } = await requerirLocal(slug);
+  const { db, admin, local } = await requerirLocal(slug);
   const nombre = String(form.get("nombre") ?? "").trim();
   const descripcion = String(form.get("descripcion") ?? "").trim() || null;
   const puntos = Number(form.get("puntos"));
@@ -28,36 +28,39 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
 
   const datos = { nombre, descripcion, puntos_necesarios: puntos };
   const { error } = id
-    ? await db.from("premios").update(datos).eq("id", id).eq("local_id", local.id)
-    : await db.from("premios").insert({ ...datos, local_id: local.id });
+    ? await admin.from("premios").update(datos).eq("id", id).eq("local_id", local.id)
+    : await admin.from("premios").insert({ ...datos, local_id: local.id });
   if (error) return { error: "No se pudo guardar. Probá de nuevo." };
-  after(() => notificarCambioLocal(local.id)); // premios en los pases de Google y Apple
+  after(() => actualizarDisenoLocal(local.id)); // premios: clase y objetos de Google (progreso), pases de Apple
   refresh();
   return { ok: Date.now() };
 }
 
-export async function alternarPremio(slug: string, id: string, activo: boolean) {
-  const { db, local } = await requerirLocal(slug);
+export async function alternarPremio(slug: string, id: string, activo: boolean): Promise<{ error?: string }> {
+  const { db, admin, local } = await requerirLocal(slug);
   if (activo) {
     // Reactivar un premio cuenta para el límite del plan.
-    if (await exigirFuncion(local.id, "crear_premio")) return;
+    const bloqueo = await exigirFuncion(local.id, "crear_premio");
+    if (bloqueo) return { error: bloqueo };
     const { count } = await db.from("premios").select("id", { count: "exact", head: true }).eq("local_id", local.id).eq("activo", true);
-    if (await exigirLimite(local.id, "premios", (count ?? 0) + 1)) return;
+    const limite = await exigirLimite(local.id, "premios", (count ?? 0) + 1);
+    if (limite) return { error: limite };
   }
-  await db.from("premios").update({ activo }).eq("id", id).eq("local_id", local.id);
-  after(() => notificarCambioLocal(local.id));
+  await admin.from("premios").update({ activo }).eq("id", id).eq("local_id", local.id);
+  after(() => actualizarDisenoLocal(local.id));
   refresh();
+  return {};
 }
 
 /** Si el premio ya se canjeó alguna vez, se desactiva en vez de borrarse (para no perder historial). */
 export async function borrarPremio(slug: string, id: string) {
-  const { db, local } = await requerirLocal(slug);
+  const { db, admin, local } = await requerirLocal(slug);
   const { count } = await db.from("canjes").select("id", { count: "exact", head: true }).eq("premio_id", id);
   if ((count ?? 0) > 0) {
-    await db.from("premios").update({ activo: false }).eq("id", id).eq("local_id", local.id);
+    await admin.from("premios").update({ activo: false }).eq("id", id).eq("local_id", local.id);
   } else {
-    await db.from("premios").delete().eq("id", id).eq("local_id", local.id);
+    await admin.from("premios").delete().eq("id", id).eq("local_id", local.id);
   }
-  after(() => notificarCambioLocal(local.id));
+  after(() => actualizarDisenoLocal(local.id));
   refresh();
 }

@@ -143,12 +143,39 @@ do $$ begin
   exception when insufficient_privilege then raise notice 'ok - dueño no crea premios en otro local';
   end;
 end $$;
-update public.locales set minutos_entre_puntos = 60 where slug = 'cafe-aurora';
-select pg_temp.check((select minutos_entre_puntos from public.locales where slug = 'cafe-aurora') = 60, 'dueño edita la regla de puntos');
-insert into public.premios (local_id, nombre, puntos_necesarios) values ('00000000-0000-4000-8000-000000000001', 'Torta', 15);
-select pg_temp.check(true, 'dueño crea premio en su local');
-update public.locales set nombre = 'hack' where slug = 'otro-bar';
+-- Auditoría: el dueño ya no escribe directo (las acciones del panel validan el
+-- plan y escriben con service role). Si pudiera, se salteaba los límites del plan.
+do $$ begin
+  begin
+    update public.locales set minutos_entre_puntos = 60 where slug = 'cafe-aurora';
+    raise exception 'FALLÓ: dueño edita su local directo';
+  exception when insufficient_privilege then raise notice 'ok - dueño no edita su local directo (va por el servidor)';
+  end;
+  begin
+    insert into public.premios (local_id, nombre, puntos_necesarios) values ('00000000-0000-4000-8000-000000000001', 'Torta', 15);
+    raise exception 'FALLÓ: dueño crea premio directo';
+  exception when insufficient_privilege then raise notice 'ok - dueño no crea premios directo';
+  end;
+  begin
+    insert into public.promos (local_id, nombre, dias, desde, hasta, puntos) values ('00000000-0000-4000-8000-000000000001', 'x', '{1}', '10:00', '12:00', 2);
+    raise exception 'FALLÓ: dueño crea promo directo';
+  exception when insufficient_privilege then raise notice 'ok - dueño no crea promos directo';
+  end;
+  begin
+    update public.mozos set activo = true;
+    raise exception 'FALLÓ: dueño edita mozos directo';
+  exception when insufficient_privilege then raise notice 'ok - dueño no edita mozos directo';
+  end;
+  begin
+    perform public.proximo_mensaje_local('00000000-0000-4000-8000-00000000000f');
+    raise exception 'FALLÓ: dueño consulta mensajes de otro local';
+  exception when insufficient_privilege then raise notice 'ok - dueño no consulta el próximo mensaje (sólo el servidor)';
+  end;
+end $$;
 reset role;
+-- Lo que antes hacía el dueño, ahora lo hace el servidor.
+update public.locales set minutos_entre_puntos = 60 where slug = 'cafe-aurora';
+insert into public.premios (local_id, nombre, puntos_necesarios) values ('00000000-0000-4000-8000-000000000001', 'Torta', 15);
 select pg_temp.check((select nombre from public.locales where slug = 'otro-bar') = 'Otro Bar', 'dueño no edita otro local');
 
 -- Dueño de otro local
@@ -429,8 +456,10 @@ select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-00
   'mensajes: el dueño manda un mensaje');
 select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', 'Otro', 'Otro mensaje'))->>'motivo' = 'limite',
   'mensajes: 1 por día por local');
+reset role;
 select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-000000000001') > now() + interval '23 hours',
   'mensajes: informa cuándo se puede mandar el próximo');
+set role authenticated;
 select pg_temp.check((select count(*) from public.mensajes_local) = 1, 'mensajes: el dueño ve su historial');
 do $$ begin
   perform public.registrar_mensaje_local('00000000-0000-4000-8000-00000000000f', 'Hola', 'No es mi local');
@@ -697,9 +726,14 @@ begin
     and (select count(*) from public.avisos_comercio where comercio_id = v_c and tipo = 'suscripcion_alta') = 1
     and (select count(*) from public.historial_suscripcion where suscripcion_id = v_s) = 1,
     'alta: registrar la misma suscripción de MP dos veces no duplica nada (webhook + panel)');
+  -- El llavero incluido llega con el PRIMER COBRO (no con la prueba gratis).
+  perform pg_temp.check(not exists (select 1 from public.pedidos where comercio_id = v_c and regalo),
+    'alta: en la prueba gratis todavía no se regala el llavero');
+  perform public.registrar_cuota(v_s, 'cuota-alta-1', 'pago-alta-1', 3000000, 'processed', 'approved', null, 0, now(), now());
+  perform public.registrar_cuota(v_s, 'cuota-alta-2', 'pago-alta-2', 3000000, 'processed', 'approved', null, 0, now(), now());
   perform pg_temp.check((select count(*) from public.pedidos p join public.pedido_items i on i.pedido_id = p.id
                           where p.comercio_id = v_c and p.regalo and p.estado = 'pagado' and p.total_centavos = 0 and i.cantidad = 1) = 1,
-    'alta: el plan incluye 1 llavero (pedido sin cargo, una sola vez)');
+    'alta: con el primer cobro, el plan incluye 1 llavero (pedido sin cargo, una sola vez)');
   perform pg_temp.check(not public.reservar_alta_suscripcion(v_c), 'alta: con una suscripción paga vigente no se puede dar otra de alta');
 
   -- Pasar de cortesía a pago: la cortesía se cierra en la misma transacción.
@@ -709,6 +743,13 @@ begin
     (select count(*) from public.suscripciones where comercio_id = '00000000-0000-4000-8000-0000000000c1' and estado <> 'cancelled') = 1
     and (select estado from public.suscripciones where comercio_id = '00000000-0000-4000-8000-0000000000c1' and mp_preapproval_id is null) = 'cancelled',
     'alta: pasar de cortesía a pago cierra la cortesía (nunca dos vigentes)');
+  -- De cortesía Pro a Básico: lo que Básico no incluye se apaga.
+  perform pg_temp.check(
+    not exists (select 1 from public.promos p join public.locales l on l.id = p.local_id
+                 where l.comercio_id = '00000000-0000-4000-8000-0000000000c1' and p.activa)
+    and not exists (select 1 from public.locales where comercio_id = '00000000-0000-4000-8000-0000000000c1'
+                     and (puntos_bienvenida > 0 or puntos_cumple > 0)),
+    'alta: pasar a un plan sin promos apaga promos y regalos');
 end $$;
 
 set role authenticated;
@@ -1003,6 +1044,55 @@ begin
     and (select stock from public.productos where codigo = 'chip') = v_stock + 3
     and (select reembolsado_centavos from public.pagos where mp_payment_id = 'pay-admin-1') = 900000,
     'admin: el reembolso marca el pedido y devuelve el stock');
+end $$;
+
+-- ---------------------------------------------------------------- auditoría
+do $$
+declare
+  v_m uuid := '00000000-0000-4000-8000-0000000001ff';
+  v_r jsonb;
+  v_i int;
+  v_c uuid := '00000000-0000-4000-8000-0000000000cf';
+  v_local uuid;
+  v_ped jsonb; v_p uuid; v_stock int;
+begin
+  -- PIN: el intento se anota ANTES de verificar; pasado el límite no hay más.
+  for v_i in 1..5 loop
+    v_r := public.reservar_intento_pin(v_m, 5, 15);
+    perform pg_temp.check((v_r->>'id') is not null and (v_r->>'fallos')::int = v_i, 'pin: intento ' || v_i || ' anotado como fallido');
+  end loop;
+  v_r := public.reservar_intento_pin(v_m, 5, 15);
+  perform pg_temp.check((v_r->>'id') is null, 'pin: después de 5 fallos no deja intentar más');
+
+  -- pending con tope: recién creada suma; vieja no.
+  select id into v_local from public.locales where comercio_id = v_c limit 1;
+  update public.suscripciones set estado = 'cancelled', cancelada_en = now(), current_period_end = null where comercio_id = v_c and estado <> 'cancelled';
+  insert into public.suscripciones (comercio_id, plan_id, estado, mp_preapproval_id)
+  values (v_c, (select id from public.planes where codigo = 'pro'), 'pending', 'mp-pending-1');
+  perform pg_temp.check(public.suma_habilitada_local(v_local), 'pending: recién creada suma');
+  update public.suscripciones set created_at = now() - interval '30 days' where mp_preapproval_id = 'mp-pending-1';
+  perform pg_temp.check(not public.suma_habilitada_local(v_local), 'pending: sin confirmar hace semanas, ya no suma');
+
+  -- Reembolso: el webhook llegó antes que el admin → igual se completa y el stock vuelve una vez.
+  select stock into v_stock from public.productos where codigo = 'chip';
+  v_ped := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":2}]', 'retiro', null);
+  v_p := (v_ped->>'pedido_id')::uuid;
+  perform public.registrar_pago_pedido(v_p, 'pay-audit-1', 'approved', null, (v_ped->>'total_centavos')::int, 'visa');
+  perform pg_temp.check(public.registrar_pago_pedido(v_p, 'pay-audit-1', 'refunded', null, (v_ped->>'total_centavos')::int, 'visa') = 'reembolsado',
+    'reembolso: el webhook marca el pedido');
+  -- (las funciones se llaman antes del check: Postgres no garantiza el orden dentro de un AND)
+  perform pg_temp.check(public.admin_reembolso_pedido(v_p, 'pay-audit-1', true) = 'ok', 'reembolso: el admin lo completa aunque ya esté reembolsado');
+  perform public.admin_reembolso_pedido(v_p, 'pay-audit-1', true);
+  perform pg_temp.check((select stock from public.productos where codigo = 'chip') = v_stock,
+    'reembolso: el admin lo completa igual y el stock vuelve una sola vez');
+
+  -- Un pago aprobado de monto distinto: el pedido no vence (hay plata cobrada).
+  v_ped := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":1}]', 'retiro', null);
+  v_p := (v_ped->>'pedido_id')::uuid;
+  perform pg_temp.check(public.registrar_pago_pedido(v_p, 'pay-audit-2', 'approved', null, 100, 'visa') = 'monto_distinto', 'pedido: monto distinto no se marca');
+  update public.pedidos set reserva_hasta = now() - interval '1 minute' where id = v_p;
+  perform public.liberar_reservas_vencidas();
+  perform pg_temp.check((select estado from public.pedidos where id = v_p) = 'pendiente_pago', 'pedido: con un pago aprobado no vence');
 end $$;
 
 -- ---------------------------------------------------------------- arrepentimiento

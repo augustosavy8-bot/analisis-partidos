@@ -9,8 +9,9 @@ export const runtime = "nodejs";
 /**
  * Webhook de Mercado Pago (configurado en Tus integraciones → Webhooks).
  *
- * 1. Guardamos SIEMPRE la notificación cruda en eventos_pago (firma válida o no).
- * 2. Validamos la firma x-signature. Si no es de MP → 401 y no se procesa.
+ * 1. Validamos la firma x-signature. Si no es de MP → 401: no se guarda ni se
+ *    procesa (si se guardara, cualquiera podría llenar la tabla).
+ * 2. Guardamos la notificación cruda en eventos_pago.
  * 3. Procesamos: consultamos el recurso a la API y actualizamos la base.
  * 4. Respondemos 200 si salió bien. Si falló algo nuestro (base caída, MP lento)
  *    respondemos 500: MP reintenta cada 15 minutos, y como el procesamiento es
@@ -18,7 +19,8 @@ export const runtime = "nodejs";
  */
 export async function POST(req: Request) {
   const url = new URL(req.url);
-  const texto = await req.text();
+  if (Number(req.headers.get("content-length") ?? 0) > 64 * 1024) return NextResponse.json({ ok: false }, { status: 413 });
+  const texto = (await req.text()).slice(0, 64 * 1024);
   let cuerpo: Record<string, unknown> = {};
   try {
     cuerpo = texto ? JSON.parse(texto) : {};
@@ -38,6 +40,11 @@ export async function POST(req: Request) {
     firmaValida = false; // sin MP_WEBHOOK_SECRET configurado: nada es válido
   }
 
+  if (!firmaValida) {
+    console.warn(`Webhook MP con firma inválida (topic=${topic}, data.id=${dataId})`);
+    return NextResponse.json({ ok: false, error: "firma inválida" }, { status: 401 });
+  }
+
   const { data: evento, error } = await crearClienteAdmin()
     .from("eventos_pago")
     .insert({
@@ -54,8 +61,6 @@ export async function POST(req: Request) {
     console.error("Webhook MP: no se pudo guardar el evento", error?.message);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
-
-  if (!firmaValida) return NextResponse.json({ ok: false, error: "firma inválida" }, { status: 401 });
 
   const r = await procesarEventoGuardado(evento.id);
   if (!r.ok) console.error(`Webhook MP evento ${evento.id} falló:`, r.resultado);

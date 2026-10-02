@@ -79,7 +79,7 @@ export function Gestionar({
             Reactivar
           </Boton>
         )}
-        {(estado === "trialing" || estado === "authorized") && (
+        {estado === "authorized" && (
           <Boton variante="secundario" tamaño="sm" disabled={pendiente} onClick={() => ejecutar("pausar")}>
             Pausar
           </Boton>

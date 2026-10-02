@@ -62,6 +62,18 @@ export const MENSAJES_AVISO: Record<string, { titulo: string; texto: string }> =
     titulo: "No pudimos crear tu pase",
     texto: "La billetera no respondió. Probá de nuevo en un rato; mientras tanto tu tarjeta sigue funcionando igual.",
   },
+  premio_invalido: {
+    titulo: "Ese premio ya no está disponible",
+    texto: "El local lo cambió o lo sacó. Mirá los premios que hay ahora en tu tarjeta.",
+  },
+  tarjeta_inexistente: {
+    titulo: "No encontramos tu tarjeta",
+    texto: "Pedile a quien te atiende que apoye el llavero en tu celular para crearla.",
+  },
+  mozo_invalido: {
+    titulo: "No pudimos validar el toque",
+    texto: "Pedile a quien te atiende que vuelva a apoyar el llavero en tu celular.",
+  },
   puntos_insuficientes: {
     titulo: "No te alcanzan los puntos",
     texto: "Todavía te faltan puntos para ese premio.",

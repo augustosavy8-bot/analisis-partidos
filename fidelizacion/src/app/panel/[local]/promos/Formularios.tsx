@@ -123,7 +123,10 @@ export function FilaPromo({ slug, promo }: { slug: string; promo: Promo }) {
         <p className="pt-app-detalle text-pt-ink-2">{describirPromo(promo)}</p>
       </div>
       <div className="flex w-full justify-end gap-2 sm:w-auto">
-        <BotonSecundario disabled={pendiente} onClick={() => start(() => alternarPromo(slug, promo.id, !promo.activa))}>
+        <BotonSecundario disabled={pendiente} onClick={() => start(async () => {
+              const r = await alternarPromo(slug, promo.id, !promo.activa);
+              if (r.error) avisar(r.error, "error");
+            })}>
           {promo.activa ? "Pausar" : "Activar"}
         </BotonSecundario>
         <button

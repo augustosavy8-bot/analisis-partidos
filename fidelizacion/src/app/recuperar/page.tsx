@@ -26,9 +26,18 @@ export default async function Recuperar({ searchParams }: PageProps<"/recuperar"
             ¿Cambiaste de celular o borraste los datos del navegador? Ingresá tu WhatsApp y seguís sumando donde lo dejaste.
           </p>
         </div>
-        <Superficie className="mt-6 p-5">
-          <FormRecuperar slug={local.slug} />
-        </Superficie>
+        {toque ? (
+          <Superficie className="mt-6 p-5">
+            <FormRecuperar slug={local.slug} />
+          </Superficie>
+        ) : (
+          // Sin toque del llavero no se recupera (protege la tarjeta de quien sepa tu número).
+          <Superficie className="mt-6 p-5 pt-app-texto text-pt-ink-2">
+            Para recuperarla, pedile a quien te atiende en {local.nombre} que apoye el llavero en tu celular. Cuando se abra
+            la pantalla para crear la tarjeta, tocá <strong className="text-pt-ink">“Recuperala con tu WhatsApp”</strong> y poné tu
+            WhatsApp.
+          </Superficie>
+        )}
       </main>
     </div>
   );

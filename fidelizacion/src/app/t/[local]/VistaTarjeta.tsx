@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Local } from "@/lib/locales";
-import { formatearHora, type Movimiento, type Premio } from "@/lib/tarjeta";
+import { cuandoFuturo, type Movimiento, type Premio } from "@/lib/tarjeta";
 import { describirPromo, horaCorta, nombreMultiplicador, type Promo } from "@/lib/promos";
 import { formasTermino } from "@/lib/terminos";
 import { Icono } from "@/components/Icono";
@@ -48,6 +48,8 @@ type Props = {
   alToque: boolean;
   pedirCumple: boolean;
   limite: string | null;
+  /** El local no está sumando (dejó de pagar Point): se avisa sin hablar de facturación. */
+  pausado?: boolean;
   urlPase: string;
   qrPase: string;
   /** Link "Agregar a Google Wallet" (sólo Android con Google Wallet configurado). */
@@ -200,9 +202,15 @@ export function VistaTarjeta(p: Props) {
           {p.celebracion && <Celebracion {...p.celebracion} puntos={tarjeta.puntos} comercio={local.nombre} logo={local.logo_url} />}
 
           {/* Avisos que importan en cualquier pestaña */}
+          {p.pausado && (
+            <Aviso icono="historial" className="mb-4">
+              {local.nombre} pausó su programa de puntos: por ahora no se suman puntos acá. Los que ya tenés siguen siendo tuyos
+              y los podés canjear.
+            </Aviso>
+          )}
           {p.limite && (
             <Aviso icono="historial" className="mb-4">
-              Ya sumaste hace poco. Vas a poder sumar de nuevo a las <strong>{formatearHora(p.limite, local.zona_horaria)}</strong>.
+              Ya sumaste hace poco. Vas a poder sumar de nuevo <strong>{cuandoFuturo(p.limite, local.zona_horaria)}</strong>.
             </Aviso>
           )}
 

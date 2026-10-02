@@ -34,6 +34,14 @@ export function avisoDeCuenta(a: Acceso, ahora: Date = new Date()): AvisoCuenta 
           boton: "Reactivar",
         };
       }
+      if (a.estado === "pending") {
+        return {
+          tono: "grave",
+          titulo: "Mercado Pago no confirmó tu tarjeta",
+          texto: `El panel está restringido. Cargá otra tarjeta en Facturación. Tus clientes siguen sumando puntos${a.hasta ? ` hasta el ${fechaCorta(a.hasta)}` : ""}.`,
+          boton: "Cambiar la tarjeta",
+        };
+      }
       return {
         tono: "grave",
         titulo: "Tu cuenta tiene un pago pendiente",
@@ -61,6 +69,9 @@ export function avisoDeCuenta(a: Acceso, ahora: Date = new Date()): AvisoCuenta 
       }
       if (a.estado === "paused") {
         return { tono: "info", titulo: "Pausaste tu suscripción", texto: `Todo sigue funcionando hasta el ${fechaCorta(a.hasta)}; después el panel se restringe.`, boton: "Reactivar" };
+      }
+      if (a.estado === "pending") {
+        return { tono: "aviso", titulo: "Mercado Pago está confirmando tu tarjeta", texto: `Suele tardar unos minutos. Si sigue así después del ${fechaCorta(a.hasta)}, el panel se restringe: probá con otra tarjeta.`, boton: "Ver facturación" };
       }
       // Cortesía con fecha de fin cercana.
       if (a.estado === "cortesia" && new Date(a.hasta).getTime() - ahora.getTime() < 15 * DIA) {

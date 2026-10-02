@@ -39,7 +39,7 @@ export const SEGMENTOS: Record<
     porDefecto: 7,
     etiquetaValor: (v) => (v === 0 ? "Hoy" : `${v} días`),
     plantilla:
-      "¡Feliz cumple, {nombre}! 🎂 Te esperamos en {local} para festejarlo: esa semana tu visita tiene puntos de regalo. {link}",
+      "¡Feliz cumple, {nombre}! 🎂 Te esperamos en {local} para festejarlo. {link}",
   },
 };
 
@@ -67,7 +67,13 @@ export function armarMensaje(plantilla: string, d: DatosMensaje): string {
     faltan: faltan === 1 ? "1 punto" : `${faltan} puntos`,
     link: d.link,
   };
-  return plantilla
+  // "te faltan {faltan} para {premio}" no tiene sentido si ya llegó al premio
+  // (diría "te faltan 0 puntos") o si el local no tiene premios.
+  let texto = plantilla;
+  const FALTAN = /(,? y )?te faltan \{faltan\} para \{premio\}/i;
+  if (d.premioPuntos == null || !d.premio) texto = texto.replace(FALTAN, "");
+  else if (faltan === 0) texto = texto.replace(FALTAN, (_t, y: string | undefined) => `${y ?? ""}ya podés canjear {premio}`);
+  return texto
     .replace(/\{(\w+)\}/g, (todo, clave: string) => valores[clave] ?? todo)
     .replace(/[ \t]+/g, " ")
     .trim();

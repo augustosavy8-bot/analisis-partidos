@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { normalizarWhatsapp } from "@/lib/whatsapp";
 import { buscarLocal } from "@/lib/locales";
@@ -8,6 +9,7 @@ import { urlResultado } from "@/lib/toque";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { leerCumple } from "@/lib/promos";
 import { guardarCumpleCliente } from "@/lib/tarjeta";
+import { ingresoPermitidoIp, numeroPermitido, registrarIntentoIp, registrarIntentoNumero } from "@/lib/app/servidor";
 
 export type EstadoForm = { error?: string; valores?: Record<string, string> };
 
@@ -45,13 +47,23 @@ export async function recuperar(_prev: EstadoForm, form: FormData): Promise<Esta
   const whatsapp = normalizarWhatsapp(whatsappCrudo);
   if (!whatsapp) return { error: "Revisá el número de WhatsApp (con código de área).", valores };
 
+  // Recuperar por número no pide código (todavía no hay OTP). Para que nadie
+  // pueda quedarse con la tarjeta de otro sabiendo su número, hace falta un
+  // toque real del llavero (estar en el local) y hay límite por IP y por número.
   const toque = await toquePendienteActual();
-  const slug = toque?.localSlug ?? String(form.get("l") ?? "");
-  const local = await buscarLocal(slug);
+  if (!toque) {
+    return { error: "Pedile a quien te atiende que apoye el llavero en tu celular y después tocá “Recuperala con tu WhatsApp”.", valores };
+  }
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? null;
+  if (!(await ingresoPermitidoIp(ip)) || !(await numeroPermitido(whatsapp))) {
+    return { error: "Hiciste muchos intentos. Esperá un rato y probá de nuevo.", valores };
+  }
+  const local = await buscarLocal(toque.localSlug);
   if (!local) return { error: "No encontramos el local.", valores };
 
   const db = crearClienteAdmin();
   const { data: cliente } = await db.from("clientes").select("nombre").eq("whatsapp", whatsapp).maybeSingle();
+  await Promise.all([registrarIntentoIp(ip, !!cliente), registrarIntentoNumero(whatsapp, !!cliente)]);
   if (!cliente) {
     return { error: "No encontramos una tarjeta con ese WhatsApp. ¿Lo escribiste bien?", valores };
   }

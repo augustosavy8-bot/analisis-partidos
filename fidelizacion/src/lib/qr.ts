@@ -15,6 +15,7 @@ export function emitirQR(mozo: { mozoId: string; localId: string; localSlug: str
   const j = randomBytes(12).toString("base64url");
   const ahora = Math.floor(Date.now() / 1000);
   const token = firmar(
+    "qr",
     { m: mozo.mozoId, l: mozo.localId, s: mozo.localSlug, j, exp: ahora + VALIDEZ_QR_SEG } satisfies PayloadQR,
     env.hmacSecret,
   );
@@ -32,7 +33,7 @@ export const jtiQR = (j: string) => `qr:${j}`;
  * Si es válido lo marca como usado.
  */
 export async function validarQR(token: string): Promise<{ ok: true; toque: Toque } | { ok: false; motivo: string }> {
-  const p = verificarFirma<PayloadQR>(token, env.hmacSecret);
+  const p = verificarFirma<PayloadQR>("qr", token, env.hmacSecret);
   if (!p) return { ok: false, motivo: "qr_vencido" };
 
   const db = crearClienteAdmin();

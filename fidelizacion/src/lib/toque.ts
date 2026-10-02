@@ -59,7 +59,10 @@ export function urlResultado(slug: string, r: ResultadoToque): string {
     case "limite":
       return `/t/${slug}?limite=${encodeURIComponent(r.proximoEn)}`;
     default:
-      return `/aviso?m=${r.motivo}`;
+      // Programa pausado: el toque quedó registrado, así que desde la tarjeta
+      // puede canjear al toque los puntos que ya tiene.
+      if (r.motivo === "programa_pausado") return `/t/${slug}?pausado=1`;
+      return `/aviso?m=${r.motivo}&l=${encodeURIComponent(slug)}`;
   }
 }
 
@@ -70,13 +73,14 @@ export const DURACION_TOQUE_PENDIENTE = 15 * 60;
 
 export function firmarToquePendiente(toque: Toque): string {
   return firmar(
+    "toque",
     { ...toque, jti: randomUUID(), exp: Math.floor(Date.now() / 1000) + DURACION_TOQUE_PENDIENTE },
     env.hmacSecret,
   );
 }
 
 export function leerToquePendiente(token: string | undefined): ToqueFirmado | null {
-  return verificarFirma<ToqueFirmado>(token, env.hmacSecret);
+  return verificarFirma<ToqueFirmado>("toque", token, env.hmacSecret);
 }
 
 /** Marca el toque pendiente como usado (un solo uso). */

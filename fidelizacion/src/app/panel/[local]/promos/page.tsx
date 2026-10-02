@@ -28,6 +28,23 @@ export default async function Promos({ params }: PageProps<"/panel/[local]/promo
         <MejorarPlan titulo="Promos y regalos son del plan Pro">
           Puntos dobles o triples en los horarios flojos, regalo de bienvenida y puntos de cumpleaños, que se suman solos.
         </MejorarPlan>
+        {/* Lo que quedó prendido de antes (otro plan o cortesía): se puede ver y apagar. */}
+        {(local.puntos_bienvenida > 0 || local.puntos_cumple > 0) && (
+          <Tarjeta className="mt-4">
+            <h2 className="pt-app-seccion text-pt-ink">Regalos que siguen activos</h2>
+            <p className="mb-4 mt-1 pt-app-detalle text-pt-ink-2">Para apagarlos, poné 0 y guardá.</p>
+            <FormRegalos slug={slug} bienvenida={local.puntos_bienvenida} cumple={local.puntos_cumple} />
+          </Tarjeta>
+        )}
+        {promos.some((p) => p.activa) && (
+          <Tarjeta className="mt-4 overflow-hidden !p-0">
+            <ul className="divide-y divide-pt-border">
+              {promos.filter((p) => p.activa).map((p) => (
+                <FilaPromo key={p.id} slug={slug} promo={p} />
+              ))}
+            </ul>
+          </Tarjeta>
+        )}
       </>
     );
   }

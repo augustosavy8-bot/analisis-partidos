@@ -6,7 +6,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { obtenerPagoMp, reembolsarPagoMp } from "@/lib/facturacion/mp";
 import { procesarEventoGuardado, procesarPreapproval } from "@/lib/facturacion/webhooks";
 import { resumenErrorMp } from "@/lib/facturacion/errores-mp";
-import { pesosACentavos } from "@/lib/facturacion/dinero";
+import { leerPesos } from "@/lib/facturacion/dinero";
 import { conciliar } from "@/lib/facturacion/conciliacion";
 
 export type EstadoAdmin = { ok?: string; error?: string };
@@ -144,7 +144,7 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
   await requerirSuperadmin();
   const db = crearClienteAdmin();
   const nombre = String(form.get("nombre") ?? "").trim();
-  const precio = pesosACentavos(Number(String(form.get("precio") ?? "").replace(/\./g, "").replace(",", ".")));
+  const precio = leerPesos(String(form.get("precio") ?? ""));
   const dias = Number(form.get("dias_prueba"));
   const limites = {
     locales: LIMITE(form.get("locales")),
@@ -156,7 +156,7 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
     diseno: form.get("diseno") === "on",
   };
   if (nombre.length < 2 || nombre.length > 40) return { error: "Nombre entre 2 y 40 letras." };
-  if (!Number.isInteger(precio) || precio <= 0) return { error: "Precio inválido." };
+  if (precio === null || precio <= 0) return { error: "Precio inválido." };
   if (!Number.isInteger(dias) || dias < 0 || dias > 90) return { error: "Días de prueba entre 0 y 90." };
   if ([limites.locales, limites.clientes, limites.premios].some((x) => Number.isNaN(x))) return { error: "Límites: un número o vacío (= ilimitado)." };
 
@@ -184,12 +184,12 @@ export async function guardarProducto(productoId: string, _prev: EstadoAdmin, fo
   await requerirSuperadmin();
   const nombre = String(form.get("nombre") ?? "").trim();
   const descripcion = String(form.get("descripcion") ?? "").trim() || null;
-  const precio = pesosACentavos(Number(String(form.get("precio") ?? "").replace(/\./g, "").replace(",", ".")));
+  const precio = leerPesos(String(form.get("precio") ?? ""));
   const stock = Number(form.get("stock"));
   const max = Number(form.get("max_por_pedido"));
   if (nombre.length < 2 || nombre.length > 60) return { error: "Nombre entre 2 y 60 letras." };
   if (descripcion && descripcion.length > 200) return { error: "Descripción de hasta 200 caracteres." };
-  if (!Number.isInteger(precio) || precio <= 0) return { error: "Precio inválido." };
+  if (precio === null || precio <= 0) return { error: "Precio inválido." };
   if (!Number.isInteger(stock) || stock < 0) return { error: "Stock inválido." };
   if (!Number.isInteger(max) || max < 1) return { error: "Máximo por pedido inválido." };
   const { error } = await crearClienteAdmin()
@@ -203,12 +203,12 @@ export async function guardarProducto(productoId: string, _prev: EstadoAdmin, fo
 
 export async function guardarConfig(_prev: EstadoAdmin, form: FormData): Promise<EstadoAdmin> {
   await requerirSuperadmin();
-  const envio = pesosACentavos(Number(String(form.get("envio") ?? "").replace(/\./g, "").replace(",", ".")));
+  const envio = leerPesos(String(form.get("envio") ?? ""));
   const reserva = Number(form.get("reserva"));
   const gracia = Number(form.get("gracia"));
   const sumar = Number(form.get("sumar"));
   const direccion = String(form.get("direccion") ?? "").trim();
-  if (!Number.isInteger(envio) || envio < 0) return { error: "Costo de envío inválido." };
+  if (envio === null) return { error: "Costo de envío inválido." };
   if (!Number.isInteger(reserva) || reserva < 5 || reserva > 1440) return { error: "Reserva entre 5 y 1440 minutos." };
   if (!Number.isInteger(gracia) || gracia < 0 || gracia > 60) return { error: "Gracia entre 0 y 60 días." };
   if (!Number.isInteger(sumar) || sumar < 0 || sumar > 60) return { error: "Días de sumar entre 0 y 60." };

@@ -98,6 +98,18 @@ export function formatearFecha(iso: string, zona: string) {
   return `${dia}, ${formatearHora(iso, zona)}`;
 }
 
+/** Para un momento futuro: "hoy a las 14:00", "mañana a las 14:00" o "el 5 oct. a las 14:00". */
+export function cuandoFuturo(iso: string, zona: string) {
+  const d = new Date(iso);
+  const fmt = (x: Date) => new Intl.DateTimeFormat("es-AR", { timeZone: zona, dateStyle: "short" }).format(x);
+  const hoy = new Date();
+  const manana = new Date(hoy.getTime() + 86400000);
+  const hora = formatearHora(iso, zona);
+  if (fmt(d) === fmt(hoy)) return `hoy a las ${hora}`;
+  if (fmt(d) === fmt(manana)) return `mañana a las ${hora}`;
+  return `el ${new Intl.DateTimeFormat("es-AR", { timeZone: zona, weekday: "long", day: "numeric", month: "short" }).format(d)} a las ${hora}`;
+}
+
 /** Minutos después de un toque en los que se puede canjear sin otro toque. */
 export const MINUTOS_CANJE_AL_TOQUE = 5;
 

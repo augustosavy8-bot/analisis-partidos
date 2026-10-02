@@ -107,6 +107,12 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
   // Cancelada (con días pagos por delante): puede volver a suscribirse con ?nueva=1.
   if (!suscripcion || (suscripcion.estado === "cancelled" && sp.nueva === "1")) {
     const planes = await planesPublicos();
+    // La prueba gratis es una vez por comercio (el servidor lo vuelve a verificar al suscribir).
+    const { count: pagasAntes } = await crearClienteAdmin()
+      .from("suscripciones")
+      .select("id", { count: "exact", head: true })
+      .eq("comercio_id", comercio.id)
+      .not("mp_preapproval_id", "is", null);
     const elegido = (typeof sp.plan === "string" ? sp.plan : null) ?? (await planElegidoAlRegistrarse()) ?? planes[planes.length - 1]?.codigo;
     const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
     return (
@@ -123,7 +129,7 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
               codigo: p.codigo,
               nombre: p.nombre,
               precioCentavos: p.precioCentavos,
-              diasPrueba: p.diasPrueba,
+              diasPrueba: (pagasAntes ?? 0) > 0 ? 0 : p.diasPrueba,
               beneficios: beneficiosPlan(p.limites),
             }))}
           />

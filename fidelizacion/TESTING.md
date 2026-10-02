@@ -267,3 +267,50 @@ pedido en Point (en la misma ventana). Pagá con tarjeta de prueba y titular `AP
 - Aunque el webhook no llegue, al volver de MP la página consulta el pago a MP
   con el `payment_id` y lo registra. Abrir esa URL a mano con otro `payment_id`
   no marca nada (se verifica que el pago sea de ESE pedido).
+
+## Fase 7 — Panel del superadmin y conciliación diaria
+
+Todo en `/admin/facturacion` (sólo superadmin; para cualquier otro es 404).
+
+### Resumen
+- Métricas: ingreso mensual (MRR: activas + impagas), lo que entra cuando terminen
+  las pruebas, cobrado en 30 días (cuotas + kits, neto de reembolsos), cantidades por
+  estado, pedidos para despachar y eventos sin procesar.
+- Lista de comercios con su estado → detalle.
+- "Consultar un pago en MP" por número de operación (soporte: "pagué y no se ve").
+
+### Detalle de un comercio
+- **Sincronizar con MP**: vuelve a consultar la suscripción y aplica lo que diga.
+- **Cortesía**: elegir plan y fecha de fin (vacía = sin fin). Si tiene suscripción
+  paga vigente, no deja (hay que cancelarla primero). Probalo con un comercio sin
+  suscripción → aparece "Point te regaló el plan sin cargo" en sus novedades.
+- **Mensajes por local**: horas entre mensajes (0 = sin límite).
+- Cuotas, historial y pedidos.
+
+### Pedidos
+- Por defecto, los pagados que falta entregar. Botones según el estado:
+  Preparando → Marcar enviado / Listo para retirar → Entregado. Cada paso avisa al
+  comercio (novedades).
+- **Reembolsar**: devuelve el total en MP y marca el pedido. Si no se despachó, el
+  stock vuelve. En MP (cuenta vendedora de prueba) el pago figura devuelto.
+
+### Eventos de pago
+- Log crudo de webhooks. Filtro "problemas" (sin procesar o con error).
+  **Reprocesar** es seguro (todo es idempotente).
+
+### Planes y productos
+- Editar precio, prueba, límites y si se ofrece. Cambiar el precio o la prueba crea
+  un plan nuevo en MP en la próxima alta; **los suscriptos actuales no cambian**.
+- Productos: precio, stock disponible, máximo por pedido, activo.
+- Configuración: envío, minutos de reserva, días de gracia y de sumar, dirección de retiro.
+
+### Conciliación diaria (cron)
+- Corre todos los días a las 6:00 (Argentina). También: botón "Conciliar con MP ahora".
+- Libera reservas vencidas, aplica bajadas de plan programadas, re-consulta las
+  suscripciones vivas, busca en MP pagos de pedidos impagos y reprocesa webhooks fallidos.
+- Sin la clave: `curl https://fidelizacion-beta.vercel.app/api/cron/diario` → **401**.
+- En Vercel → proyecto → Settings → Cron Jobs figura `/api/cron/diario`.
+
+### Volver a suscribirse sin repetir la prueba
+- Con un comercio que canceló: "Volver a activar" ya no muestra "14 días de prueba
+  gratis" y el botón dice "Suscribirme". La suscripción nueva arranca cobrando.

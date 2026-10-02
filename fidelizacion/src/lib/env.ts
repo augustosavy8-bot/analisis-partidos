@@ -93,6 +93,10 @@ export const env = {
   get mpWebhookSecret() {
     return requerida("MP_WEBHOOK_SECRET");
   },
+  /** Protege /api/cron/* (Vercel Cron manda "Authorization: Bearer <CRON_SECRET>"). */
+  get cronSecret() {
+    return requerida("CRON_SECRET");
+  },
   /** ¿Están cargadas las credenciales de Mercado Pago? (para no romper páginas sin configurar) */
   get mpConfigurado() {
     return Boolean(process.env.MP_ACCESS_TOKEN && process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);

@@ -1,5 +1,5 @@
 import "server-only";
-import { Invoice, MercadoPagoConfig, Payment, PreApproval, PreApprovalPlan, Preference } from "mercadopago";
+import { Invoice, MercadoPagoConfig, Payment, PaymentRefund, PreApproval, PreApprovalPlan, Preference } from "mercadopago";
 import { env } from "@/lib/env";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { centavosAPesos } from "./dinero";
@@ -77,10 +77,14 @@ export async function crearSuscripcionMp(p: {
   reason: string;
   payerEmail: string;
   cardToken: string;
+  /** Vuelve a suscribirse después de cancelar: sin prueba gratis (no se usa el plan de MP, que la trae). */
+  sinPrueba?: { precioCentavos: number };
 }) {
   return new PreApproval(config()).create({
     body: {
-      preapproval_plan_id: p.planMpId,
+      ...(p.sinPrueba
+        ? { auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: centavosAPesos(p.sinPrueba.precioCentavos), currency_id: "ARS" } }
+        : { preapproval_plan_id: p.planMpId }),
       reason: p.reason,
       external_reference: p.comercioId,
       payer_email: p.payerEmail,
@@ -116,6 +120,17 @@ export async function obtenerSuscripcionMp(id: string) {
 /** Cuota de una suscripción ("authorized payment" / factura). */
 export async function obtenerCuotaMp(id: string) {
   return new Invoice(config()).get({ id });
+}
+
+/** Pagos de un pedido (Checkout Pro), por external_reference: para conciliar si el webhook no llegó. */
+export async function buscarPagosDePedidoMp(pedidoId: string) {
+  const r = await new Payment(config()).search({ options: { external_reference: pedidoId } });
+  return r.results ?? [];
+}
+
+/** Reembolso total de un pago. La clave de idempotencia evita devolver dos veces. */
+export async function reembolsarPagoMp(paymentId: string) {
+  return new PaymentRefund(config()).total({ payment_id: paymentId, requestOptions: { idempotencyKey: `reembolso-${paymentId}` } });
 }
 
 export async function obtenerPagoMp(id: string) {

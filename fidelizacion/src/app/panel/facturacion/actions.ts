@@ -26,6 +26,16 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Si 2 sale bien y 3 falla, la suscripción existe en MP pero no acá: el webhook
  * (fase 3) y la reconciliación diaria (fase 7) la encuentran por external_reference.
  */
+/** ¿Este comercio ya tuvo una suscripción paga (aunque esté cancelada)? Entonces ya usó su prueba gratis. */
+async function yaTuvoSuscripcionPaga(comercioId: string): Promise<boolean> {
+  const { count } = await crearClienteAdmin()
+    .from("suscripciones")
+    .select("id", { count: "exact", head: true })
+    .eq("comercio_id", comercioId)
+    .not("mp_preapproval_id", "is", null);
+  return (count ?? 0) > 0;
+}
+
 export async function suscribirse(entrada: { comercioId: string; plan: string; token: string; email: string }): Promise<ResultadoAlta> {
   const { userId } = await requerirUsuario();
   const comercio = await comercioDelUsuario(entrada.comercioId);
@@ -50,9 +60,12 @@ export async function suscribirse(entrada: { comercioId: string; plan: string; t
 
   let mpId: string | undefined;
   try {
-    const planMpId = await asegurarPlanMp(plan);
+    // La prueba gratis es una sola vez por comercio: si ya tuvo una suscripción paga, arranca cobrando.
+    const yaUsoPrueba = await yaTuvoSuscripcionPaga(comercio.id);
+    const planMpId = yaUsoPrueba ? "" : await asegurarPlanMp(plan);
     const resp = await crearSuscripcionMp({
       planMpId,
+      ...(yaUsoPrueba ? { sinPrueba: { precioCentavos: plan.precio_centavos } } : {}),
       comercioId: comercio.id,
       reason: `Point ${plan.nombre} · ${comercio.nombre}`,
       payerEmail: email,
@@ -61,7 +74,7 @@ export async function suscribirse(entrada: { comercioId: string; plan: string; t
     mpId = resp.id;
     if (!mpId) throw new Error("Mercado Pago no devolvió el id de la suscripción");
 
-    const inicial = estadoInicial(resp, plan.dias_prueba);
+    const inicial = estadoInicial(resp, yaUsoPrueba ? 0 : plan.dias_prueba);
     const { error } = await admin.rpc("registrar_alta_suscripcion", {
       p_comercio_id: comercio.id,
       p_plan_id: plan.id,

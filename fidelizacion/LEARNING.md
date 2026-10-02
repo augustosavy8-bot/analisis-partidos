@@ -475,3 +475,41 @@ que lo revise el superadmin.
 **7. Pagar tarde.** Si alguien paga después de que venció la reserva (raro, porque
 el link vence), el pedido se marca pagado igual (la plata entró) y se vuelve a tomar
 el stock que haya. El superadmin lo ve en los pedidos (fase 7).
+
+## Fase 7 — Panel del superadmin y conciliación
+
+### Qué se hizo
+- `/admin/facturacion`: métricas, comercios, pedidos, eventos de pago, planes y
+  productos, configuración.
+- Cortesías editables, horas entre mensajes por local, avance de pedidos, reembolsos.
+- Cron diario `/api/cron/diario` (protegido con `CRON_SECRET`) que concilia con MP.
+- La prueba gratis es una sola vez por comercio.
+
+### Conceptos de pagos que aparecieron
+
+**1. MRR y "cobrado".** MRR (*monthly recurring revenue*) es lo que entra por mes si
+todo sigue igual: la suma de los precios de las suscripciones activas (contamos las
+impagas porque todavía pueden recuperarse). "Cobrado" es plata que efectivamente
+entró. Se miran los dos: un MRR alto con poco cobrado = problemas de cobro.
+
+**2. Conciliación.** Los webhooks pueden no llegar (caída, error de red, clave mal
+cargada). La conciliación es la red de seguridad: una vez por día preguntamos a MP
+el estado real de lo que tenemos "en vuelo" y lo aplicamos con las mismas funciones
+idempotentes. Si el webhook ya lo había hecho, no cambia nada.
+
+**3. Cron protegido.** Una URL que procesa pagos no puede quedar abierta: Vercel la
+llama con `Authorization: Bearer CRON_SECRET` y comparamos en tiempo constante.
+
+**4. Precios nuevos y suscriptos viejos (*grandfathering*).** Si subís el precio del
+plan, los que ya están suscriptos siguen pagando el anterior hasta que se decida
+otra cosa (cambiarles el monto en MP les manda un email y conviene avisarles antes).
+Las altas nuevas toman el precio nuevo: por eso se descarta el plan de MP guardado
+y se crea otro.
+
+**5. Reembolsos: primero MP, después la base.** Igual que al cancelar: el que mueve
+la plata es MP. Si MP devuelve y la base falla, el error lo dice explícitamente
+para corregirlo a mano; al revés (marcar devuelto sin devolver) sería peor.
+
+**6. La prueba gratis una sola vez.** Sin esto, cancelar y volver a suscribirse
+daría 14 días gratis cada vez. Si el comercio ya tuvo una suscripción paga, la nueva
+se crea sin plan de MP (que trae la prueba) y con el monto directo: arranca cobrando.

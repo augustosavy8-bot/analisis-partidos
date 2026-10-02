@@ -954,4 +954,46 @@ begin
     'kit: la reserva vencida devuelve el stock');
 end $$;
 
+-- ---------------------------------------------------------------- fase 7: admin
+do $$
+declare
+  v_c uuid := '00000000-0000-4000-8000-0000000000cf';
+  v_pro uuid := (select id from public.planes where codigo = 'pro');
+  v_basico uuid := (select id from public.planes where codigo = 'basico');
+  v_r text; v_ped jsonb; v_p uuid; v_stock int;
+begin
+  -- Con suscripción paga vigente no se pisa con cortesía.
+  update public.suscripciones set estado = 'authorized', past_due_desde = null where comercio_id = v_c and estado <> 'cancelled';
+  v_r := public.admin_set_cortesia(v_c, v_pro, null, null);
+  perform pg_temp.check(v_r = 'tiene_suscripcion_paga', 'admin: la cortesía no pisa una suscripción paga');
+
+  -- Sin suscripción: se crea; después se edita (plan y fin).
+  update public.suscripciones set estado = 'cancelled', cancelada_en = now(), current_period_end = null where comercio_id = v_c and estado <> 'cancelled';
+  v_r := public.admin_set_cortesia(v_c, v_basico, null, null);
+  perform pg_temp.check(v_r = 'creada' and (select count(*) from public.suscripciones where comercio_id = v_c and estado = 'cortesia') = 1,
+    'admin: da cortesía a un comercio sin suscripción');
+  v_r := public.admin_set_cortesia(v_c, v_pro, now() + interval '30 days', null);
+  perform pg_temp.check(v_r = 'editada' and (select plan_id = v_pro and cortesia_hasta is not null from public.suscripciones where comercio_id = v_c and estado = 'cortesia'),
+    'admin: edita plan y fin de la cortesía');
+
+  -- Pedido: transiciones válidas e inválidas.
+  v_ped := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":3}]', 'retiro', null);
+  v_p := (v_ped->>'pedido_id')::uuid;
+  perform pg_temp.check(public.admin_estado_pedido(v_p, 'preparando') = 'transicion_invalida', 'admin: un pedido impago no se prepara');
+  perform public.registrar_pago_pedido(v_p, 'pay-admin-1', 'approved', 'accredited', 900000, 'account_money');
+  perform pg_temp.check(public.admin_estado_pedido(v_p, 'enviado') = 'transicion_invalida', 'admin: un pedido de retiro no se "envía"');
+  v_r := public.admin_estado_pedido(v_p, 'listo_retiro');
+  perform pg_temp.check(v_r = 'ok' and (select estado from public.pedidos where id = v_p) = 'listo_retiro'
+    and exists (select 1 from public.avisos_comercio where comercio_id = v_c and tipo = 'pedido_listo_retiro'),
+    'admin: listo para retirar avisa al comercio');
+
+  -- Reembolso con devolución de stock.
+  select stock into v_stock from public.productos where codigo = 'chip';
+  v_r := public.admin_reembolso_pedido(v_p, 'pay-admin-1', true);
+  perform pg_temp.check(v_r = 'ok' and (select estado from public.pedidos where id = v_p) = 'reembolsado'
+    and (select stock from public.productos where codigo = 'chip') = v_stock + 3
+    and (select reembolsado_centavos from public.pagos where mp_payment_id = 'pay-admin-1') = 900000,
+    'admin: el reembolso marca el pedido y devuelve el stock');
+end $$;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

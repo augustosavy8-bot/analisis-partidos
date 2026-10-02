@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Nav } from "@/components/landing/Nav";
 import { FormInteres } from "@/app/interes/FormInteres";
 import { FormRegistro } from "./FormRegistro";
+import { BotonGoogle, SeparadorO } from "@/components/app/BotonGoogle";
+import { googleActivo } from "@/lib/google-auth";
 
 export const metadata: Metadata = { title: "Sumá tu local" };
 
@@ -14,6 +16,7 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
   const sp = await searchParams;
   const contacto = sp.modo === "contacto";
   const plan = typeof sp.plan === "string" ? sp.plan : null;
+  const google = await googleActivo();
 
   return (
     <>
@@ -39,6 +42,12 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
               Creá tu cuenta en un minuto. Después elegís el plan y empezás tu prueba gratis.
             </p>
             <div className="mt-10 rounded-pt-lg bg-pt-ink p-6 text-white shadow-pt-product md:p-10">
+              {google && (
+                <>
+                  <BotonGoogle oscuro siguiente={`/panel/completar${plan && /^[a-z0-9_]{2,30}$/.test(plan) ? `?plan=${plan}` : ""}`} />
+                  <SeparadorO oscuro />
+                </>
+              )}
               <FormRegistro plan={plan} />
             </div>
             <p className="mt-6 text-center pt-ui text-pt-ink-2">

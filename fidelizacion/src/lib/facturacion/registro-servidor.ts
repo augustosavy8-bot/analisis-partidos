@@ -4,7 +4,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { requerirUsuario } from "@/lib/panel";
 import { slugDesde } from "@/lib/admin";
 import { notificarCambioLocal } from "@/lib/wallet";
-import { validarDatosComercio } from "./registro";
+import { validarDatosComercio, type DatosComercio } from "./registro";
 
 /** Primera dirección libre para el local: "bar-central", "bar-central-2", ... */
 async function slugLibre(nombre: string): Promise<string> {
@@ -38,17 +38,26 @@ export async function completarRegistroPendiente(): Promise<string | null> {
     return null;
   }
 
+  return crearComercio(userId, email, r.datos);
+}
+
+/**
+ * Crea el comercio del usuario con su primer local (dirección /t/... libre).
+ * Lo usan el registro con email (al confirmar) y el de Google (pantalla
+ * "Contanos de tu comercio"). Devuelve el id, o null si no se pudo.
+ */
+export async function crearComercio(userId: string, email: string, datos: DatosComercio): Promise<string | null> {
   const admin = crearClienteAdmin();
   for (let intento = 0; intento < 3; intento++) {
-    const slug = await slugLibre(r.datos.comercio);
+    const slug = await slugLibre(datos.comercio);
     const { data: comercioId, error } = await admin.rpc("completar_registro", {
       p_user: userId,
-      p_comercio: r.datos.comercio,
-      p_rubro: r.datos.rubro,
+      p_comercio: datos.comercio,
+      p_rubro: datos.rubro,
       p_slug: slug,
-      p_razon_social: r.datos.razonSocial ?? "",
-      p_cuit: r.datos.cuit ?? "",
-      p_condicion_fiscal: r.datos.condicionFiscal ?? "",
+      p_razon_social: datos.razonSocial ?? "",
+      p_cuit: datos.cuit ?? "",
+      p_condicion_fiscal: datos.condicionFiscal ?? "",
       p_email: email,
     });
     if (!error && comercioId) {

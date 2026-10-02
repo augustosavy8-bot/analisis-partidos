@@ -1,3 +1,5 @@
+import { esSuperadmin } from "@/lib/admin";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LogoPoint } from "@/components/landing/LogoPoint";
 import { Encabezado, Seccion, Superficie } from "@/components/app/Superficie";
@@ -85,6 +87,7 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
   const sp = await searchParams;
   const comercio = await comercioDelUsuario(typeof sp.c === "string" ? sp.c : creado);
 
+  if (!comercio && !(await esSuperadmin())) redirect("/panel/completar");
   if (!comercio) {
     return (
       <Marco>

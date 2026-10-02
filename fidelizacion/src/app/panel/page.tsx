@@ -20,6 +20,8 @@ export default async function Panel() {
   const [locales, superadmin, comercio] = await Promise.all([localesDelUsuario(), esSuperadmin(), comercioDelUsuario()]);
   // Comercio sin suscripción (ni cortesía): primero tiene que activar la cuenta.
   if (comercio && !superadmin && !(await suscripcionVigente(comercio.id))) redirect("/panel/facturacion");
+  // Entró con Google por primera vez: todavía no cargó los datos de su comercio.
+  if (!comercio && !superadmin && locales.length === 0) redirect("/panel/completar");
   if (locales.length === 1 && !superadmin) redirect(`/panel/${locales[0].slug}`);
 
   return (

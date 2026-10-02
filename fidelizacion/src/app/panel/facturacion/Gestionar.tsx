@@ -152,7 +152,7 @@ function CambiarTarjeta({
         locale="es-AR"
         initialization={{ amount: precioCentavos / 100, ...(payerEmail ? { payer: { email: payerEmail } } : {}) }}
         customization={{
-          paymentMethods: { maxInstallments: 1, types: { excluded: ["prepaid_card"] } },
+          paymentMethods: { maxInstallments: 1 }, // crédito, débito y prepagas
           visual: { texts: { formSubmit: "Usar esta tarjeta" } },
         }}
         onError={(e) => {

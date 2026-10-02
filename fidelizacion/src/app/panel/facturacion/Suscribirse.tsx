@@ -176,7 +176,7 @@ export function Suscribirse({
             locale="es-AR"
             initialization={{ amount: plan.precioCentavos / 100, payer: { email } }}
             customization={{
-              paymentMethods: { maxInstallments: 1, types: { excluded: ["prepaid_card"] } },
+              paymentMethods: { maxInstallments: 1 }, // crédito, débito y prepagas
               visual: { texts: { formSubmit: plan.diasPrueba > 0 ? "Empezar prueba gratis" : "Suscribirme" } },
             }}
             onReady={() => setListo(true)}

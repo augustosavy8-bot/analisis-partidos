@@ -37,8 +37,10 @@ export function NavPanel({ slug, personal, cuenta, vista }: { slug: string; pers
 
   if (vista === "escritorio") {
     return (
-      <nav aria-label="Secciones del panel" className="-mx-4 hidden overflow-x-auto px-4 [scrollbar-width:none] md:block">
-        <ul className="flex min-w-max gap-1">
+      // Las pestañas bajan a otra fila si no entran: con scroll horizontal oculto,
+      // Ajustes / Comprar chips / Facturación quedaban fuera de la pantalla en notebooks.
+      <nav aria-label="Secciones del panel" className="hidden md:block">
+        <ul className="flex flex-wrap gap-1">
           {todas.map((s) => (
             <li key={s.ruta}>
               <Link

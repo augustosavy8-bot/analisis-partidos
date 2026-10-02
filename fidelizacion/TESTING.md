@@ -4,30 +4,35 @@ Todo se prueba en el **sandbox de Mercado Pago**, con usuarios de prueba. Nunca
 con tarjetas ni cuentas reales. Este documento se completa fase por fase; la
 fase 8 lo cierra con todos los casos y el checklist para producción.
 
-## Usuarios de prueba
+## Credenciales para probar
 
-| Rol | Para qué | Usuario | Dónde están sus datos |
-|---|---|---|---|
-| Vendedor | Hace de **Point**: sus credenciales (app "Point Test") están en Vercel | La cuenta de prueba con la que creaste "Point Test" | Tus integraciones → Cuentas de prueba |
-| Comprador | Hace del **comercio**: su email va en el formulario de tarjeta | _creala en Cuentas de prueba (perfil comprador)_ | Tus integraciones → Cuentas de prueba |
+Usamos el formulario de tarjeta de MP (Card Payment Brick). Para pagos con
+tarjeta desde un Brick, Mercado Pago pide **las credenciales de prueba de tu
+cuenta real** (no las de una cuenta de prueba vendedora) y **cualquier email**
+como pagador:
 
-Las contraseñas y los tokens **no** van en el repo: viven en Vercel (variables de
-entorno) y en tu panel de Mercado Pago.
+1. Mercado Pago Developers → Tus integraciones → **Point26** → **Credenciales de prueba**.
+2. En Vercel → fidelizacion → Settings → Environment Variables, reemplazá:
+   - `MP_ACCESS_TOKEN` → el *Access Token* de prueba de Point26.
+   - `NEXT_PUBLIC_MP_PUBLIC_KEY` → la *Public Key* de prueba de Point26.
+3. Redeploy (la Public Key se incrusta en el build).
+4. Webhooks: Point26 → Webhooks → **modo prueba** → URL
+   `https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago`, eventos *Pagos* y
+   *Planes y suscripciones*. La clave secreta nueva va en `MP_WEBHOOK_SECRET`.
 
-### Cómo crearlos (una sola vez)
-1. Entrá a https://www.mercadopago.com.ar/developers/panel/app con tu cuenta real
-   y creá una aplicación llamada **Point** (producto: Suscripciones y Checkout Pro).
-2. En la aplicación → **Cuentas de prueba** → creá una **Vendedor** y una
-   **Comprador** (país Argentina). Anotá usuario y contraseña de cada una.
-3. Cerrá sesión e iniciá sesión en el panel de desarrolladores **con la cuenta de
-   prueba vendedora**. Creá ahí otra aplicación "Point (pruebas)" y copiá sus
-   credenciales: esas son las credenciales de prueba que usa el servidor.
-4. En esa aplicación → **Webhooks → Configurar notificación**: URL
-   `https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago`, eventos
-   *Pagos*, *Planes y suscripciones*. Guardá y copiá la **clave secreta**.
-5. En Vercel → proyecto fidelizacion → Settings → Environment Variables, cargá
-   `MP_ACCESS_TOKEN`, `NEXT_PUBLIC_MP_PUBLIC_KEY`, `MP_WEBHOOK_SECRET` y
-   `CRON_SECRET` (un texto largo al azar).
+En el formulario de pago:
+- Email: **cualquiera que no sea el de tu cuenta de Mercado Pago ni el de un
+  usuario de prueba** (por ejemplo, el de la cuenta de Point con la que entraste).
+- Tarjeta de prueba y titular `APRO` (ver más abajo).
+
+> Por qué: con las credenciales de una cuenta de prueba vendedora, MP exige que el
+> pagador también sea un usuario de prueba, y el Brick no soporta ese modo para
+> tarjetas (el alta falla con "User bad request" o "Both payer and collector must
+> be real or test users"). Las cuentas de prueba (vendedor/comprador) sirven para
+> Checkout Pro (fase 6), donde el comprador inicia sesión en MP.
+
+Las contraseñas y los tokens **no** van en el repo: viven en Vercel y en tu panel
+de Mercado Pago.
 
 ## Fase 1 — Esquema, planes y productos
 
@@ -46,8 +51,9 @@ entorno) y en tu panel de Mercado Pago.
   esté en *Redirect URLs* (el link de confirmación vuelve a `/auth/callback`).
 - Supabase manda pocos emails por hora con su servidor por defecto: si no llega el de
   confirmación, esperá unos minutos o configurá un SMTP propio.
-- Tené a mano el **email del usuario de prueba comprador** (Tus integraciones →
-  Cuentas de prueba). MP exige que quien paga también sea de prueba.
+- Vercel tiene que tener las **credenciales de prueba de Point26** (ver "Credenciales
+  para probar"). El email del pagador puede ser cualquiera que no sea el de tu cuenta
+  de Mercado Pago.
 
 **Tarjetas de prueba de Argentina** (cualquier vencimiento futuro, CVV 123, DNI 12345678):
 | Tarjeta | Número |
@@ -91,8 +97,8 @@ crean en ese primer ingreso, igual que si hubieras tocado el link.
 3. Abrí el link del email **en el mismo navegador** → te lleva a `/panel/facturacion`.
    - Si lo abrís en otro navegador: te pide ingresar con la contraseña (el email ya
      quedó confirmado).
-4. Elegí Pro (viene marcado por defecto). En la tarjeta: número de prueba, titular `APRO`, y en el
-   email del formulario **el del usuario de prueba comprador**.
+4. Elegí Pro (viene marcado por defecto). En la tarjeta: número de prueba y titular `APRO`. En
+   "Email de tu cuenta de Mercado Pago" dejá el email de tu cuenta de Point (no uno de prueba).
 5. "Empezar prueba gratis" → te lleva al panel del local.
 6. Volvé a `/panel/facturacion`: "Plan Pro · prueba gratis. Tu prueba termina el …".
 7. En Supabase: `suscripciones` tiene una fila `trialing` con `mp_preapproval_id`;

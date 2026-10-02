@@ -27,7 +27,17 @@ type PlanDb = {
  * La fuente de verdad del precio es nuestra base; MP recibe una copia.
  */
 export async function asegurarPlanMp(plan: PlanDb): Promise<string> {
-  if (plan.mp_preapproval_plan_id) return plan.mp_preapproval_plan_id;
+  if (plan.mp_preapproval_plan_id) {
+    // Si cambiaron las credenciales (otra cuenta de MP), el plan guardado no existe
+    // en la cuenta nueva: lo volvemos a crear en vez de fallar.
+    try {
+      await new PreApprovalPlan(config()).get({ preApprovalPlanId: plan.mp_preapproval_plan_id });
+      return plan.mp_preapproval_plan_id;
+    } catch (e) {
+      // 404 (no existe) o 403 (es de otra cuenta): hay que crearlo de nuevo.
+      if (!esNoEncontradoMp(e) && (e as { status?: number })?.status !== 403) throw e;
+    }
+  }
 
   const creado = await new PreApprovalPlan(config()).create({
     body: {
@@ -48,7 +58,9 @@ export async function asegurarPlanMp(plan: PlanDb): Promise<string> {
 
   // Guardamos sólo si nadie lo guardó antes (dos altas simultáneas del primer suscriptor).
   const db = crearClienteAdmin();
-  await db.from("planes").update({ mp_preapproval_plan_id: creado.id }).eq("id", plan.id).is("mp_preapproval_plan_id", null);
+  const anterior = plan.mp_preapproval_plan_id;
+  const cambio = db.from("planes").update({ mp_preapproval_plan_id: creado.id }).eq("id", plan.id);
+  await (anterior ? cambio.eq("mp_preapproval_plan_id", anterior) : cambio.is("mp_preapproval_plan_id", null));
   const { data } = await db.from("planes").select("mp_preapproval_plan_id").eq("id", plan.id).single();
   return data?.mp_preapproval_plan_id ?? creado.id;
 }

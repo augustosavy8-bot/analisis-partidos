@@ -310,3 +310,23 @@ no le cortamos el alta de tarjetas (el que paga el error sería el cliente del
 café). Le mostramos un aviso para que pase a Pro. Los límites duros van donde el
 que decide es el dueño (cuántos premios crea), no el cliente. Y el canje de
 puntos ya ganados nunca se bloquea, pase lo que pase con el pago.
+
+### Anexo fase 3 — Por qué el alta fallaba en pruebas
+
+Mercado Pago tiene **dos formas de probar**, y no se pueden mezclar:
+
+| | Credenciales de prueba de tu cuenta real | Credenciales de una cuenta de prueba vendedora |
+|---|---|---|
+| Para qué | Pagos con tarjeta desde tu web (Bricks, API) | Flujos donde el comprador entra a MP (Checkout Pro) |
+| Quién paga | Cualquier email (que no sea el tuyo de MP) | Tiene que ser otra cuenta de prueba (comprador) |
+| Tarjetas | Las de prueba (titular APRO, OTHE…) | Las de prueba o saldo de la cuenta compradora |
+
+Habíamos cargado las de una cuenta de prueba vendedora. Con esas, MP exige que el
+pagador sea un usuario de prueba, pero el formulario de tarjeta (Brick) no soporta
+ese modo: el alta fallaba con "Both payer and collector must be real or test users"
+(email real) o "User bad request" (email de prueba). La documentación de Bricks lo
+dice explícito: para tarjetas, credenciales de prueba de la cuenta real.
+
+Lección: cuando un pago de prueba falla con un error genérico, lo primero es
+revisar **qué tipo de credenciales** usa cada parte (navegador y servidor) y si
+coinciden con el producto que estás probando.

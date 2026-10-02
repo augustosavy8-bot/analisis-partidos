@@ -18,7 +18,7 @@ export function mensajeErrorMp(error: unknown): string {
   if (/rejected|rechaz|insufficient|disabled|call_for_authorize/.test(t))
     return "La tarjeta fue rechazada. Probá con otra o consultá con tu banco.";
   if (/test user|real users|different countries|collector|user bad request/.test(t))
-    return "Esta tarjeta o email no se pueden usar con esta cuenta de Mercado Pago (en pruebas, usá el email del usuario de prueba comprador: test_user_NÚMERO@testuser.com).";
+    return "Esta tarjeta o email no se pueden usar con esta cuenta de Mercado Pago (en pruebas: credenciales de prueba de tu cuenta real y un email que no sea de Mercado Pago).";
   if (/payer_email|email/.test(t)) return "Revisá el email del titular de la tarjeta.";
   if (e.status === 401 || e.status === 403) return "No pudimos conectarnos con Mercado Pago. Ya estamos avisados; probá en un rato.";
   return "No pudimos activar la suscripción. Probá de nuevo en un momento.";

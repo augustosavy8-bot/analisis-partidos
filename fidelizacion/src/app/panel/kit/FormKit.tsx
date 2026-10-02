@@ -143,7 +143,12 @@ export function FormKit({
           Pagar con Mercado Pago
         </Boton>
         <p className="text-center text-[12px] text-pt-ink-3">
-          Te reservamos el stock por {minutosReserva} minutos mientras pagás. El pago se hace en Mercado Pago.
+          Te reservamos el stock por {minutosReserva} minutos mientras pagás. El pago se hace en Mercado Pago. Tenés 10 días para arrepentirte
+          (
+          <a href="/terminos" target="_blank" className="underline underline-offset-2">
+            términos
+          </a>
+          ).
         </p>
       </section>
     </form>

@@ -179,8 +179,12 @@ export function Suscribirse({
           />
         </div>
         <p className="mt-3 text-center text-[12px] text-pt-ink-3">
-          Pagos procesados por Mercado Pago. Point no guarda los datos de tu tarjeta. Mercado Pago puede hacer un cargo mínimo para
-          validarla, que se devuelve al instante.
+          Suscripción mensual con renovación automática; la cancelás cuando quieras desde Facturación. Pagos procesados por Mercado Pago:
+          Point no guarda los datos de tu tarjeta. Mercado Pago puede hacer un cargo mínimo para validarla, que se devuelve al instante.{" "}
+          <a href="/terminos" target="_blank" className="underline underline-offset-2">
+            Términos y condiciones
+          </a>
+          .
         </p>
       </section>
     </div>

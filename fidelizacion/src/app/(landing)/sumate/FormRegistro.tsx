@@ -126,6 +126,17 @@ export function FormRegistro({ plan }: { plan: string | null }) {
         {pendiente ? "Creando tu cuenta…" : "Crear mi cuenta"}
       </button>
       <p className="text-center text-xs text-white/50 sm:col-span-2">
+        Al crear tu cuenta aceptás los{" "}
+        <Link href="/terminos" className="text-white underline underline-offset-4">
+          términos y condiciones
+        </Link>{" "}
+        y la{" "}
+        <Link href="/privacidad" className="text-white underline underline-offset-4">
+          política de privacidad
+        </Link>
+        .
+      </p>
+      <p className="text-center text-xs text-white/50 sm:col-span-2">
         ¿Ya tenés cuenta?{" "}
         <Link href="/panel/ingresar" className="text-white underline underline-offset-4">
           Ingresá

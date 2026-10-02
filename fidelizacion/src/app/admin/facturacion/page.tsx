@@ -4,7 +4,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { Tarjeta, Titulo } from "@/components/Panel";
 import { formatearPesos } from "@/lib/facturacion/dinero";
 import { BotonAccion, FormAdmin, claseCampo } from "./Componentes";
-import { consultarPago, correrConciliacion } from "./actions";
+import { consultarPago, correrConciliacion, resolverArrepentimiento } from "./actions";
 import { Subnav } from "./Subnav";
 import { EstadoConfig } from "./EstadoConfig";
 
@@ -33,13 +33,14 @@ export default async function FacturacionAdmin() {
   await requerirSuperadmin();
   const db = crearClienteAdmin();
   const hace30 = haceDias(30);
-  const [{ data: comercios }, { data: subs }, { data: cuotas }, { data: pagosKit }, { count: aDespachar }, { count: eventosMal }] = await Promise.all([
+  const [{ data: comercios }, { data: subs }, { data: cuotas }, { data: pagosKit }, { count: aDespachar }, { count: eventosMal }, { data: arrepentimientos }] = await Promise.all([
     db.from("comercios").select("id, nombre, created_at").order("created_at", { ascending: false }),
     db.from("suscripciones").select("comercio_id, estado, precio_centavos, current_period_end, cortesia_hasta, created_at, planes!suscripciones_plan_id_fkey(nombre)").order("created_at", { ascending: false }),
     db.from("pagos_suscripcion").select("monto_centavos").eq("estado_pago", "approved").gte("fecha_pago", hace30),
     db.from("pagos").select("monto_centavos, reembolsado_centavos").eq("estado", "approved").gte("created_at", hace30),
     db.from("pedidos").select("id", { count: "exact", head: true }).in("estado", ["pagado", "preparando"]),
     db.from("eventos_pago").select("id", { count: "exact", head: true }).is("procesado_en", null),
+    db.from("solicitudes_arrepentimiento").select("id, codigo, nombre, email, tipo, referencia, motivo, created_at").eq("estado", "nueva").order("created_at"),
   ]);
 
   // La suscripción que cuenta de cada comercio: la no cancelada, o la última.
@@ -76,6 +77,28 @@ export default async function FacturacionAdmin() {
           {eventosMal ?? 0} eventos sin procesar →
         </Link>
       </div>
+
+      {(arrepentimientos ?? []).length > 0 && (
+        <>
+          <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-widest text-red-700">Botón de arrepentimiento: pedidos sin resolver</h2>
+          <Tarjeta className="!p-0 overflow-hidden border-red-200">
+            <ul className="divide-y divide-stone-100 text-sm">
+              {(arrepentimientos ?? []).map((a) => (
+                <li key={a.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+                  <span className="font-mono font-semibold">{a.codigo}</span>
+                  <span className="min-w-0 flex-1">
+                    {a.nombre} · {a.email} · {a.tipo === "pedido" ? `pedido ${a.referencia ?? ""}` : "suscripción"}
+                    {a.motivo && <span className="block text-xs text-stone-500">{a.motivo}</span>}
+                  </span>
+                  <span className="text-xs text-stone-500">{a.created_at.slice(0, 10)}</span>
+                  <BotonAccion accion={resolverArrepentimiento.bind(null, a.id)}>Resuelta</BotonAccion>
+                </li>
+              ))}
+            </ul>
+          </Tarjeta>
+          <p className="mt-2 text-xs text-stone-500">Hay que responder al email y devolver el dinero (Pedidos → Reembolsar, o cancelar la suscripción y reembolsar en MP).</p>
+        </>
+      )}
 
       <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-widest text-stone-500">Comercios</h2>
       <Tarjeta className="!p-0 overflow-hidden">

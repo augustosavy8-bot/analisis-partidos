@@ -19,11 +19,15 @@ verdad. En `/admin/facturacion` el cartel de arriba dice en qué modo está.
       TusFacturas) y con qué condición fiscal (monotributo / responsable inscripto).
       Los datos fiscales que cargan los comercios al registrarse están en
       `comercios` (razón social, CUIT, condición fiscal).
-- [ ] **Textos legales** en la web: términos y condiciones del servicio, política de
-      cancelación y reembolso, y política de privacidad. En Argentina la baja de un
-      servicio contratado online tiene que poder hacerse online igual de fácil
-      (Res. 316/2018): ya está ("Cancelar suscripción" en Facturación), mencionalo
-      en los términos. Botón de arrepentimiento (Res. 424/2020) para el kit.
+- [x] **Textos legales**: `/terminos` (suscripción, prueba, renovación, baja online,
+      cambio de plan, morosidad, kit, arrepentimiento) y `/privacidad`, enlazados en el
+      pie de la web, en el registro, en el alta y en la compra del kit.
+- [x] **Botón de arrepentimiento** (Res. 424/2020): `/arrepentimiento`, visible en el
+      pie de la página de inicio, sin login, da un código de trámite al instante. Las
+      solicitudes aparecen en rojo en `/admin/facturacion` hasta marcarlas resueltas.
+- [ ] **Revisar los textos legales con un abogado** (son una base razonable, no
+      asesoramiento legal) y completar el contacto (razón social, CUIT y domicilio de
+      Point, que la ley de defensa del consumidor pide mostrar).
 - [ ] **Emails (SMTP propio)**: configurá Resend en Supabase (ver LEARNING.md, anexo
       fase 2). Con el SMTP de prueba de Supabase los mails de confirmación de cuenta
       llegan tarde o no llegan, y un comercio real no puede registrarse.

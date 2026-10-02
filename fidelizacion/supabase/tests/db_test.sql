@@ -996,4 +996,14 @@ begin
     'admin: el reembolso marca el pedido y devuelve el stock');
 end $$;
 
+-- ---------------------------------------------------------------- arrepentimiento
+insert into public.solicitudes_arrepentimiento (codigo, nombre, email, tipo) values ('ARR-TEST01', 'Ana', 'ana@test.com', 'pedido');
+set role anon;
+do $$ begin
+  perform 1 from public.solicitudes_arrepentimiento;
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+reset role;
+select pg_temp.check(true, 'arrepentimiento: las solicitudes (con emails) no se leen desde afuera');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

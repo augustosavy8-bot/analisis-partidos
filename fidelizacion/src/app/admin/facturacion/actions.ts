@@ -219,3 +219,16 @@ export async function guardarConfig(_prev: EstadoAdmin, form: FormData): Promise
   refresh();
   return { ok: "Configuración guardada." };
 }
+
+// ---------------------------------------------------------------- arrepentimiento
+
+export async function resolverArrepentimiento(id: string): Promise<EstadoAdmin> {
+  await requerirSuperadmin();
+  const { error } = await crearClienteAdmin()
+    .from("solicitudes_arrepentimiento")
+    .update({ estado: "resuelta", resuelta_en: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  refresh();
+  return { ok: "Marcada como resuelta." };
+}

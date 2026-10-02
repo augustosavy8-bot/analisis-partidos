@@ -13,6 +13,7 @@ export type PlanOpcion = {
   precioCentavos: number;
   diasPrueba: number;
   beneficios: string[];
+  destacado?: boolean;
 };
 
 let mpIniciado = false;
@@ -107,7 +108,12 @@ export function Suscribirse({
               />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="text-[17px] font-semibold text-pt-ink">{p.nombre}</span>
+                  <span className="text-[17px] font-semibold text-pt-ink">
+                    {p.nombre}
+                    {p.destacado && (
+                      <span className="ml-2 rounded-full bg-pt-accent px-2 py-0.5 align-middle text-[11px] font-semibold text-pt-ink">Recomendado</span>
+                    )}
+                  </span>
                   <span className="tabular-nums text-pt-ink">
                     <strong className="text-[17px]">{formatearPesos(p.precioCentavos)}</strong>
                     <span className="text-[13px] text-pt-ink-2"> / mes</span>

@@ -11,8 +11,9 @@ verdad. En `/admin/facturacion` el cartel de arriba dice en qué modo está.
 
 ## 1. Antes de tocar nada
 
-- [ ] **Precios finales** en `/admin/facturacion/catalogo` (Básico, Pro, kit, chip,
-      envío, días de prueba, dirección de retiro).
+- [x] **Planes**: Básico $25.000 (austero a propósito), Pro $40.000 (recomendado),
+      Max $80.000 (todo, locales ilimitados). Se editan en `/admin/facturacion/catalogo`.
+- [ ] **Dirección de retiro** real (hoy dice "a confirmar") y precios del kit/chip/envío.
 - [ ] **Facturación (AFIP)**: Point tiene que emitir factura por cada cobro
       (suscripción y kit). El sistema no factura solo (quedó fuera de alcance):
       definí cómo lo vas a hacer (manual desde AFIP o un servicio tipo Facturante /
@@ -85,11 +86,13 @@ select numero, estado, total_centavos from pedidos;
       `/admin/facturacion/pedidos` **Reembolsar** → verificá la devolución en MP.
 - [ ] Mirá `/admin/facturacion/eventos`: los webhooks llegan con firma válida.
 
-## 5. Quitar las cortesías que no correspondan
+## 5. Sin cortesías: todo se cobra
 
-- [ ] FairPlay, BAR EJEMPLO, 1365 SOCIAL HOUSE están en cortesía Pro sin fin. Decidí
-      hasta cuándo (detalle del comercio → Cortesía → fecha). Al vencer, el comercio
-      ve "Tu cortesía está por terminar" 15 días antes y después tiene que suscribirse.
+- [x] Los locales que crea el superadmin ya **no** arrancan en cortesía: el dueño
+      activa su suscripción (con prueba gratis) y hasta entonces el local no suma.
+- [ ] FairPlay, BAR EJEMPLO y 1365 SOCIAL HOUSE siguen en cortesía Pro sin fin.
+      Ponerles fecha de fin (detalle del comercio → Cortesía → fecha): 15 días antes
+      ven "Tu cortesía está por terminar" y al vencer tienen que suscribirse.
 
 ## 6. Seguridad (revisión hecha el 2/10/2026)
 

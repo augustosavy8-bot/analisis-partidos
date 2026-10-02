@@ -60,14 +60,15 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
   const { data: existe } = await db.from("locales").select("id").eq("slug", slug).maybeSingle();
   if (existe) return { error: `Ya existe un local con la dirección /${slug}. Elegí otra.` };
 
-  // Cada local pertenece a un comercio (la cuenta que paga). Los que se crean
-  // desde acá arrancan en cortesía con plan Pro, sin fecha de fin (se edita en /admin).
+  // Cada local pertenece a un comercio (la cuenta que paga). Arranca SIN
+  // suscripción: hasta que el dueño la active, el local no suma puntos.
   const { data: comercioId, error: errorComercio } = await db.rpc("crear_comercio", {
     p_nombre: nombre,
     p_rubro: rubro ?? "",
     p_owner: null,
     p_origen: "admin",
-    p_cortesia_plan: "pro",
+    // Sin cortesía: todo se cobra. El dueño activa su suscripción (con prueba gratis) al entrar.
+    p_cortesia_plan: null,
   });
   if (errorComercio || !comercioId) return { error: "No se pudo crear el comercio." };
 

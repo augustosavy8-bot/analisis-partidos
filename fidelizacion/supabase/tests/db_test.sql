@@ -515,11 +515,14 @@ select pg_temp.check(
   'app: eliminar la cuenta borra tarjetas y celulares');
 
 -- ---------------------------------------------------------------- facturación
-select pg_temp.check((select count(*) from public.planes where activo) = 2
-  and (select precio_centavos from public.planes where codigo = 'basico') = 1500000
-  and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 300
-  and (select limites->'clientes' from public.planes where codigo = 'pro') = 'null'::jsonb,
-  'facturación: planes Básico ($15.000, 300 clientes) y Pro (ilimitados) cargados en centavos');
+select pg_temp.check((select count(*) from public.planes where activo) = 3
+  and (select precio_centavos from public.planes where codigo = 'basico') = 2500000
+  and (select precio_centavos from public.planes where codigo = 'pro') = 4000000
+  and (select precio_centavos from public.planes where codigo = 'max') = 8000000
+  and (select (limites->>'clientes')::int from public.planes where codigo = 'basico') = 100
+  and (select limites->'clientes' from public.planes where codigo = 'pro') = 'null'::jsonb
+  and (select destacado from public.planes where codigo = 'pro'),
+  'facturación: Básico $25.000 (austero), Pro $40.000 (recomendado) y Max $80.000, en centavos');
 select pg_temp.check((select stock from public.productos where codigo = 'kit_inicial') = 5
   and (select chips_por_unidad from public.productos where codigo = 'kit_inicial') = 10
   and (select costo_envio_centavos from public.config_facturacion) = 500000,
@@ -613,7 +616,7 @@ select pg_temp.check((select count(*) from public.comercios) = 1
   and (select count(*) from public.pagos_suscripcion) = 0
   and (select count(*) from public.avisos_comercio) = 0,
   'facturación: el dueño ve sólo su comercio, su suscripción y sus avisos');
-select pg_temp.check((select count(*) from public.planes) = 2 and (select count(*) from public.productos) = 2,
+select pg_temp.check((select count(*) from public.planes) = 3 and (select count(*) from public.productos) = 2,
   'facturación: el dueño logueado ve los planes y productos');
 do $$ begin
   update public.suscripciones set estado = 'authorized';

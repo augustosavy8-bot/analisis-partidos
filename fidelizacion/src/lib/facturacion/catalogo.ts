@@ -10,6 +10,8 @@ export type PlanPublico = {
   precioCentavos: number;
   diasPrueba: number;
   limites: LimitesPlan;
+  /** El plan recomendado (se muestra marcado y elegido por defecto). */
+  destacado: boolean;
 };
 
 export type ProductoPublico = {
@@ -35,7 +37,7 @@ export type ConfigFacturacion = {
 export async function planesPublicos(): Promise<PlanPublico[]> {
   const { data, error } = await crearClienteAdmin()
     .from("planes")
-    .select("id, codigo, nombre, descripcion, precio_centavos, dias_prueba, limites")
+    .select("id, codigo, nombre, descripcion, precio_centavos, dias_prueba, limites, destacado")
     .eq("activo", true)
     .order("orden");
   if (error) throw new Error(`No se pudieron leer los planes: ${error.message}`);
@@ -47,6 +49,7 @@ export async function planesPublicos(): Promise<PlanPublico[]> {
     precioCentavos: p.precio_centavos,
     diasPrueba: p.dias_prueba,
     limites: leerLimites(p.limites),
+    destacado: p.destacado,
   }));
 }
 

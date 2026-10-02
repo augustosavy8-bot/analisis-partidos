@@ -31,7 +31,7 @@ export type EstadoBorrador = { error?: string; ok?: number };
 export async function subirBorrador(slug: string, tipo: TipoImagen, form: FormData): Promise<EstadoBorrador> {
   if (!TIPOS_IMAGEN.includes(tipo)) return { error: "Tipo de imagen inválido." };
   const { local } = await requerirLocal(slug);
-  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  const bloqueo = (await exigirFuncion(local.id, "editar_programa")) ?? (await exigirFuncion(local.id, "diseno_personalizado"));
   if (bloqueo) return { error: bloqueo };
   const archivo = form.get("archivo");
   if (!(archivo instanceof File) || archivo.size === 0) return { error: "Elegí un archivo." };

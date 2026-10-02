@@ -113,7 +113,7 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
       .select("id", { count: "exact", head: true })
       .eq("comercio_id", comercio.id)
       .not("mp_preapproval_id", "is", null);
-    const elegido = (typeof sp.plan === "string" ? sp.plan : null) ?? (await planElegidoAlRegistrarse()) ?? planes[planes.length - 1]?.codigo;
+    const elegido = (typeof sp.plan === "string" ? sp.plan : null) ?? (await planElegidoAlRegistrarse()) ?? planes.find((p) => p.destacado)?.codigo ?? planes[0]?.codigo;
     const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? "";
     return (
       <Marco>
@@ -130,6 +130,7 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
               nombre: p.nombre,
               precioCentavos: p.precioCentavos,
               diasPrueba: (pagasAntes ?? 0) > 0 ? 0 : p.diasPrueba,
+              destacado: p.destacado,
               beneficios: beneficiosPlan(p.limites),
             }))}
           />

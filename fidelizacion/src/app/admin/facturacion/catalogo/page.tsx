@@ -13,7 +13,7 @@ export default async function CatalogoAdmin() {
   await requerirSuperadmin();
   const db = crearClienteAdmin();
   const [{ data: planes }, { data: productos }, { data: cfg }] = await Promise.all([
-    db.from("planes").select("id, codigo, nombre, precio_centavos, dias_prueba, limites, activo").order("orden"),
+    db.from("planes").select("id, codigo, nombre, precio_centavos, dias_prueba, limites, activo, destacado").order("orden"),
     db.from("productos").select("id, codigo, nombre, descripcion, precio_centavos, stock, max_por_pedido, activo").order("orden"),
     db.from("config_facturacion").select("costo_envio_centavos, minutos_reserva_stock, dias_gracia, dias_sumar_tras_gracia, direccion_retiro").single(),
   ]);
@@ -53,6 +53,8 @@ export default async function CatalogoAdmin() {
                   <div className="flex flex-col justify-end gap-1 text-stone-600">
                     <Check name="promos" etiqueta="Promos" defaultChecked={l.promos} />
                     <Check name="mensajes" etiqueta="Mensajes" defaultChecked={l.mensajes} />
+                    <Check name="diseno" etiqueta="Logo e imágenes propias" defaultChecked={l.diseno} />
+                    <Check name="destacado" etiqueta="Recomendado" defaultChecked={p.destacado} />
                     <Check name="activo" etiqueta="Activo (se ofrece)" defaultChecked={p.activo} />
                   </div>
                 </div>

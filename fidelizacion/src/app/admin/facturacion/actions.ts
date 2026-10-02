@@ -153,6 +153,7 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
     promos: form.get("promos") === "on",
     mensajes: form.get("mensajes") === "on",
     estadisticas: form.get("estadisticas") === "avanzadas" ? "avanzadas" : "basicas",
+    diseno: form.get("diseno") === "on",
   };
   if (nombre.length < 2 || nombre.length > 40) return { error: "Nombre entre 2 y 40 letras." };
   if (!Number.isInteger(precio) || precio <= 0) return { error: "Precio inválido." };
@@ -170,6 +171,7 @@ export async function guardarPlan(planId: string, _prev: EstadoAdmin, form: Form
       dias_prueba: dias,
       limites,
       activo: form.get("activo") === "on",
+      destacado: form.get("destacado") === "on",
       ...(cambiaMp ? { mp_preapproval_plan_id: null } : {}),
     })
     .eq("id", planId);

@@ -15,6 +15,8 @@ export type LimitesPlan = {
   promos: boolean;
   mensajes: boolean;
   estadisticas: NivelEstadisticas;
+  /** Logo e imágenes propias en la tarjeta (sin esto, sólo colores). */
+  diseno: boolean;
 };
 
 export const LIMITES_MINIMOS: LimitesPlan = {
@@ -24,6 +26,7 @@ export const LIMITES_MINIMOS: LimitesPlan = {
   promos: false,
   mensajes: false,
   estadisticas: "basicas",
+  diseno: false,
 };
 
 function limiteNumerico(v: unknown, minimo: number): number | null {
@@ -42,6 +45,7 @@ export function leerLimites(json: unknown): LimitesPlan {
     promos: o.promos === true,
     mensajes: o.mensajes === true,
     estadisticas: o.estadisticas === "avanzadas" ? "avanzadas" : "basicas",
+    diseno: o.diseno === true,
   };
 }
 
@@ -59,5 +63,6 @@ export function beneficiosPlan(l: LimitesPlan): string[] {
   ];
   if (l.promos) lista.push("Promos: puntos dobles y de cumpleaños");
   if (l.mensajes) lista.push("Mensajes a tus clientes en la Wallet");
+  lista.push(l.diseno ? "Tarjeta con tu logo e imágenes" : "Tarjeta con tus colores (sin logo propio)");
   return lista;
 }

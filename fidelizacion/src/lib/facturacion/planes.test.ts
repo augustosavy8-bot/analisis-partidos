@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LIMITES_MINIMOS, beneficiosPlan, leerLimites } from "./planes";
 
-const BASICO = { locales: 1, clientes: 300, premios: 3, promos: false, mensajes: false, estadisticas: "basicas" };
-const PRO = { locales: 3, clientes: null, premios: null, promos: true, mensajes: true, estadisticas: "avanzadas" };
+const BASICO = { locales: 1, clientes: 100, premios: 2, promos: false, mensajes: false, estadisticas: "basicas", diseno: false };
+const PRO = { locales: 3, clientes: null, premios: null, promos: true, mensajes: true, estadisticas: "avanzadas", diseno: true };
 
 describe("límites de los planes", () => {
   it("lee los planes cargados en la base", () => {
@@ -25,15 +25,17 @@ describe("límites de los planes", () => {
   it("describe lo que incluye cada plan", () => {
     expect(beneficiosPlan(leerLimites(BASICO))).toEqual([
       "1 local",
-      "Hasta 300 clientes con tarjeta",
+      "Hasta 100 clientes con tarjeta",
       "1 programa de puntos",
-      "Hasta 3 premios",
+      "Hasta 2 premios",
       "Estadísticas básicas: clientes, puntos y canjes del mes",
+      "Tarjeta con tus colores (sin logo propio)",
     ]);
     const pro = beneficiosPlan(leerLimites(PRO));
     expect(pro).toContain("Hasta 3 locales");
     expect(pro).toContain("Clientes ilimitados");
     expect(pro).toContain("Premios ilimitados");
     expect(pro).toContain("Mensajes a tus clientes en la Wallet");
+    expect(pro).toContain("Tarjeta con tu logo e imágenes");
   });
 });

@@ -36,6 +36,7 @@ const MENSAJES: Record<Funcion, string> = {
   mensajes: "Los mensajes a clientes están incluidos en el plan Pro.",
   estadisticas: "Tu cuenta está restringida: regularizá el pago en Facturación para ver estadísticas.",
   estadisticas_avanzadas: "Las estadísticas avanzadas están incluidas en el plan Pro.",
+  diseno_personalizado: "El logo y las imágenes propias en la tarjeta están incluidos en el plan Pro.",
 };
 
 /** Para server actions: null si puede, o el mensaje para mostrarle al comercio. */

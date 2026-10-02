@@ -86,7 +86,8 @@ export type Funcion =
   | "promos"
   | "mensajes"
   | "estadisticas"
-  | "estadisticas_avanzadas";
+  | "estadisticas_avanzadas"
+  | "diseno_personalizado";
 
 const PANEL_BLOQUEADO: NivelAcceso[] = ["restringido", "sin_sumar", "sin_suscripcion"];
 
@@ -103,6 +104,8 @@ export function puedeUsar(a: Acceso, f: Funcion): boolean {
       return a.limites.mensajes;
     case "estadisticas_avanzadas":
       return a.limites.estadisticas === "avanzadas";
+    case "diseno_personalizado":
+      return a.limites.diseno;
     default:
       return true;
   }

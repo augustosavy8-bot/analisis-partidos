@@ -250,3 +250,63 @@ Esto no es sólo "sacar una página": también se cerró la lectura anónima de 
 Supabase cualquiera podía consultar la API y ver los precios aunque no hubiera página.
 **Lo que no querés público no alcanza con no mostrarlo en la interfaz: hay que
 cerrarlo en la fuente.**
+
+## Fase 3 — Webhooks, activación de la cuenta y control de acceso por plan
+
+### Qué se hizo
+- `POST /api/webhooks/mercadopago`: recibe las notificaciones de MP
+  (`subscription_preapproval`, `subscription_authorized_payment`, `payment`).
+  Guarda cada una en `eventos_pago`, valida la firma y procesa.
+- `aplicar_cambio_suscripcion` y `registrar_cuota` (funciones Postgres): aplican el
+  cambio de estado de forma atómica, con historial y aviso al comercio.
+- Control de acceso (`acceso.ts`): el servidor decide qué puede hacer cada comercio
+  según plan y estado. Básico: 3 premios, sin promos ni mensajes, estadísticas
+  básicas. Pro: todo. Cuenta impaga después de la gracia: panel restringido.
+- En el panel, lo que el plan no incluye se ve con un aviso "Pasar a Pro" en lugar
+  del formulario.
+
+### Conceptos de pagos que aparecieron
+
+**1. Nunca creerle al cuerpo del webhook.** La notificación sólo dice "cambió el
+recurso X". No usamos el estado que viene adentro: con el id, consultamos a la API
+de MP (`GET /preapproval/{id}`, `GET /authorized_payments/{id}`) y usamos *esa*
+respuesta. Así, aunque alguien nos mande un POST trucho, lo peor que logra es que
+le preguntemos a MP algo que ya sabe.
+
+**2. Firma HMAC (`x-signature`).** MP firma cada notificación con un secreto que
+sólo conocemos nosotros y MP. Armamos el mismo texto
+(`id:{data.id};request-id:{x-request-id};ts:{ts};`), calculamos HMAC-SHA256 con el
+secreto y comparamos con `v1` usando una comparación de tiempo constante
+(`timingSafeEqual`, para no filtrar cuántos caracteres coinciden). Firma inválida
+→ 401 y no se procesa (pero queda guardada para auditar).
+
+**3. Idempotencia: el mismo evento puede llegar 2, 5 o 20 veces.** MP reintenta si
+no respondemos 200 a tiempo (22 s), y a veces manda duplicados igual. Todo el
+procesamiento es idempotente: la cuota se guarda por su id único de MP
+(`ON CONFLICT`), y aplicar "authorized" a una suscripción ya "authorized" no hace
+nada nuevo (ni historial ni aviso).
+
+**4. Los eventos llegan desordenados.** Puede llegar "cuota rechazada, intento 1"
+después de "intento 3". Por eso la cuota guardada sólo se pisa si el intento nuevo
+es mayor o igual. Y los estados terminales no vuelven: una suscripción cancelada
+no se "resucita" por un webhook viejo que dice "authorized".
+
+**5. 200 vs 500: cuándo pedir que reintenten.** Si el problema es nuestro (base
+caída, MP lento al consultar) respondemos 500 y MP reintenta cada 15 minutos. Si el
+recurso no existe en MP (404) respondemos 200: reintentar no lo va a arreglar.
+
+**6. Huérfanos: "MP la creó pero nosotros no la guardamos".** Si el servidor se
+cae justo después de crear la suscripción en MP, nuestra base no la tiene. Al
+crearla mandamos `external_reference` = id del comercio; cuando llega el webhook de
+una suscripción que no conocemos, la reconstruimos con ese dato. Nada se pierde.
+
+**7. El acceso se decide en el servidor, en cada acción.** Esconder un botón no
+alcanza: alguien puede llamar a la server action directo. Por eso `crear premio`,
+`crear promo`, `enviar mensaje`, etc. preguntan `exigirFuncion`/`exigirLimite`
+antes de guardar. La pantalla sólo refleja lo que el servidor ya decidió.
+
+**8. No castigar al cliente final.** Si un comercio Básico pasa los 300 clientes,
+no le cortamos el alta de tarjetas (el que paga el error sería el cliente del
+café). Le mostramos un aviso para que pase a Pro. Los límites duros van donde el
+que decide es el dueño (cuántos premios crea), no el cliente. Y el canje de
+puntos ya ganados nunca se bloquea, pase lo que pase con el pago.

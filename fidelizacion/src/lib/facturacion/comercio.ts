@@ -20,6 +20,7 @@ export type SuscripcionVigente = {
   cortesiaHasta: string | null;
   cancelAtPeriodEnd: boolean;
   mpPayerEmail: string | null;
+  pastDueDesde: string | null;
 };
 
 /**
@@ -38,7 +39,7 @@ export const comercioDelUsuario = cache(async (id?: string | null): Promise<Come
 export async function suscripcionVigente(comercioId: string): Promise<SuscripcionVigente | null> {
   const { data } = await crearClienteAdmin()
     .from("suscripciones")
-    .select("id, estado, plan_id, precio_centavos, trial_ends_at, current_period_end, cortesia_hasta, cancel_at_period_end, mp_payer_email, planes(codigo, nombre, limites)")
+    .select("id, estado, plan_id, precio_centavos, trial_ends_at, current_period_end, cortesia_hasta, cancel_at_period_end, mp_payer_email, past_due_desde, planes(codigo, nombre, limites)")
     .eq("comercio_id", comercioId)
     .neq("estado", "cancelled")
     .maybeSingle();
@@ -57,5 +58,6 @@ export async function suscripcionVigente(comercioId: string): Promise<Suscripcio
     cortesiaHasta: data.cortesia_hasta,
     cancelAtPeriodEnd: data.cancel_at_period_end,
     mpPayerEmail: data.mp_payer_email,
+    pastDueDesde: data.past_due_desde,
   };
 }

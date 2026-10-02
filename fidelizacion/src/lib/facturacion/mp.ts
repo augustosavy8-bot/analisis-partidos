@@ -1,5 +1,5 @@
 import "server-only";
-import { MercadoPagoConfig, PreApproval, PreApprovalPlan } from "mercadopago";
+import { Invoice, MercadoPagoConfig, Payment, PreApproval, PreApprovalPlan } from "mercadopago";
 import { env } from "@/lib/env";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { centavosAPesos } from "./dinero";
@@ -83,4 +83,19 @@ export async function crearSuscripcionMp(p: {
 
 export async function obtenerSuscripcionMp(id: string) {
   return new PreApproval(config()).get({ id });
+}
+
+/** Cuota de una suscripción ("authorized payment" / factura). */
+export async function obtenerCuotaMp(id: string) {
+  return new Invoice(config()).get({ id });
+}
+
+export async function obtenerPagoMp(id: string) {
+  return new Payment(config()).get({ id });
+}
+
+/** ¿El error de MP es "ese recurso no existe"? (ids de prueba, recursos de otra cuenta) */
+export function esNoEncontradoMp(e: unknown): boolean {
+  const x = e as { status?: number; message?: string } | null;
+  return x?.status === 404 || /not.?found|no encontrad/i.test(x?.message ?? "");
 }

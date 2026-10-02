@@ -4,6 +4,9 @@ import { promoVigente, type Promo } from "@/lib/promos";
 import { FilaPromo, FormPromo, FormRegalos } from "./Formularios";
 import { claseBoton } from "@/components/app/Boton";
 import { Aviso } from "@/components/app/Superficie";
+import { MejorarPlan } from "@/components/app/MejorarPlan";
+import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
+import { puedeUsar } from "@/lib/facturacion/acceso";
 
 export const metadata = { title: "Promos" };
 
@@ -17,6 +20,17 @@ export default async function Promos({ params }: PageProps<"/panel/[local]/promo
     .order("created_at");
   const promos = (data ?? []) as Promo[];
   const ahora = promoVigente(promos, local.zona_horaria);
+
+  if (!puedeUsar(await accesoDelLocal(local.id), "promos")) {
+    return (
+      <>
+        <Titulo detalle="Puntos extra para traer gente en los días flojos.">Promos y regalos</Titulo>
+        <MejorarPlan titulo="Promos y regalos son del plan Pro">
+          Puntos dobles o triples en los horarios flojos, regalo de bienvenida y puntos de cumpleaños, que se suman solos.
+        </MejorarPlan>
+      </>
+    );
+  }
 
   return (
     <>

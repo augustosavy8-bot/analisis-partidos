@@ -4,6 +4,9 @@ import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { Insignia } from "@/components/app/Superficie";
 import { textoAlcance, type MensajeLocal } from "@/lib/mensajes";
 import { FormMensaje } from "./FormMensaje";
+import { MejorarPlan } from "@/components/app/MejorarPlan";
+import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
+import { puedeUsar } from "@/lib/facturacion/acceso";
 
 export const metadata = { title: "Mensajes" };
 
@@ -23,12 +26,18 @@ export default async function Mensajes({ params }: PageProps<"/panel/[local]/men
   ]);
   const horas: number = limite?.horas_entre_mensajes ?? 24;
   const mensajes = (historial ?? []) as MensajeLocal[];
+  const habilitado = puedeUsar(await accesoDelLocal(local.id), "mensajes");
 
   return (
     <>
       <Titulo detalle="Llegan como notificación a quienes tienen tu tarjeta en Apple Wallet o Google Wallet.">Mensajes</Titulo>
 
-      <Tarjeta className="mb-4">
+      {!habilitado && (
+        <MejorarPlan titulo="Los mensajes a clientes son del plan Pro" className="mb-4">
+          Avisá promos y novedades con una notificación en la tarjeta de la Wallet de tus clientes.
+        </MejorarPlan>
+      )}
+      <Tarjeta className={`mb-4 ${habilitado ? "" : "hidden"}`}>
         <h2 className="pt-app-seccion text-pt-ink">Enviar mensaje a clientes</h2>
         <p className="mb-4 mt-1 pt-app-detalle text-pt-ink-2">
           {horas === 0

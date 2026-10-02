@@ -5,11 +5,14 @@ import { after } from "next/server";
 import { requerirLocal } from "@/lib/panel";
 import { enviarMensajeLocal } from "@/lib/wallet";
 import { LIMITES_MENSAJE } from "@/lib/mensajes";
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 
 export type EstadoMensaje = { error?: string; ok?: number; proximo?: string };
 
 export async function enviarMensaje(slug: string, _prev: EstadoMensaje, form: FormData): Promise<EstadoMensaje> {
   const { db, local } = await requerirLocal(slug);
+  const bloqueo = await exigirFuncion(local.id, "mensajes");
+  if (bloqueo) return { error: bloqueo };
   const titulo = String(form.get("titulo") ?? "").trim().replace(/\s+/g, " ");
   const texto = String(form.get("texto") ?? "").trim().replace(/[ \t]+/g, " ");
 

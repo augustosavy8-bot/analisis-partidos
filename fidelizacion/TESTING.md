@@ -110,3 +110,46 @@ crean en ese primer ingreso, igual que si hubieras tocado el link.
 ### Caso: registro repetido
 - Recargar `/panel/facturacion` varias veces después de confirmar no crea más
   comercios ni locales (hay uno solo, con la dirección `/t/nombre-del-local`).
+
+## Fase 3 — Webhooks y control de acceso
+
+### Configuración (una vez)
+En Mercado Pago → Tus integraciones → "Point Test" → Webhooks → modo **prueba**:
+- URL: `https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago`
+- Eventos: **Planes y suscripciones** (los tres) y **Pagos**.
+- La clave secreta que muestra MP es `MP_WEBHOOK_SECRET` en Vercel (ya cargada).
+
+### Caso: simular una notificación desde MP
+1. En la pantalla de Webhooks → "Simular notificación", tipo *Planes y suscripciones*.
+2. MP muestra la respuesta: tiene que ser **200** (el id de prueba no existe → se
+   ignora) o 500 si algo falló nuestro.
+3. En Supabase: `select * from eventos_pago order by id desc limit 5;` → una fila con
+   `firma_valida = true`.
+
+### Caso: firma inválida
+- Un POST a mano sin firma (por ejemplo con curl, desde tu compu):
+  `curl -X POST "https://fidelizacion-beta.vercel.app/api/webhooks/mercadopago?data.id=1&type=payment"`
+  → **401**, y en `eventos_pago` queda la fila con `firma_valida = false` y sin procesar.
+
+### Caso: el alta se confirma por webhook
+1. Hacé el alta de la fase 2 (titular `APRO`).
+2. A los segundos, `eventos_pago` tiene eventos `subscription_preapproval` con
+   `procesado_en` lleno y `error` vacío.
+3. La suscripción sigue en `trialing` (MP la tiene "authorized"; mientras dure la
+   prueba, para nosotros es prueba).
+
+### Caso: webhook duplicado
+- En `eventos_pago` copiá un evento y pedile a MP que lo reenvíe (o simulá dos
+  veces): `historial_suscripcion` y `avisos_comercio` no suman filas nuevas.
+
+### Caso: huérfano
+- (Sólo si querés forzarlo) borrá la fila de `suscripciones` recién creada en una
+  base de prueba y reenviá la notificación: la suscripción vuelve a aparecer,
+  reconstruida con `external_reference`.
+
+### Caso: límites del plan Básico
+1. Con un comercio en Básico, creá 3 premios: el 4.º no se puede (aviso "Pasar a Pro").
+2. Promos y Mensajes muestran el aviso en lugar del formulario.
+3. Resumen: se ven Clientes, Visitas y Canjes; "Vuelven", el gráfico y el ranking
+   aparecen como "del plan Pro".
+4. FairPlay y Café Aurora (cortesía Pro) ven todo como siempre.

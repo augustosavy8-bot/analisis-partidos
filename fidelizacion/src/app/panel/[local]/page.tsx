@@ -5,6 +5,9 @@ import { BotonLink } from "@/components/app/Boton";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { formasTermino } from "@/lib/terminos";
 import { Icono, type NombreIcono } from "@/components/Icono";
+import { MejorarPlan } from "@/components/app/MejorarPlan";
+import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
+import { dentroDelLimite, puedeUsar } from "@/lib/facturacion/acceso";
 
 type Metricas = {
   clientes_total: number;
@@ -25,6 +28,9 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
   const { data, error } = await db.rpc("panel_metricas", { p_local_id: local.id, p_dias: 30 });
   if (error) throw new Error(error.message);
   const m = data as Metricas;
+  const acceso = await accesoDelLocal(local.id);
+  const basicas = puedeUsar(acceso, "estadisticas");
+  const avanzadas = puedeUsar(acceso, "estadisticas_avanzadas");
   const t = formasTermino(local.termino_personal);
 
   const pctRecurrentes = m.clientes_activos ? Math.round((m.clientes_recurrentes / m.clientes_activos) * 100) : 0;
@@ -49,57 +55,81 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Numero icono="cliente" etiqueta="Clientes" valor={m.clientes_total} detalle={`+${m.clientes_nuevos} nuevos`} />
-        <Numero icono="sumar-punto" etiqueta="Visitas" valor={m.visitas} detalle={`${m.clientes_activos} clientes distintos`} />
-        <Numero
-          icono="historial"
-          etiqueta="Vuelven"
-          valor={`${pctRecurrentes}%`}
-          detalle={`${m.clientes_recurrentes} vinieron 2 veces o más`}
-        />
-        <Numero icono="canjear" etiqueta="Canjes" valor={m.canjes} detalle="premios entregados" />
-      </div>
+      {acceso.limites && !dentroDelLimite(acceso, "clientes", m.clientes_total) && (
+        <MejorarPlan titulo="Superaste los clientes de tu plan" className="mb-4">
+          Tenés {m.clientes_total} clientes con tarjeta y tu plan {acceso.planNombre} incluye {acceso.limites.clientes}. Tus clientes siguen sumando
+          igual; pasá a Pro para tener clientes ilimitados.
+        </MejorarPlan>
+      )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Tarjeta>
-          <GraficoVisitas datos={m.visitas_por_dia} />
-        </Tarjeta>
+      {!basicas ? (
+        <MejorarPlan titulo="Las estadísticas están en pausa" boton="Ver facturación">
+          Tu cuenta tiene un pago pendiente. Tus clientes pueden seguir canjeando sus puntos; regularizá el pago para volver a ver las estadísticas y
+          editar el programa.
+        </MejorarPlan>
+      ) : (
+        <>
+          <div className={`grid grid-cols-2 gap-3 ${avanzadas ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+            <Numero icono="cliente" etiqueta="Clientes" valor={m.clientes_total} detalle={`+${m.clientes_nuevos} nuevos`} />
+            <Numero icono="sumar-punto" etiqueta="Visitas" valor={m.visitas} detalle={`${m.clientes_activos} clientes distintos`} />
+            {avanzadas && (
+              <Numero
+                icono="historial"
+                etiqueta="Vuelven"
+                valor={`${pctRecurrentes}%`}
+                detalle={`${m.clientes_recurrentes} vinieron 2 veces o más`}
+              />
+            )}
+            <Numero icono="canjear" etiqueta="Canjes" valor={m.canjes} detalle="premios entregados" />
+          </div>
 
-        <Tarjeta>
-          <h2 className="pt-app-seccion text-pt-ink">Ranking de {t.plural}</h2>
-          <p className="pt-app-detalle text-pt-ink-2">Puntos dados en 30 días</p>
-          {m.ranking_mozos.length === 0 ? (
-            <div className="mt-4 rounded-pt-sm bg-pt-surface p-4 text-center pt-app-detalle text-pt-ink-2">
-              Todavía no hay {t.plural}.{" "}
-              <Link href={`/panel/${slug}/mozos`} className="font-semibold text-pt-ink underline underline-offset-2">
-                Agregar
-              </Link>
-            </div>
+          {!avanzadas ? (
+            <MejorarPlan titulo="Estadísticas avanzadas son del plan Pro" className="mt-4">
+              Con Pro ves cuántos clientes vuelven, las visitas día por día y el ranking de tu equipo.
+            </MejorarPlan>
           ) : (
-            <ol className="mt-4 space-y-3">
-              {m.ranking_mozos.map((r, i) => (
-                <li key={r.id}>
-                  <div className="flex items-baseline justify-between pt-app-detalle">
-                    <span className="font-medium text-pt-ink">
-                      <span className="mr-2 text-pt-ink-2 tabular-nums">{i + 1}</span>
-                      {r.nombre}
-                      {!r.activo && <span className="ml-1 text-pt-ink-2">(inactivo)</span>}
-                    </span>
-                    <span className="tabular-nums text-pt-ink">
-                      {r.sumas}
-                      {r.canjes > 0 && <span className="text-pt-ink-2"> · {r.canjes} canjes</span>}
-                    </span>
+            <div className="mt-4 grid gap-4 lg:grid-cols-[2fr_1fr]">
+              <Tarjeta>
+                <GraficoVisitas datos={m.visitas_por_dia} />
+              </Tarjeta>
+
+              <Tarjeta>
+                <h2 className="pt-app-seccion text-pt-ink">Ranking de {t.plural}</h2>
+                <p className="pt-app-detalle text-pt-ink-2">Puntos dados en 30 días</p>
+                {m.ranking_mozos.length === 0 ? (
+                  <div className="mt-4 rounded-pt-sm bg-pt-surface p-4 text-center pt-app-detalle text-pt-ink-2">
+                    Todavía no hay {t.plural}.{" "}
+                    <Link href={`/panel/${slug}/mozos`} className="font-semibold text-pt-ink underline underline-offset-2">
+                      Agregar
+                    </Link>
                   </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-pt-surface">
-                    <div className="h-full rounded-full bg-pt-accent" style={{ width: `${(r.sumas / maxMozo) * 100}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ol>
+                ) : (
+                  <ol className="mt-4 space-y-3">
+                    {m.ranking_mozos.map((r, i) => (
+                      <li key={r.id}>
+                        <div className="flex items-baseline justify-between pt-app-detalle">
+                          <span className="font-medium text-pt-ink">
+                            <span className="mr-2 text-pt-ink-2 tabular-nums">{i + 1}</span>
+                            {r.nombre}
+                            {!r.activo && <span className="ml-1 text-pt-ink-2">(inactivo)</span>}
+                          </span>
+                          <span className="tabular-nums text-pt-ink">
+                            {r.sumas}
+                            {r.canjes > 0 && <span className="text-pt-ink-2"> · {r.canjes} canjes</span>}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-pt-surface">
+                          <div className="h-full rounded-full bg-pt-accent" style={{ width: `${(r.sumas / maxMozo) * 100}%` }} />
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </Tarjeta>
+            </div>
           )}
-        </Tarjeta>
-      </div>
+        </>
+      )}
     </>
   );
 }

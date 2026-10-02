@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { requerirLocal } from "@/lib/panel";
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 
 export type EstadoForm = { error?: string; ok?: number };
 
@@ -9,6 +10,8 @@ const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function guardarRegalos(slug: string, _prev: EstadoForm, form: FormData): Promise<EstadoForm> {
   const { db, local } = await requerirLocal(slug);
+  const bloqueo = await exigirFuncion(local.id, "promos");
+  if (bloqueo) return { error: bloqueo };
   const bienvenida = Number(form.get("puntos_bienvenida") || 0);
   const cumple = Number(form.get("puntos_cumple") || 0);
   for (const n of [bienvenida, cumple]) {
@@ -25,6 +28,8 @@ export async function guardarRegalos(slug: string, _prev: EstadoForm, form: Form
 
 export async function crearPromo(slug: string, _prev: EstadoForm, form: FormData): Promise<EstadoForm> {
   const { db, local } = await requerirLocal(slug);
+  const bloqueo = await exigirFuncion(local.id, "promos");
+  if (bloqueo) return { error: bloqueo };
   const nombre = String(form.get("nombre") ?? "").trim();
   const dias = form.getAll("dias").map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
   const todoElDia = form.get("todo_el_dia") === "on";
@@ -50,6 +55,7 @@ export async function crearPromo(slug: string, _prev: EstadoForm, form: FormData
 
 export async function alternarPromo(slug: string, id: string, activa: boolean) {
   const { db, local } = await requerirLocal(slug);
+  if (activa && (await exigirFuncion(local.id, "promos"))) return;
   await db.from("promos").update({ activa }).eq("id", id).eq("local_id", local.id);
   refresh();
 }

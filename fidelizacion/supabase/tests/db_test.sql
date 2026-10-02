@@ -739,4 +739,45 @@ exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'mensajes: el dueño no puede sacarse el límite');
 reset role;
 
+-- ---------------------------------------------------------------- fase 3: webhooks
+do $$
+declare v_s uuid := 'eeeeeeee-0000-4000-8000-000000000001'; v_q1 uuid; v_q2 uuid;
+begin
+  -- Cobro fallido → past_due con fecha, historial y aviso.
+  perform public.aplicar_cambio_suscripcion(v_s, 'past_due', '{}', 'Cuota rechazada', 'webhook');
+  perform pg_temp.check((select estado = 'past_due' and past_due_desde is not null from public.suscripciones where id = v_s)
+    and (select count(*) from public.avisos_comercio a join public.suscripciones s on s.comercio_id = a.comercio_id where s.id = v_s and a.tipo = 'cobro_fallido') = 1,
+    'webhooks: cobro fallido pasa a past_due y avisa al comercio');
+  -- El mismo evento otra vez no duplica historial ni aviso.
+  perform public.aplicar_cambio_suscripcion(v_s, 'past_due', '{}', 'Cuota rechazada', 'webhook');
+  perform pg_temp.check((select count(*) from public.historial_suscripcion where suscripcion_id = v_s and a_estado = 'past_due') = 1,
+    'webhooks: el mismo evento dos veces no duplica el historial');
+  -- Cobro recuperado → authorized, se limpia past_due y se extiende el período.
+  perform public.aplicar_cambio_suscripcion(v_s, 'authorized', '{"current_period_end":"2030-01-01T00:00:00Z"}', 'Cuota cobrada', 'webhook');
+  perform pg_temp.check((select estado = 'authorized' and past_due_desde is null and current_period_end = '2030-01-01T00:00:00Z' from public.suscripciones where id = v_s),
+    'webhooks: el cobro recuperado vuelve a authorized y extiende el período');
+
+  -- Cuotas idempotentes; una versión vieja no pisa la nueva.
+  v_q1 := public.registrar_cuota(v_s, 'ap-fase3', 'pay-f3', 1500000, 'recycling', 'rejected', 'cc_rejected_insufficient_amount', 2, now(), null);
+  v_q2 := public.registrar_cuota(v_s, 'ap-fase3', 'pay-f3', 1500000, 'scheduled', null, null, 1, now(), null);
+  perform pg_temp.check(v_q1 = v_q2 and (select estado from public.pagos_suscripcion where id = v_q1) = 'recycling'
+    and (select count(*) from public.pagos_suscripcion where mp_authorized_payment_id = 'ap-fase3') = 1,
+    'webhooks: la misma cuota se guarda una vez y un evento viejo no la pisa');
+
+  -- Cancelada es terminal.
+  perform public.aplicar_cambio_suscripcion(v_s, 'cancelled', '{}', 'Cancelada en MP', 'webhook');
+  perform pg_temp.check(not public.aplicar_cambio_suscripcion(v_s, 'authorized', '{}', 'Webhook tardío', 'webhook')
+    and (select estado from public.suscripciones where id = v_s) = 'cancelled',
+    'webhooks: un webhook tardío no resucita una suscripción cancelada');
+end $$;
+
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000003"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000003', false);
+do $$ begin
+  perform public.aplicar_cambio_suscripcion('eeeeeeee-0000-4000-8000-000000000001', 'authorized', '{}', 'x', 'panel');
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+select pg_temp.check(true, 'webhooks: el dueño no puede cambiar el estado de su suscripción');
+reset role;
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

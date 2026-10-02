@@ -103,6 +103,16 @@ select numero, estado, total_centavos from pedidos;
       Policies (avisa si la contraseña está filtrada; aviso del linter de Supabase).
 - [ ] Las credenciales de **prueba** que pasaron por el chat no importan; si alguna
       vez pegaste una de producción en otro lado, regenerala en MP.
+- [x] **Auditoría completa (2/10/2026, migración 033)**: tokens por tipo, PIN atómico,
+      escrituras del panel sólo desde el servidor, recuperar tarjeta con toque real,
+      cabeceras de seguridad, doble cobro en altas fallidas, cortesías que no podían
+      suscribirse, pending con tope, llavero de regalo con el primer cobro.
+- [ ] **Código por WhatsApp/SMS (OTP)** para entrar a la app con el número: hoy la app
+      sólo tiene límite por IP y por número (5 por día). Es lo único que falta para que
+      nadie pueda entrar a la tarjeta de otro sabiendo su número.
+- [ ] `npm audit`: 3 avisos "high" de `node-forge` (lo usa `passkit-generator` para
+      firmar pases de Apple; nosotros sólo firmamos con nuestro certificado). Riesgo
+      bajo; se arregla con una versión mayor de passkit-generator.
 - Avisos del linter que son a propósito (no tocar): tablas con RLS y sin políticas
   (`eventos_pago`, `apple_*`, etc.: sólo el servidor las usa) y funciones del panel
   ejecutables por usuarios logueados (validan permisos adentro).

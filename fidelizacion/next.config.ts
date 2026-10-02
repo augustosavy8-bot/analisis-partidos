@@ -11,7 +11,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // Las páginas con el formulario de tarjeta de Mercado Pago quedan afuera:
+        // no arriesgamos que una cabecera rompa sus iframes (Secure Fields).
+        source: "/((?!panel/facturacion|panel/kit).*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },

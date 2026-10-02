@@ -46,6 +46,11 @@ export function Suscribirse({
   const [intento, setIntento] = useState(0);
   const [listo, setListo] = useState(false);
   const enviando = useRef(false);
+  // Email del pagador en Mercado Pago (puede no ser el de la cuenta de Point).
+  // En pruebas tiene que ser el del usuario de prueba comprador. Ref: el brick
+  // puede quedarse con una versión vieja de onSubmit.
+  const [emailPagador, setEmailPagador] = useState(email);
+  const emailRef = useRef(email);
 
   useEffect(() => {
     if (!mpIniciado) {
@@ -59,12 +64,12 @@ export function Suscribirse({
     new Date(new Date(hoy).getTime() + plan.diasPrueba * 86_400_000),
   );
 
-  async function alEnviar(formData: { token: string; payer: { email?: string } }) {
+  async function alEnviar(formData: { token: string }) {
     if (enviando.current) return;
     enviando.current = true;
     setError(null);
     try {
-      const r = await suscribirse({ comercioId, plan: plan.codigo, token: formData.token, email: formData.payer?.email ?? email });
+      const r = await suscribirse({ comercioId, plan: plan.codigo, token: formData.token, email: emailRef.current });
       if (r.ok) {
         router.push(r.destino);
         return;
@@ -143,6 +148,21 @@ export function Suscribirse({
             {error}
           </p>
         )}
+        <label className="mb-3 grid gap-1.5">
+          <span className="text-[14px] font-medium text-pt-ink">Email de tu cuenta de Mercado Pago</span>
+          <input
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={emailPagador}
+            onChange={(e) => {
+              setEmailPagador(e.target.value);
+              emailRef.current = e.target.value.trim();
+            }}
+            className="h-12 rounded-pt-sm border border-pt-border bg-pt-pure px-4 text-[16px] text-pt-ink outline-none focus:border-pt-ink"
+          />
+          <span className="text-[12px] text-pt-ink-3">Es el email con el que Mercado Pago te avisa de cada cobro.</span>
+        </label>
         <div className="min-h-[320px]">
           {!listo && <p className="py-6 text-center text-[14px] text-pt-ink-2">Cargando el formulario seguro de Mercado Pago…</p>}
           <CardPayment

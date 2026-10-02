@@ -116,8 +116,9 @@ export function VistaTarjeta(p: Props) {
             <Icono nombre="premio" tamaño={18} />
           </span>
           <span className="min-w-0 flex-1 pt-app-detalle">
-            <strong className="block text-[15px] font-semibold">Tenés un premio para canjear</strong>
-            <span className="text-pt-accent-ink">Ver premios</span>
+            {/* Recién apoyaron el llavero: puede canjear ya mismo (también si el toque no sumó por la regla de horas). */}
+            <strong className="block text-[15px] font-semibold">{p.alToque ? "¡Podés canjear ahora!" : "Tenés un premio para canjear"}</strong>
+            <span className="text-pt-accent-ink">{p.alToque ? "Elegí tu premio" : "Ver premios"}</span>
           </span>
           <Icono nombre="chevron" tamaño={18} className="text-pt-accent-ink" />
         </a>
@@ -211,6 +212,7 @@ export function VistaTarjeta(p: Props) {
           {p.limite && (
             <Aviso icono="historial" className="mb-4">
               Ya sumaste hace poco. Vas a poder sumar de nuevo <strong>{cuandoFuturo(p.limite, local.zona_horaria)}</strong>.
+              {p.alToque && alcanzaAlguno && " Pero tus premios los podés canjear ahora."}
             </Aviso>
           )}
 

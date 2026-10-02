@@ -6,18 +6,19 @@ const nextConfig: NextConfig = {
     "/t/[local]/franja": ["./assets/**"],
     "/t/[local]/cabecera": ["./assets/**"],
   },
-  // Cabeceras de seguridad: que nadie meta el panel en un iframe (clickjacking),
-  // que el navegador no adivine tipos, y no filtrar URLs con tokens (/w/…) a otros sitios.
+  // Cabeceras de seguridad: que nadie meta el panel en un iframe (clickjacking)
+  // y que el navegador no adivine tipos.
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Sin Permissions-Policy ni Referrer-Policy: con esas cabeceras el formulario
+          // de tarjeta de Mercado Pago (Secure Fields, iframes) dejó de cargar
+          // ("fields_setup_failed"). El Referrer-Policy del navegador ya es estricto.
         ],
       },
     ];

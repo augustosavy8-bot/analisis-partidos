@@ -4,7 +4,7 @@ import { Nav } from "@/components/landing/Nav";
 import { FormInteres } from "@/app/interes/FormInteres";
 import { FormRegistro } from "./FormRegistro";
 import { BotonGoogle, SeparadorO } from "@/components/app/BotonGoogle";
-import { googleActivo } from "@/lib/google-auth";
+import { proveedoresActivos } from "@/lib/google-auth";
 
 export const metadata: Metadata = { title: "Sumá tu local" };
 
@@ -16,7 +16,8 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
   const sp = await searchParams;
   const contacto = sp.modo === "contacto";
   const plan = typeof sp.plan === "string" ? sp.plan : null;
-  const google = await googleActivo();
+  const sociales = await proveedoresActivos();
+  const siguienteSocial = `/panel/completar${plan && /^[a-z0-9_]{2,30}$/.test(plan) ? `?plan=${plan}` : ""}`;
 
   return (
     <>
@@ -42,11 +43,12 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
               Creá tu cuenta en un minuto. Después elegís el plan y empezás tu prueba gratis.
             </p>
             <div className="mt-10 rounded-pt-lg bg-pt-ink p-6 text-white shadow-pt-product md:p-10">
-              {google && (
-                <>
-                  <BotonGoogle oscuro siguiente={`/panel/completar${plan && /^[a-z0-9_]{2,30}$/.test(plan) ? `?plan=${plan}` : ""}`} />
+              {(sociales.google || sociales.apple) && (
+                <div className="space-y-3">
+                  {sociales.apple && <BotonGoogle oscuro proveedor="apple" siguiente={siguienteSocial} />}
+                  {sociales.google && <BotonGoogle oscuro siguiente={siguienteSocial} />}
                   <SeparadorO oscuro />
-                </>
+                </div>
               )}
               <FormRegistro plan={plan} />
             </div>

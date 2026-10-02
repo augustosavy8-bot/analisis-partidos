@@ -2,13 +2,13 @@ import Link from "next/link";
 import { PantallaCuenta } from "@/components/app/PantallaCuenta";
 import { FormIngreso } from "./FormIngreso";
 import { BotonGoogle, SeparadorO } from "@/components/app/BotonGoogle";
-import { googleActivo } from "@/lib/google-auth";
+import { proveedoresActivos } from "@/lib/google-auth";
 
 export const metadata = { title: "Ingresar al panel", robots: { index: false } };
 
 export default async function Ingresar({ searchParams }: PageProps<"/panel/ingresar">) {
   const sp = await searchParams;
-  const google = await googleActivo();
+  const sociales = await proveedoresActivos();
   const aviso =
     sp.aviso === "confirmado"
       ? "¡Listo! Tu email quedó confirmado. Ingresá con tu contraseña para seguir."
@@ -39,11 +39,12 @@ export default async function Ingresar({ searchParams }: PageProps<"/panel/ingre
           {aviso}
         </p>
       )}
-      {google && (
-        <>
-          <BotonGoogle siguiente="/panel" />
+      {(sociales.google || sociales.apple) && (
+        <div className="space-y-3">
+          {sociales.apple && <BotonGoogle proveedor="apple" siguiente="/panel" />}
+          {sociales.google && <BotonGoogle siguiente="/panel" />}
           <SeparadorO />
-        </>
+        </div>
       )}
       <FormIngreso />
     </PantallaCuenta>

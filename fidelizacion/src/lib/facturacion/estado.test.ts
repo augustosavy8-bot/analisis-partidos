@@ -35,6 +35,7 @@ describe("errores de Mercado Pago", () => {
     expect(mensajeErrorMp({ status: 400, message: "Card token was used", cause: [] })).toMatch(/vencieron/);
     expect(mensajeErrorMp({ status: 400, message: "cc_rejected_insufficient_amount" })).toMatch(/rechazada/);
     expect(mensajeErrorMp({ status: 400, message: "Both payer and collector must be real or test users" })).toMatch(/usuario de prueba/);
+    expect(mensajeErrorMp({ status: 400, message: "User bad request" })).toMatch(/usuario de prueba/);
     expect(mensajeErrorMp({ status: 401, message: "unauthorized" })).toMatch(/conectarnos/);
     expect(mensajeErrorMp(new Error("boom"))).toMatch(/Probá de nuevo/);
   });

@@ -37,12 +37,16 @@ export const comercioDelUsuario = cache(async (id?: string | null): Promise<Come
 
 /** Suscripción vigente (no cancelada) del comercio, con su plan. Lectura con service role: sólo servidor. */
 export async function suscripcionVigente(comercioId: string): Promise<SuscripcionVigente | null> {
-  const { data } = await crearClienteAdmin()
+  const { data, error } = await crearClienteAdmin()
     .from("suscripciones")
-    .select("id, estado, plan_id, precio_centavos, trial_ends_at, current_period_end, cortesia_hasta, cancel_at_period_end, mp_payer_email, past_due_desde, planes(codigo, nombre, limites)")
+    .select("id, estado, plan_id, precio_centavos, trial_ends_at, current_period_end, cortesia_hasta, cancel_at_period_end, mp_payer_email, past_due_desde, planes!suscripciones_plan_id_fkey(codigo, nombre, limites)")
     .eq("comercio_id", comercioId)
     .neq("estado", "cancelled")
     .maybeSingle();
+  // Un error acá NO es "no tiene suscripción": sería bloquear a un comercio que pagó.
+  // suscripciones tiene dos FK a planes (plan_id y plan_programado_id): el embed
+  // tiene que nombrar cuál, o PostgREST responde "más de una relación".
+  if (error) throw new Error(`suscripcionVigente: ${error.message}`);
   if (!data) return null;
   const plan = data.planes as unknown as { codigo: string; nombre: string; limites: unknown };
   return {

@@ -6,8 +6,14 @@ const R = 8;
 const P = 1;
 const LARGO = 32;
 
+/** PINs viejos de 4 o 5 dígitos siguen sirviendo para entrar. */
 export function esPinValido(pin: string): boolean {
   return /^[0-9]{4,6}$/.test(pin);
+}
+
+/** Los PINs nuevos (o cambiados) son de 6 dígitos: 4 se adivinan en días probando. */
+export function esPinNuevoValido(pin: string): boolean {
+  return /^[0-9]{6}$/.test(pin);
 }
 
 export function hashearPin(pin: string): string {

@@ -24,8 +24,8 @@ export function FormNuevoMozo({ slug }: { slug: string }) {
         <input name="nombre" required maxLength={40} placeholder="Ej: Caro" className={inputPanel} />
       </label>
       <label className="block">
-        <EtiquetaPanel>PIN (4 a 6 números)</EtiquetaPanel>
-        <input name="pin" required inputMode="numeric" pattern="\d{4,6}" maxLength={6} placeholder="••••" className={inputPin} />
+        <EtiquetaPanel>PIN (6 números)</EtiquetaPanel>
+        <input name="pin" required inputMode="numeric" pattern="\d{6}" maxLength={6} placeholder="••••••" className={inputPin} />
       </label>
       <BotonPrimario type="submit" disabled={pendiente}>
         {pendiente ? "Creando…" : "Agregar"}
@@ -55,7 +55,7 @@ export function AccionesMozo({ slug, id, activo }: { slug: string; id: string; a
   if (cambiando) {
     return (
       <form action={accion} className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-        <input name="pin" required inputMode="numeric" pattern="\d{4,6}" maxLength={6} placeholder="Nuevo PIN" className={`${inputPin} w-32`} autoFocus />
+        <input name="pin" required inputMode="numeric" pattern="\d{6}" maxLength={6} placeholder="Nuevo PIN" className={`${inputPin} w-32`} autoFocus />
         <BotonPrimario type="submit" disabled={guardando}>Guardar</BotonPrimario>
         <button type="button" onClick={() => setCambiando(false)} className={claseBoton("fantasma", "sm")}>
           Cancelar

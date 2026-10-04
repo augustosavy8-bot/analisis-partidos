@@ -379,6 +379,23 @@ select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-00000000
   (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'sin_toque',
   'canje al toque: un toque de hace más de 5 minutos no sirve');
 
+-- Chip de link fijo (modo prueba): el canje pide el PIN de alguien del local.
+update public.tarjetas set puntos = 10 where id = 'dddddddd-0000-4000-8000-000000000006';
+select public.marcar_toque('dddddddd-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000101',
+  '00000000-0000-4000-8000-000000000201', 'nfc');
+select pg_temp.check((public.canjear_con_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'))->>'motivo') = 'requiere_pin',
+  'canje con chip de link fijo: sin PIN no canjea');
+select pg_temp.check((public.canjear_al_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'), 5, gen_random_uuid())->>'motivo') = 'pin_invalido',
+  'canje con chip de link fijo: un mozo de otro lado no sirve');
+select public.canjear_al_toque('dddddddd-0000-4000-8000-000000000006',
+  (select id from public.premios where nombre = 'Café gratis'), 5, '00000000-0000-4000-8000-000000000102') as r \gset
+select pg_temp.check((:'r'::jsonb->>'ok')::boolean
+  and (select mozo_id from public.canjes where tarjeta_id = 'dddddddd-0000-4000-8000-000000000006'
+        order by created_at desc limit 1) = '00000000-0000-4000-8000-000000000102',
+  'canje con chip de link fijo: con el PIN de un mozo del local canjea a su nombre');
+
 -- ---------------------------------------------------------------- aplicar_toque (una sola llamada)
 update public.locales set minutos_entre_puntos = 0 where id = '00000000-0000-4000-8000-000000000001';
 update public.tarjetas set puntos = 0, ultimo_toque_en = null where id = 'dddddddd-0000-4000-8000-000000000006';

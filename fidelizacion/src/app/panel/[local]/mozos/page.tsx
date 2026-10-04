@@ -24,7 +24,7 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
         <h2 id="nuevo" className="pt-app-seccion mb-3 text-pt-ink">Nuevo {t.singular}</h2>
         <FormNuevoMozo slug={slug} />
         <p className="mt-3 pt-app-detalle text-pt-ink-2">
-          El PIN lo usa para mostrar el QR de respaldo en{" "}
+          El PIN sirve para confirmar canjes en el celular del cliente y para mostrar el QR de respaldo en{" "}
           <Link href={`/mozo/${slug}`} className="font-medium text-pt-ink underline underline-offset-2">/mozo/{slug}</Link>. Los llaveros los da de alta el administrador.
         </p>
       </Tarjeta>

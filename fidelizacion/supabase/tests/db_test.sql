@@ -195,18 +195,29 @@ reset role;
 -- ---------------------------------------------------------------- panel
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
-select pg_temp.check((public.panel_metricas('00000000-0000-4000-8000-000000000001')->>'clientes_total')::int = 2, 'panel_metricas cuenta clientes');
-select pg_temp.check((public.panel_metricas('00000000-0000-4000-8000-000000000001')->>'canjes')::int = 1, 'panel_metricas cuenta canjes');
-select pg_temp.check(jsonb_array_length(public.panel_metricas('00000000-0000-4000-8000-000000000001')->'visitas_por_dia') = 14, 'panel_metricas trae 14 días');
+do $$ begin
+  perform public.panel_metricas('00000000-0000-4000-8000-000000000001');
+  raise exception 'FALLÓ: el dueño llama panel_metricas directo (saltea el plan)';
+exception when insufficient_privilege then raise notice 'ok - panel_metricas sólo desde el servidor';
+end $$;
+reset role;
+select pg_temp.check((public.panel_metricas_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 30)->>'clientes_total')::int = 2, 'panel_metricas cuenta clientes');
+select pg_temp.check((public.panel_metricas_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 30)->>'canjes')::int = 1, 'panel_metricas cuenta canjes');
+select pg_temp.check(jsonb_array_length(public.panel_metricas_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 14)->'visitas_por_dia') = 14, 'panel_metricas trae 14 días');
+do $$ begin
+  perform public.panel_metricas_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-00000000000f', 30);
+  raise exception 'FALLÓ: dueño ve métricas de otro local';
+exception when insufficient_privilege then raise notice 'ok - panel_metricas rechaza otro local';
+end $$;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check(not exists (select 1 from information_schema.column_privileges
+  where table_name = 'tarjetas' and column_name = 'wallet_auth_token' and grantee = 'authenticated' and privilege_type = 'SELECT'),
+  'el dueño no lee el token de Wallet de las tarjetas');
 select pg_temp.check((select count(*) from public.panel_clientes('00000000-0000-4000-8000-000000000001')) = 2, 'panel_clientes lista los clientes del local');
 select pg_temp.check((select nombre from public.panel_clientes('00000000-0000-4000-8000-000000000001', 'bet')) = 'Beto', 'panel_clientes busca por nombre');
 select pg_temp.check((select nombre from public.panel_clientes('00000000-0000-4000-8000-000000000001', '0000001')) = 'Ana', 'panel_clientes busca por WhatsApp');
 do $$ begin
-  begin
-    perform public.panel_metricas('00000000-0000-4000-8000-00000000000f');
-    raise exception 'FALLÓ: dueño ve métricas de otro local';
-  exception when insufficient_privilege then raise notice 'ok - panel_metricas rechaza otro local';
-  end;
   begin
     perform * from public.panel_clientes('00000000-0000-4000-8000-00000000000f');
     raise exception 'FALLÓ: dueño ve clientes de otro local';
@@ -293,6 +304,7 @@ select pg_temp.check((select count(*) from public.movimientos where tarjeta_id =
   'los regalos quedan en movimientos');
 
 update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '1 hour';
 select public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
 select pg_temp.check((:'r'::jsonb->>'puntos')::int = 10 and jsonb_array_length(:'r'::jsonb->'regalos') = 0,
   'segunda visita: sin bienvenida ni cumple repetidos');
@@ -301,19 +313,46 @@ select public.registrar_suma('dddddddd-0000-4000-8000-000000000006', '00000000-0
 select pg_temp.check((:'r'::jsonb->>'puntos')::int = 4,
   'cumple cargado recién: no hay regalo de cumple (sí bienvenida)');
 
+-- Borrar la cuenta y volver con el mismo número no vuelve a dar bienvenida ni cumple, ni saltea la espera.
+delete from public.clientes where id = 'cccccccc-0000-4000-8000-000000000005';
+insert into public.clientes (id, nombre, whatsapp, consentimiento, cumple_dia, cumple_mes, cumple_cargado_en)
+select 'cccccccc-0000-4000-8000-0000000000a5', 'Caro de nuevo', '+5493410000005', true,
+       extract(day from now() at time zone 'America/Argentina/Buenos_Aires'),
+       extract(month from now() at time zone 'America/Argentina/Buenos_Aires'), now() - interval '40 days';
+insert into public.tarjetas (id, cliente_id, local_id) values
+  ('dddddddd-0000-4000-8000-0000000000a5', 'cccccccc-0000-4000-8000-0000000000a5', '00000000-0000-4000-8000-000000000001');
+select public.registrar_suma('dddddddd-0000-4000-8000-0000000000a5', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check(:'r'::jsonb->>'motivo' = 'limite',
+  'cuenta borrada y recreada: rige la espera entre puntos de antes');
+update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '1 hour';
+select public.registrar_suma('dddddddd-0000-4000-8000-0000000000a5', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
+select pg_temp.check((:'r'::jsonb->>'puntos')::int = 1 and jsonb_array_length(:'r'::jsonb->'regalos') = 0,
+  'cuenta borrada y recreada: no vuelve a cobrar bienvenida ni cumple');
+-- Se restaura el cliente original para los tests que siguen.
+delete from public.clientes where id = 'cccccccc-0000-4000-8000-0000000000a5';
+insert into public.clientes (id, nombre, whatsapp, consentimiento, cumple_dia, cumple_mes, cumple_cargado_en)
+select 'cccccccc-0000-4000-8000-000000000005', 'Caro', '+5493410000005', true,
+       extract(day from now() at time zone 'America/Argentina/Buenos_Aires'),
+       extract(month from now() at time zone 'America/Argentina/Buenos_Aires'), now() - interval '40 days';
+insert into public.tarjetas (id, cliente_id, local_id, puntos) values
+  ('dddddddd-0000-4000-8000-000000000005', 'cccccccc-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000001', 10);
+
 insert into public.promos (local_id, nombre, dias, desde, hasta, puntos)
 values ('00000000-0000-4000-8000-000000000001', 'Puntos dobles', array[0,1,2,3,4,5,6], '00:00', '23:59:59.999', 2);
 update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '1 hour';
 select public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr') as r \gset
 select pg_temp.check((:'r'::jsonb->>'sumados')::int = 2 and :'r'::jsonb->>'promo' = 'Puntos dobles' and (:'r'::jsonb->>'puntos')::int = 12,
   'promo vigente: el toque suma 2');
 update public.promos set activa = false;
 update public.movimientos set created_at = created_at - interval '1 hour' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '1 hour';
 select pg_temp.check((public.registrar_suma('dddddddd-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000101', null, 'qr')->>'sumados')::int = 1,
   'promo pausada: vuelve a sumar 1');
 
 -- ---------------------------------------------------------------- reactivar por WhatsApp
 update public.movimientos set created_at = created_at - interval '40 days' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '40 days';
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
 select pg_temp.check((select count(*) from public.panel_reactivar('00000000-0000-4000-8000-000000000001', 'inactivos', 30)
@@ -469,20 +508,29 @@ select pg_temp.check((select count(*) from public.apple_registrations) = 0 and (
 -- ---------------------------------------------------------------- mensajes del local
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
-select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', '2x1 hoy', 'Medialunas 2x1 hasta las 12'))->>'ok' = 'true',
-  'mensajes: el dueño manda un mensaje');
-select pg_temp.check((public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', 'Otro', 'Otro mensaje'))->>'motivo' = 'limite',
-  'mensajes: 1 por día por local');
+do $$ begin
+  perform public.registrar_mensaje_local('00000000-0000-4000-8000-000000000001', 'Directo', 'Salteando el plan');
+  raise exception 'FALLÓ: el dueño manda novedades directo por la API';
+exception when insufficient_privilege then raise notice 'ok - mensajes: sólo desde el servidor (que valida el plan)';
+end $$;
 reset role;
+select pg_temp.check((public.registrar_mensaje_local_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', '2x1 hoy', 'Medialunas 2x1 hasta las 12'))->>'ok' = 'true',
+  'mensajes: el dueño manda un mensaje');
+select pg_temp.check((select enviado_por from public.mensajes_local order by created_at desc limit 1) = 'aaaaaaaa-0000-4000-8000-000000000002',
+  'mensajes: queda quién lo mandó');
+select pg_temp.check((public.registrar_mensaje_local_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', 'Otro', 'Otro mensaje'))->>'motivo' = 'limite',
+  'mensajes: 1 por día por local');
 select pg_temp.check(public.proximo_mensaje_local('00000000-0000-4000-8000-000000000001') > now() + interval '23 hours',
   'mensajes: informa cuándo se puede mandar el próximo');
 set role authenticated;
 select pg_temp.check((select count(*) from public.mensajes_local) = 1, 'mensajes: el dueño ve su historial');
+reset role;
 do $$ begin
-  perform public.registrar_mensaje_local('00000000-0000-4000-8000-00000000000f', 'Hola', 'No es mi local');
+  perform public.registrar_mensaje_local_de('aaaaaaaa-0000-4000-8000-000000000002', '00000000-0000-4000-8000-00000000000f', 'Hola', 'No es mi local');
   raise exception 'debía fallar';
 exception when insufficient_privilege then null; end $$;
 select pg_temp.check(true, 'mensajes: no se puede mandar por un local ajeno');
+set role authenticated;
 do $$ begin
   update public.mensajes_local set estado = 'error';
   raise exception 'debía fallar';
@@ -952,6 +1000,27 @@ begin
   perform pg_temp.check(v_r = 'inmediato'
     and (select plan_id = v_pro from public.suscripciones where id = v_s),
     'cambio de plan: subir es inmediato');
+
+  -- Subió sin pagar Pro y enseguida pide Básico: la bajada es inmediata (no usa Pro todo el mes pagando Básico).
+  update public.suscripciones set current_period_end = now() + interval '20 days' where id = v_s;
+  v_r := public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+  perform pg_temp.check(v_r = 'inmediato'
+    and (select plan_id = v_basico and plan_programado_id is null from public.suscripciones where id = v_s),
+    'cambio de plan: bajar de un plan todavía no pagado es inmediato');
+
+  -- Con un cobro aprobado después de subir, la bajada vuelve a ser programada.
+  perform public.cambiar_plan_suscripcion(v_s, v_pro, true, 3000000, null);
+  insert into public.pagos_suscripcion (suscripcion_id, mp_authorized_payment_id, monto_centavos, estado, intento, fecha_pago)
+  values (v_s, 'ap-cambio-plan-1', 3000000, 'processed', 1, now() + interval '1 second');
+  v_r := public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+  perform pg_temp.check(v_r = 'programado', 'cambio de plan: un plan ya pagado se conserva hasta fin de período');
+
+  -- Un cambio a la vez.
+  perform pg_temp.check(public.reservar_cambio_plan(v_s) and not public.reservar_cambio_plan(v_s),
+    'cambio de plan: no se pueden hacer dos cambios en paralelo');
+  perform public.liberar_cambio_plan(v_s);
+  perform pg_temp.check(public.reservar_cambio_plan(v_s), 'cambio de plan: al liberar se puede volver a cambiar');
+  perform public.liberar_cambio_plan(v_s);
 
   -- Impaga: no se puede cambiar de plan.
   update public.suscripciones set estado = 'past_due', past_due_desde = now() where id = v_s;

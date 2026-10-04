@@ -44,7 +44,13 @@ export async function iaUsosHoy(localId: string): Promise<number> {
  */
 export async function redactarMensajeReactivar(localId: string, c: ContextoMensajeIA): Promise<{ texto: string } | { error: string }> {
   if (!env.iaConfigurada) return { error: "La IA todavía no está configurada." };
-  if ((await iaUsosHoy(localId)) >= IA_USOS_POR_DIA) {
+  // Se reserva el uso ANTES de llamar (y cuenta aunque falle): muchos pedidos en
+  // paralelo ya no pasan todos el límite.
+  const admin = crearClienteAdmin();
+  const { data: uso } = await admin.from("ia_usos").insert({ local_id: localId, tipo: "reactivar", tokens_in: 0, tokens_out: 0 }).select("id").single();
+  if (!uso) return { error: "No pudimos escribir el mensaje. Probá de nuevo." };
+  if ((await iaUsosHoy(localId)) > IA_USOS_POR_DIA) {
+    await admin.from("ia_usos").delete().eq("id", uso.id);
     return { error: `Llegaste al máximo de ${IA_USOS_POR_DIA} mensajes con IA por día. Probá mañana.` };
   }
 
@@ -64,7 +70,7 @@ export async function redactarMensajeReactivar(localId: string, c: ContextoMensa
   try {
     const r = await client.beta.messages.create({
       model: "claude-opus-5-5",
-      max_tokens: 2000,
+      max_tokens: 1000,
       // Pedido simple: poco razonamiento (más rápido y barato).
       output_config: { effort: "low" },
       // Si el modelo declina por política, el pedido sigue en otro modelo.
@@ -80,9 +86,7 @@ export async function redactarMensajeReactivar(localId: string, c: ContextoMensa
       .trim()
       .replace(/^["“]|["”]$/g, "");
     if (!texto) return { error: "La IA no devolvió un mensaje. Probá de nuevo." };
-    await crearClienteAdmin()
-      .from("ia_usos")
-      .insert({ local_id: localId, tipo: "reactivar", tokens_in: r.usage.input_tokens, tokens_out: r.usage.output_tokens });
+    await admin.from("ia_usos").update({ tokens_in: r.usage.input_tokens, tokens_out: r.usage.output_tokens }).eq("id", uso.id);
     return { texto: texto.slice(0, 700) };
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return { error: "La IA está saturada. Probá en un minuto." };

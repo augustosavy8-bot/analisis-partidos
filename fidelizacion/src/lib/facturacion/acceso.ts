@@ -80,11 +80,17 @@ export function calcularAcceso(s: SuscripcionAcceso | null, cfg: ConfigAcceso, a
       if (t < finSumar) return { ...base, nivel: "restringido", hasta: new Date(finSumar).toISOString() };
       return { ...base, nivel: "sin_sumar", hasta: null };
     }
-    case "paused":
+    case "paused": {
       // Pausada por el comercio: no se cobra. Usa lo que ya pagó hasta el fin del
-      // período; después el panel queda restringido (sumar sigue) hasta que reactive.
-      if (s.currentPeriodEnd && new Date(s.currentPeriodEnd).getTime() > t) return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };
-      return { ...base, nivel: "restringido", hasta: null };
+      // período; después, panel restringido unos días (sumar sigue) y luego no se
+      // suma más hasta que reactive (antes se podía sumar gratis para siempre).
+      if (!s.currentPeriodEnd) return { ...base, nivel: "restringido", hasta: null };
+      const fin = new Date(s.currentPeriodEnd).getTime();
+      const finSumar = fin + cfg.diasSumarTrasGracia * DIA;
+      if (fin > t) return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };
+      if (t < finSumar) return { ...base, nivel: "restringido", hasta: new Date(finSumar).toISOString() };
+      return { ...base, nivel: "sin_sumar", hasta: null };
+    }
     case "cancelled":
       // Cancelada con el período pago vigente: sigue con acceso completo hasta el final.
       if (s.currentPeriodEnd && new Date(s.currentPeriodEnd).getTime() > t) return { ...base, nivel: "completo", hasta: s.currentPeriodEnd };

@@ -1,5 +1,7 @@
 "use server";
 
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
+
 import { refresh } from "next/cache";
 import { requerirLocal } from "@/lib/panel";
 import { esSegmento, SEGMENTOS } from "@/lib/reactivar";
@@ -42,6 +44,9 @@ export async function marcarNoContactar(slug: string, clienteId: string, valor: 
  */
 export async function escribirConIA(slug: string, dias: number, pedido: string): Promise<{ texto?: string; error?: string }> {
   const { db, local } = await requerirLocal(slug);
+  // Cuenta restringida (impaga/pausada): sin IA, que tiene costo.
+  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  if (bloqueo) return { error: bloqueo };
   if (!SEGMENTOS.inactivos.valores.includes(dias)) return { error: "Elegí un período válido." };
   const pedidoLimpio = pedido.trim().slice(0, 200) || null;
   const [premios, promos, { data: lista }] = await Promise.all([

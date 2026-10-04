@@ -104,11 +104,16 @@ describe("control de acceso por plan", () => {
     expect(puedeUsar(nada, "canjear")).toBe(true);
   });
 
-  it("pausada: usa lo pagado hasta el fin del período, después restringida pero suma", () => {
+  it("pausada: usa lo pagado hasta el fin del período, después restringida unos días y luego sin sumar", () => {
     expect(calcularAcceso(susc({ estado: "paused", currentPeriodEnd: "2026-10-20T00:00:00Z" }), CFG, AHORA).nivel).toBe("completo");
-    const pausada = calcularAcceso(susc({ estado: "paused", currentPeriodEnd: "2026-10-01T00:00:00Z" }), CFG, AHORA);
+    const pausada = calcularAcceso(susc({ estado: "paused", currentPeriodEnd: "2026-10-05T00:00:00Z" }), CFG, AHORA);
     expect(pausada.nivel).toBe("restringido");
     expect(puedeUsar(pausada, "sumar_puntos")).toBe(true);
     expect(puedeUsar(pausada, "editar_programa")).toBe(false);
+    // Pausar no puede ser "sumar puntos gratis para siempre".
+    const vieja = calcularAcceso(susc({ estado: "paused", currentPeriodEnd: "2026-09-01T00:00:00Z" }), CFG, AHORA);
+    expect(vieja.nivel).toBe("sin_sumar");
+    expect(puedeUsar(vieja, "sumar_puntos")).toBe(false);
+    expect(puedeUsar(vieja, "canjear")).toBe(true);
   });
 });

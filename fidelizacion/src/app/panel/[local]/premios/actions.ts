@@ -27,10 +27,20 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
   }
 
   const datos = { nombre, descripcion, puntos_necesarios: puntos };
-  const { error } = id
-    ? await admin.from("premios").update(datos).eq("id", id).eq("local_id", local.id)
-    : await admin.from("premios").insert({ ...datos, local_id: local.id });
-  if (error) return { error: "No se pudo guardar. Probá de nuevo." };
+  if (id) {
+    const { error } = await admin.from("premios").update(datos).eq("id", id).eq("local_id", local.id);
+    if (error) return { error: "No se pudo guardar. Probá de nuevo." };
+  } else {
+    const { data: nuevo, error } = await admin.from("premios").insert({ ...datos, local_id: local.id }).select("id").single();
+    if (error || !nuevo) return { error: "No se pudo guardar. Probá de nuevo." };
+    // Dos altas en paralelo podían pasar las dos el conteo de arriba: se vuelve a contar ya insertado.
+    const { count } = await admin.from("premios").select("id", { count: "exact", head: true }).eq("local_id", local.id).eq("activo", true);
+    const pasado = await exigirLimite(local.id, "premios", count ?? 0);
+    if (pasado) {
+      await admin.from("premios").delete().eq("id", nuevo.id);
+      return { error: pasado };
+    }
+  }
   after(() => actualizarDisenoLocal(local.id)); // premios: clase y objetos de Google (progreso), pases de Apple
   refresh();
   return { ok: Date.now() };

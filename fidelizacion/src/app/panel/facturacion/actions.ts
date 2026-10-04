@@ -251,27 +251,38 @@ export async function cambiarPlan(entrada: { comercioId: string; plan: string })
     inmediato = d.inmediato;
   }
 
-  // El próximo débito se cobra con el precio del plan elegido (sin prorrateo).
-  try {
-    await actualizarSuscripcionMp(s.mpPreapprovalId, {
-      auto_recurring: { transaction_amount: centavosAPesos(destino.precio_centavos), currency_id: "ARS" },
-    });
-  } catch (e) {
-    console.error("Cambio de monto en MP fallido", comercio.id, resumenErrorMp(e));
-    return { ok: false, error: "Mercado Pago no respondió. Probá de nuevo en un momento." };
-  }
+  // Un cambio a la vez: dos pedidos en paralelo podían dejar MP con un monto y la base con otro.
+  const { data: reservado } = await admin.rpc("reservar_cambio_plan", { p_suscripcion_id: s.id });
+  if (!reservado) return { ok: false, error: "Ya hay un cambio de plan en curso. Esperá un minuto y probá de nuevo." };
 
-  const { data: resultado, error } = await admin.rpc("cambiar_plan_suscripcion", {
-    p_suscripcion_id: s.id,
-    p_plan_id: destino.id,
-    p_inmediato: inmediato,
-    p_precio_centavos: destino.precio_centavos,
-    p_actor: userId,
-  });
-  if (error) {
-    // MP ya tiene el monto nuevo y la base no: lo dejamos registrado para revisarlo.
-    console.error(`CAMBIO DE PLAN A MEDIAS: comercio=${comercio.id} plan=${destino.codigo}`, error.message);
-    return { ok: false, error: "No pudimos terminar el cambio. Ya estamos avisados; probá de nuevo en un rato." };
+  let resultado: string | null = null;
+  try {
+    // El próximo débito se cobra con el precio del plan elegido (sin prorrateo).
+    try {
+      await actualizarSuscripcionMp(s.mpPreapprovalId, {
+        auto_recurring: { transaction_amount: centavosAPesos(destino.precio_centavos), currency_id: "ARS" },
+      });
+    } catch (e) {
+      console.error("Cambio de monto en MP fallido", comercio.id, resumenErrorMp(e));
+      return { ok: false, error: "Mercado Pago no respondió. Probá de nuevo en un momento." };
+    }
+
+    // La base decide si la bajada es programada o inmediata (si el plan actual todavía no se pagó).
+    const { data, error } = await admin.rpc("cambiar_plan_suscripcion", {
+      p_suscripcion_id: s.id,
+      p_plan_id: destino.id,
+      p_inmediato: inmediato,
+      p_precio_centavos: destino.precio_centavos,
+      p_actor: userId,
+    });
+    if (error) {
+      // MP ya tiene el monto nuevo y la base no: lo dejamos registrado para revisarlo.
+      console.error(`CAMBIO DE PLAN A MEDIAS: comercio=${comercio.id} plan=${destino.codigo}`, error.message);
+      return { ok: false, error: "No pudimos terminar el cambio. Ya estamos avisados; probá de nuevo en un rato." };
+    }
+    resultado = data as string;
+  } finally {
+    await admin.rpc("liberar_cambio_plan", { p_suscripcion_id: s.id });
   }
   refresh();
   if (resultado === "anulado") return { ok: true, mensaje: `Listo: seguís en el plan ${destino.nombre}.` };

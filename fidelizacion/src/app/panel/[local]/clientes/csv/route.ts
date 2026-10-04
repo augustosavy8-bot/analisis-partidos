@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { aCSV } from "@/lib/csv";
+import { exigirFuncion } from "@/lib/facturacion/acceso-servidor";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/panel/[lo
 
   const { data: local } = await db.from("locales").select("id, slug, zona_horaria").eq("slug", slug).maybeSingle();
   if (!local) return new NextResponse("No encontrado", { status: 404 });
+  // Con la cuenta restringida (impaga o pausada) no se exporta la base de clientes.
+  const bloqueo = await exigirFuncion(local.id, "estadisticas");
+  if (bloqueo) return new NextResponse(bloqueo, { status: 403 });
 
   const q = req.nextUrl.searchParams.get("q")?.slice(0, 60) || null;
   const { data, error } = await db.rpc("panel_clientes", { p_local_id: local.id, p_busqueda: q, p_limite: 10000 });

@@ -25,8 +25,8 @@ export const metadata = { title: "Resumen" };
 
 export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
   const { local: slug } = await params;
-  const { db, local } = await requerirLocal(slug);
-  const { data, error } = await db.rpc("panel_metricas", { p_local_id: local.id, p_dias: 30 });
+  const { db, admin, local, userId } = await requerirLocal(slug);
+  const { data, error } = await admin.rpc("panel_metricas_de", { p_user_id: userId, p_local_id: local.id, p_dias: 30 });
   if (error) throw new Error(error.message);
   const m = data as Metricas;
   const acceso = await accesoDelLocal(local.id);

@@ -10,6 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.point.fidelizacion",
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
       },

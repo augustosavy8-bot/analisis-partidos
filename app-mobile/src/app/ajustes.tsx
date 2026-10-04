@@ -56,6 +56,11 @@ export default function Ajustes() {
           <Text style={estilos.filaTexto}>Privacidad</Text>
           <Ionicons name="chevron-forward" size={18} color={color.tinta3} />
         </Pressable>
+        <Pressable style={[estilos.fila, { borderTopWidth: 1, borderTopColor: color.borde }]} accessibilityRole="link" onPress={() => router.push("/admin")}>
+          <Ionicons name="key-outline" size={20} color={color.tinta} />
+          <Text style={estilos.filaTexto}>Grabar llaveros (Point)</Text>
+          <Ionicons name="chevron-forward" size={18} color={color.tinta3} />
+        </Pressable>
       </View>
 
       <Boton

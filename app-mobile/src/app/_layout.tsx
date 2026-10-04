@@ -40,6 +40,8 @@ function Navegacion() {
         <Stack.Screen name="tarjetas/[slug]" options={{ title: "" }} />
         <Stack.Screen name="ajustes" options={{ title: "Ajustes", presentation: "modal" }} />
       </Stack.Protected>
+      {/* Superadmin: grabar llaveros. Con o sin sesión de cliente. */}
+      <Stack.Screen name="admin/index" options={{ title: "Grabar llaveros", presentation: "modal" }} />
     </Stack>
   );
 }

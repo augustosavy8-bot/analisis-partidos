@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { Boton } from "@/components/Boton";
 import { useSesion } from "@/lib/sesion";
 import { limpiarWhatsapp, whatsappPlausible } from "@/lib/formato";
@@ -69,6 +70,10 @@ export default function Ingresar() {
               Se crea la primera vez que sumás en un local adherido: pedile a quien te atiende que apoye su llavero en tu celular.
             </Text>
           </View>
+
+          <Pressable onPress={() => router.push("/admin")} style={{ alignSelf: "center", padding: 12, marginTop: 8 }} accessibilityRole="link">
+            <Text style={{ fontSize: 13, color: color.tinta3 }}>Soy de Point</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

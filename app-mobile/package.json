@@ -5,8 +5,10 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@premieroctet/react-native-wallet": "1.0.2",
+    "aes-js": "^3.1.2",
     "expo": "~57.0.26",
     "expo-constants": "~57.0.20",
+    "expo-crypto": "~57.0.3",
     "expo-dev-client": "~57.0.19",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
@@ -24,6 +26,7 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
+    "react-native-nfc-manager": "^3.17.5",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
@@ -31,6 +34,7 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
+    "@types/aes-js": "^3.1.4",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },

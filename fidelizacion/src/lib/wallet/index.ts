@@ -49,7 +49,7 @@ export interface ProveedorWallet {
 
 const proveedores: ProveedorWallet[] = [];
 
-export function registrarProveedorWallet(p: ProveedorWallet) {
+function registrarProveedorWallet(p: ProveedorWallet) {
   if (!proveedores.includes(p)) proveedores.push(p);
 }
 

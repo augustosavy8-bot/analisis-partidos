@@ -1,5 +1,5 @@
 /** Controles de formulario de la app: radio pt-sm, borde pt-border y foco con el acento. */
-export const claseControl =
+const claseControl =
   "block w-full rounded-pt-sm border border-pt-border bg-pt-pure px-3.5 text-base text-pt-ink outline-none transition-[border-color,box-shadow] duration-150 ease-[var(--ease-pt)] placeholder:text-pt-ink-3 hover:border-pt-ink-3 focus:border-pt-accent-dark focus:ring-4 focus:ring-pt-accent/25 disabled:bg-pt-surface disabled:text-pt-ink-2";
 
 export const claseInput = `${claseControl} h-pt-control`;

@@ -5,7 +5,8 @@
  * los colores del bar se respetan en tono, pero se aclaran u oscurecen lo
  * mínimo necesario para que se lean.
  */
-import { coloresTarjeta, contraste, mezclar, saturacion, separarDe, ajustarHasta } from "@/lib/colores";
+import { coloresTarjeta, contraste, saturacion, separarDe, ajustarHasta } from "@/lib/colores";
+import { mezclar } from "@/lib/diseno-billetera";
 
 type LocalTema = {
   color_primario: string;

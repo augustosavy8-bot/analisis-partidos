@@ -8,7 +8,7 @@
  * decimales en `transaction_amount` / `unit_price`) convertimos.
  */
 
-export function esCentavos(n: unknown): n is number {
+function esCentavos(n: unknown): n is number {
   return typeof n === "number" && Number.isSafeInteger(n) && n >= 0;
 }
 

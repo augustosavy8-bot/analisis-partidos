@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 import { opcionesCookie } from "@/lib/dispositivo";
 import { verificarPin } from "@/lib/pin";
 
-export const COOKIE_MOZO = "fid_mozo";
+const COOKIE_MOZO = "fid_mozo";
 const DURACION_TURNO = 12 * 60 * 60;
 const MAX_FALLOS = 5;
 const VENTANA_FALLOS_MIN = 15;

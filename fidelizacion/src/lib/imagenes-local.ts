@@ -113,7 +113,7 @@ export function validarImagen(tipo: TipoImagen, b: Uint8Array): string | null {
   return validarMedidas(tipo, medidasImagen(b));
 }
 
-export const EXTENSION: Record<Formato, string> = { png: "png", jpeg: "jpg" };
+const EXTENSION: Record<Formato, string> = { png: "png", jpeg: "jpg" };
 export const CONTENT_TYPE: Record<Formato, string> = { png: "image/png", jpeg: "image/jpeg" };
 
 const ARCHIVO: Record<TipoImagen, string> = { logo: "logo", icono: "icon", franja: "franja" };

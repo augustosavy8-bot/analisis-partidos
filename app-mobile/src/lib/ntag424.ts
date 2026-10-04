@@ -50,13 +50,13 @@ export const concat = (...partes: (Bytes | number[])[]): Bytes => {
 const xor = (a: Bytes, b: Bytes): Bytes => a.map((x, i) => x ^ b[i]);
 const CERO16 = new Uint8Array(16);
 
-export function aesEcbCifrar(k: Bytes, bloque: Bytes): Bytes {
+function aesEcbCifrar(k: Bytes, bloque: Bytes): Bytes {
   return new aesjs.ModeOfOperation.ecb(k).encrypt(bloque);
 }
-export function aesCbcCifrar(k: Bytes, iv: Bytes, datos: Bytes): Bytes {
+function aesCbcCifrar(k: Bytes, iv: Bytes, datos: Bytes): Bytes {
   return new aesjs.ModeOfOperation.cbc(k, iv).encrypt(datos);
 }
-export function aesCbcDescifrar(k: Bytes, iv: Bytes, datos: Bytes): Bytes {
+function aesCbcDescifrar(k: Bytes, iv: Bytes, datos: Bytes): Bytes {
   return new aesjs.ModeOfOperation.cbc(k, iv).decrypt(datos);
 }
 
@@ -119,7 +119,7 @@ export function crc32nk(datos: Bytes): Bytes {
 
 // --- sesión autenticada (AuthenticateEV2First) --------------------------------
 
-export type Sesion = { kEnc: Bytes; kMac: Bytes; ti: Bytes; ctr: number };
+type Sesion = { kEnc: Bytes; kMac: Bytes; ti: Bytes; ctr: number };
 
 /** Claves de sesión a partir de RndA y RndB (AN12196 §3.6 / datasheet §9.1.7). */
 export function clavesDeSesion(k: Bytes, rndA: Bytes, rndB: Bytes): { kEnc: Bytes; kMac: Bytes } {
@@ -144,11 +144,11 @@ async function enviar(tx: Transceptor, apdu: Bytes, esperado: string[], que: str
   return cuerpo(r);
 }
 
-export async function seleccionarAplicacion(tx: Transceptor) {
+async function seleccionarAplicacion(tx: Transceptor) {
   await enviar(tx, hexABytes("00A4040007D276000085010100"), ["9000"], "Seleccionar aplicación");
 }
 
-export async function autenticar(tx: Transceptor, nroClave: number, k: Bytes, aleatorio: Aleatorio): Promise<Sesion> {
+async function autenticar(tx: Transceptor, nroClave: number, k: Bytes, aleatorio: Aleatorio): Promise<Sesion> {
   const r1 = await enviar(tx, nativo(0x71, [nroClave, 0x00]), ["91AF"], "Autenticar (1)");
   if (r1.length !== 16) throw new ErrorChip("Autenticar: respuesta inesperada");
   const rndB = aesCbcDescifrar(k, CERO16, r1);
@@ -164,12 +164,12 @@ export async function autenticar(tx: Transceptor, nroClave: number, k: Bytes, al
 const ctrLE = (n: number) => [n & 0xff, (n >> 8) & 0xff];
 
 /** IV para cifrar el comando en modo Full. */
-export function ivComando(s: Sesion): Bytes {
+function ivComando(s: Sesion): Bytes {
   return aesEcbCifrar(s.kEnc, concat([0xa5, 0x5a], s.ti, ctrLE(s.ctr), new Uint8Array(8)));
 }
 
 /** Arma un comando en modo de comunicación Full: datos cifrados + MAC. */
-export function comandoFull(s: Sesion, cmd: number, cabecera: Bytes | number[], datos: Bytes): Bytes {
+function comandoFull(s: Sesion, cmd: number, cabecera: Bytes | number[], datos: Bytes): Bytes {
   const cifrado = aesCbcCifrar(s.kEnc, ivComando(s), rellenar(datos));
   const mac = truncarMac(aesCmac(s.kMac, concat([cmd], ctrLE(s.ctr), s.ti, cabecera, cifrado)));
   return nativo(cmd, concat(cabecera, cifrado, mac));
@@ -181,7 +181,7 @@ async function enviarFull(tx: Transceptor, s: Sesion, cmd: number, cabecera: num
 }
 
 /** ChangeKey. Para la clave con la que se autenticó (Key 0) va sólo la nueva; para las otras, nueva XOR vieja + CRC. */
-export async function cambiarClave(tx: Transceptor, s: Sesion, nro: number, nueva: Bytes, vieja: Bytes, autenticadaCon: number) {
+async function cambiarClave(tx: Transceptor, s: Sesion, nro: number, nueva: Bytes, vieja: Bytes, autenticadaCon: number) {
   const datos =
     nro === autenticadaCon ? concat(nueva, [0x00]) : concat(xor(nueva, vieja), [0x00], crc32nk(nueva));
   await enviarFull(tx, s, 0xc4, [nro], datos, `Cambiar clave ${nro}`);
@@ -189,8 +189,8 @@ export async function cambiarClave(tx: Transceptor, s: Sesion, nro: number, nuev
 
 // --- NDEF con SUN -------------------------------------------------------------
 
-export const PLANTILLA_P = "0".repeat(32);
-export const PLANTILLA_M = "0".repeat(16);
+const PLANTILLA_P = "0".repeat(32);
+const PLANTILLA_M = "0".repeat(16);
 
 /** Contenido del archivo NDEF (NLEN + registro URI) y offsets de PICCData y MAC dentro del archivo. */
 export function armarNdef(base: string): { archivo: Bytes; offsetPicc: number; offsetMac: number } {
@@ -210,7 +210,7 @@ export function armarNdef(base: string): { archivo: Bytes; offsetPicc: number; o
 const off3 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff];
 
 /** Datos de ChangeFileSettings del archivo NDEF (02) con SDM: PICCData cifrado (Key 1) + SDMMAC (Key 2). */
-export function datosConfigSdm(offsetPicc: number, offsetMac: number): Bytes {
+function datosConfigSdm(offsetPicc: number, offsetMac: number): Bytes {
   return Uint8Array.from([
     0x40, // FileOption: SDM habilitado, comunicación plana
     0x00, 0xe0, // AccessRights: Read=E (libre), Write=0, ReadWrite=0, Change=0
@@ -232,7 +232,7 @@ async function escribirNdef(tx: Transceptor, archivo: Bytes) {
 }
 
 /** Lee el NDEF (como lo haría un celular) y saca p y m de la URL. */
-export async function leerSun(tx: Transceptor): Promise<{ p: string; m: string; url: string }> {
+async function leerSun(tx: Transceptor): Promise<{ p: string; m: string; url: string }> {
   await seleccionarAplicacion(tx);
   await enviar(tx, hexABytes("00A4000C02E104"), ["9000"], "Seleccionar NDEF");
   const nlen = await enviar(tx, hexABytes("00B0000002"), ["9000"], "Leer NDEF");

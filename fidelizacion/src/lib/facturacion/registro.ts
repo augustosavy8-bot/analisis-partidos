@@ -11,7 +11,7 @@ export const CONDICIONES_FISCALES = {
   responsable_inscripto: "Responsable inscripto",
   exento: "Exento",
 } as const;
-export type CondicionFiscal = keyof typeof CONDICIONES_FISCALES;
+type CondicionFiscal = keyof typeof CONDICIONES_FISCALES;
 
 export type DatosComercio = {
   comercio: string;

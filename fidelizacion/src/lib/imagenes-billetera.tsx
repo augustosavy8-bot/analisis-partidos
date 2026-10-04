@@ -90,7 +90,7 @@ const cacheImagenesRemotas = new Map<string, Promise<string | null>>();
  * pedidos a una URL cualquiera (si no, alguien podría usarlo para llegar a
  * direcciones internas).
  */
-export function urlImagenPermitida(url: string, supabaseUrl: string, appUrl: string): boolean {
+function urlImagenPermitida(url: string, supabaseUrl: string, appUrl: string): boolean {
   try {
     const u = new URL(url);
     if (u.protocol !== "https:") return false;

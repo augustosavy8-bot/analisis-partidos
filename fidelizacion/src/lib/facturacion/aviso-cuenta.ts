@@ -13,7 +13,7 @@ export type AvisoCuenta = {
 
 const DIA = 86_400_000;
 
-export const fechaCorta = (iso: string) =>
+const fechaCorta = (iso: string) =>
   new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(iso));
 
 export function avisoDeCuenta(a: Acceso, ahora: Date = new Date()): AvisoCuenta | null {

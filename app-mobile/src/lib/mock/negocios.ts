@@ -2,7 +2,7 @@
  * Datos de ejemplo del home (por ahora). Después vienen de la API (Supabase);
  * la forma es la misma que va a devolver el adaptador de lib/negocios.ts.
  */
-export type ColoresMarca = {
+type ColoresMarca = {
   /** Gradiente de la tarjeta (de claro a oscuro). */
   c1: string;
   c2: string;

@@ -26,7 +26,7 @@ export function horaCorta(h: string): string {
 }
 
 /** Día de la semana y hora ("HH:MM:SS") en la zona del local. */
-export function ahoraEnZona(zona: string, fecha = new Date()) {
+function ahoraEnZona(zona: string, fecha = new Date()) {
   const partes = new Intl.DateTimeFormat("en-US", {
     timeZone: zona,
     weekday: "short",

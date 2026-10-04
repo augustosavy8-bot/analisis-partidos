@@ -6,7 +6,7 @@
  * usa el valor MÁS restrictivo: ante la duda, el gating falla "cerrado"
  * (es preferible que un comercio no pueda algo a regalarle el plan Pro por un typo).
  */
-export type NivelEstadisticas = "basicas" | "avanzadas";
+type NivelEstadisticas = "basicas" | "avanzadas";
 
 export type LimitesPlan = {
   locales: number | null;

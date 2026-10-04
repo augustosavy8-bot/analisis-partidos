@@ -3,7 +3,7 @@
  * objeto con `message`, `status` y a veces `cause: [{ code, description }]`.
  * Nunca mostramos el detalle técnico al usuario; se loguea aparte.
  */
-export type ErrorMp = { message?: string; status?: number; cause?: { code?: string | number; description?: string }[] | unknown };
+type ErrorMp = { message?: string; status?: number; cause?: { code?: string | number; description?: string }[] | unknown };
 
 function textoCompleto(e: ErrorMp): string {
   const causas = Array.isArray(e.cause) ? e.cause.map((c) => `${c?.code ?? ""} ${c?.description ?? ""}`).join(" ") : "";

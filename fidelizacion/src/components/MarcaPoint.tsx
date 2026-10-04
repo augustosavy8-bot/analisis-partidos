@@ -1,10 +1,10 @@
 /** Marca de la plataforma (Point). Los locales usan su propia marca. */
-export const COLORES_POINT = { naranja: "#E6633A", marino: "#0F172A" } as const;
+const COLORES_POINT = { naranja: "#E6633A", marino: "#0F172A" } as const;
 
 type Tono = "color" | "blanco" | "negro";
 
 /** El punto con ondas NFC. */
-export function IsotipoPoint({ tamaño = 40, tono = "color", className = "" }: { tamaño?: number; tono?: Tono; className?: string }) {
+function IsotipoPoint({ tamaño = 40, tono = "color", className = "" }: { tamaño?: number; tono?: Tono; className?: string }) {
   const arco = tono === "color" ? COLORES_POINT.naranja : tono === "blanco" ? "#fff" : "#000";
   const ondas = tono === "color" ? COLORES_POINT.marino : arco;
   return (

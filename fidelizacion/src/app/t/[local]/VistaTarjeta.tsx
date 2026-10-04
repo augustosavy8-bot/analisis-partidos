@@ -22,7 +22,7 @@ import { FormCumple } from "./FormCumple";
 import { ListaPremios } from "./ListaPremios";
 import { Historial } from "./Historial";
 
-export type DatosCelebracion = {
+type DatosCelebracion = {
   tipo: "suma" | "canje";
   sumados: number;
   promo: string | null;

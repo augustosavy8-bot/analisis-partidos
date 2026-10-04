@@ -2,6 +2,8 @@
  * Colores de la tarjeta en las billeteras. Sin dependencias: lo usan el panel
  * (vista previa en vivo), el pase de Apple y los tests.
  */
+import { luminancia, mezclar } from "./diseno-billetera";
+
 export const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function rgb(hex: string) {
@@ -10,14 +12,6 @@ function rgb(hex: string) {
 }
 
 export const cssRgb = (hex: string) => `rgb(${rgb(hex).join(", ")})`;
-
-function luminancia(hex: string) {
-  const [r, g, b] = rgb(hex).map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
 
 /** Contraste WCAG entre dos colores (1 a 21). */
 export function contraste(a: string, b: string) {
@@ -59,14 +53,6 @@ export type NivelContraste = "ok" | "bajo" | "muy-bajo";
 export function nivelContraste(a: string, b: string, minimo = 4.5): NivelContraste {
   const c = contraste(a, b);
   return c >= minimo ? "ok" : c >= 3 ? "bajo" : "muy-bajo";
-}
-
-/** Mezcla dos colores hex: t = 0 → a, t = 1 → b. */
-export function mezclar(a: string, b: string, t: number): string {
-  const [r1, g1, b1] = rgb(a);
-  const [r2, g2, b2] = rgb(b);
-  const c = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, "0");
-  return `#${c(r1, r2)}${c(g1, g2)}${c(b1, b2)}`;
 }
 
 /**

@@ -6,7 +6,7 @@ import { env } from "@/lib/env";
 import type { Toque } from "@/lib/toque";
 
 /** El QR se renueva cada 30 s; aceptamos 15 s extra para escanear y cargar la página. */
-export const ROTACION_QR_SEG = 30;
+const ROTACION_QR_SEG = 30;
 const VALIDEZ_QR_SEG = ROTACION_QR_SEG + 15;
 
 type PayloadQR = { m: string; l: string; s: string; j: string; exp: number };
@@ -26,7 +26,7 @@ export function emitirQR(mozo: { mozoId: string; localId: string; localSlug: str
   };
 }
 
-export const jtiQR = (j: string) => `qr:${j}`;
+const jtiQR = (j: string) => `qr:${j}`;
 
 /**
  * Valida un QR escaneado: firma, vencimiento, mozo activo y UN SOLO USO.

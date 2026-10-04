@@ -68,8 +68,6 @@ export async function recuperar(_prev: EstadoForm, form: FormData): Promise<Esta
     return { error: "No encontramos una tarjeta con ese WhatsApp. ¿Lo escribiste bien?", valores };
   }
 
-  // Hook OTP: cuando verificacionActiva() sea true, acá se pide y valida el código.
-
   const { resultado } = await vincularCelular({ nombre: cliente.nombre, whatsapp, localId: local.id });
   redirect(resultado ? urlResultado(local.slug, resultado) : `/t/${local.slug}`);
 }

@@ -20,7 +20,7 @@
 import type { LimitesPlan } from "./planes";
 import type { EstadoSuscripcion } from "./estado";
 
-export type NivelAcceso = "completo" | "gracia" | "restringido" | "sin_sumar" | "sin_suscripcion";
+type NivelAcceso = "completo" | "gracia" | "restringido" | "sin_sumar" | "sin_suscripcion";
 
 export type SuscripcionAcceso = {
   estado: EstadoSuscripcion;
@@ -34,7 +34,7 @@ export type SuscripcionAcceso = {
 };
 
 /** Cuánto puede quedar en "pending" (MP no confirmó la tarjeta) con todo andando. */
-export const HORAS_PENDIENTE = 48;
+const HORAS_PENDIENTE = 48;
 
 export type ConfigAcceso = { diasGracia: number; diasSumarTrasGracia: number };
 

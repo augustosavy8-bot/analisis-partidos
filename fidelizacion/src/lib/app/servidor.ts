@@ -40,7 +40,7 @@ export async function registrarIntento(req: Request, exitoso: boolean) {
 // por IP, cada número admite pocos ingresos por día, venga de donde venga.
 // Se guarda en la misma tabla, con el hash del número en vez del de la IP.
 
-export const LIMITE_POR_NUMERO = { ventanaHoras: 24, maximo: 5 } as const;
+const LIMITE_POR_NUMERO = { ventanaHoras: 24, maximo: 5 } as const;
 
 const hashNumero = (whatsapp: string) => createHash("sha256").update(`wa:${whatsapp}|${env.hmacSecret}`).digest("hex");
 

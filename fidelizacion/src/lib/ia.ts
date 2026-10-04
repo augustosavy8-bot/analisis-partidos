@@ -4,7 +4,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 
 /** Tope de mensajes escritos con IA por local y por día (cada uno cuesta plata de la API). */
-export const IA_USOS_POR_DIA = 20;
+const IA_USOS_POR_DIA = 20;
 
 export type ContextoMensajeIA = {
   local: string;
@@ -28,7 +28,7 @@ Reglas:
 - Respondé solo con el texto del mensaje, sin comillas ni explicaciones.`;
 
 /** ¿Ya usó el tope de hoy? */
-export async function iaUsosHoy(localId: string): Promise<number> {
+async function iaUsosHoy(localId: string): Promise<number> {
   const desde = new Date(Date.now() - 24 * 3600_000).toISOString();
   const { count } = await crearClienteAdmin()
     .from("ia_usos")

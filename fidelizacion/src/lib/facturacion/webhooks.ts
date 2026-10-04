@@ -122,7 +122,7 @@ export async function procesarPreapproval(id: string): Promise<string> {
 }
 
 /** topic subscription_authorized_payment: una cuota mensual (programada, cobrada, en reintento...). */
-export async function procesarCuota(id: string): Promise<string> {
+async function procesarCuota(id: string): Promise<string> {
   const cuota = await obtenerCuotaMp(id);
   if (!cuota.preapproval_id) return `cuota ${id} sin preapproval_id: ignorada`;
   let s = await suscripcionPorMp(cuota.preapproval_id);
@@ -167,7 +167,7 @@ export async function procesarCuota(id: string): Promise<string> {
  * un pedido del kit (Checkout Pro, external_reference = id del pedido).
  * Se consulta el pago a MP: lo que diga la notificación no se usa.
  */
-export async function procesarPago(id: string): Promise<string> {
+async function procesarPago(id: string): Promise<string> {
   const pago = await obtenerPagoMp(id);
   const { data } = await db()
     .from("pagos_suscripcion")
@@ -197,7 +197,7 @@ export async function registrarPagoDePedido(pago: Awaited<ReturnType<typeof obte
   return `pago ${pago.id} (${pago.status}) del pedido ${pedidoId}: ${data}`;
 }
 
-export async function procesarEvento(topic: string | null, dataId: string | null): Promise<string> {
+async function procesarEvento(topic: string | null, dataId: string | null): Promise<string> {
   if (!dataId) return "sin data.id: ignorado";
   try {
     switch (topic) {

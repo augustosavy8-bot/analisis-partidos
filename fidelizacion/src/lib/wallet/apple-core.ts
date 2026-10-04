@@ -89,15 +89,15 @@ export type DatosPaseApple = {
   };
 };
 
-export function proximoPremioApple(puntos: number, premios: DatosPaseApple["local"]["premios"]) {
+function proximoPremioApple(puntos: number, premios: DatosPaseApple["local"]["premios"]) {
   if (!premios.length) return null;
   return premios.find((p) => p.puntos > puntos) ?? premios[premios.length - 1];
 }
 
-export const SIN_NOVEDADES = "Todavía no hay novedades.";
+const SIN_NOVEDADES = "Todavía no hay novedades.";
 
 /** Texto de la notificación de iOS cuando cambian los puntos (%@ = puntos nuevos). */
-export function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"]) {
+function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"]) {
   return ultimo === "canje" ? "Canjeaste tu premio: ahora tenés %@" : "Sumaste puntos: ahora tenés %@";
 }
 
@@ -225,7 +225,7 @@ export function leerTag(v: string | null): Date | null {
 
 // --- APNs ---------------------------------------------------------------------
 
-export const APNS_HOST = "https://api.push.apple.com";
+const APNS_HOST = "https://api.push.apple.com";
 
 export type ResultadoPush = { token: string; status: number };
 

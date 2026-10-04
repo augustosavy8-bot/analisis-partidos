@@ -23,7 +23,7 @@ const CLIENTE = "Sofía";
 const svgUri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 /** Ícono como lo genera el servidor: color de fondo y la imagen al 80% (o la inicial). */
-export function IconoLocal({ d, lado, redondeo }: { d: DatosMockup; lado: number; redondeo: number }) {
+function IconoLocal({ d, lado, redondeo }: { d: DatosMockup; lado: number; redondeo: number }) {
   const src = d.icono ?? d.logo;
   return (
     <span className="flex shrink-0 items-center justify-center overflow-hidden" style={{ width: lado, height: lado, borderRadius: redondeo, background: d.fondo }} aria-hidden>

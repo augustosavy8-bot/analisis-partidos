@@ -144,7 +144,7 @@ export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string, 
 const b64url = (v: string | Buffer) => Buffer.from(v).toString("base64url");
 
 /** JWT RS256 firmado con la clave de la cuenta de servicio. */
-export function firmarJwt(payload: object, privateKey: string) {
+function firmarJwt(payload: object, privateKey: string) {
   const cabecera = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const cuerpo = b64url(JSON.stringify(payload));
   const firma = createSign("RSA-SHA256").update(`${cabecera}.${cuerpo}`).sign(privateKey);

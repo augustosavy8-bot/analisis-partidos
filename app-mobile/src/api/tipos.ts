@@ -2,7 +2,7 @@
  * Contrato de la API /api/app/v1 (copia de fidelizacion/src/lib/app/contrato.ts).
  * Si cambia allá, actualizar acá.
  */
-export type ColoresApp = { fondo: string; texto: string; etiqueta: string; acento: string };
+type ColoresApp = { fondo: string; texto: string; etiqueta: string; acento: string };
 
 export type LocalApp = {
   slug: string;
@@ -13,7 +13,7 @@ export type LocalApp = {
   colores: ColoresApp;
 };
 
-export type PremioApp = { id: string; nombre: string; descripcion: string | null; puntos: number; alcanza: boolean };
+type PremioApp = { id: string; nombre: string; descripcion: string | null; puntos: number; alcanza: boolean };
 
 export type TarjetaResumenApp = {
   local: LocalApp;
@@ -22,7 +22,7 @@ export type TarjetaResumenApp = {
   premiosDisponibles: number;
 };
 
-export type MovimientoApp = { id: string; tipo: "suma" | "canje" | "regalo"; texto: string; puntos: number; fecha: string };
+type MovimientoApp = { id: string; tipo: "suma" | "canje" | "regalo"; texto: string; puntos: number; fecha: string };
 
 export type TarjetaDetalleApp = TarjetaResumenApp & {
   premios: PremioApp[];

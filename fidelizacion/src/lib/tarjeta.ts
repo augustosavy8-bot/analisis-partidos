@@ -40,13 +40,6 @@ export async function promosDelLocal(localId: string): Promise<Promo[]> {
   return data ?? [];
 }
 
-/** Cumple del cliente (día y mes), o null si no lo cargó. */
-export async function cumpleDelCliente(clienteId: string): Promise<{ dia: number; mes: number } | null> {
-  const db = crearClienteAdmin();
-  const { data } = await db.from("clientes").select("cumple_dia, cumple_mes").eq("id", clienteId).maybeSingle();
-  return data?.cumple_dia && data.cumple_mes ? { dia: data.cumple_dia, mes: data.cumple_mes } : null;
-}
-
 export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const db = crearClienteAdmin();
   // Una sola consulta (tarjeta + últimos movimientos): es el camino del toque, cada ida a la base suma.
@@ -84,7 +77,7 @@ export function proximoPremio(premios: Premio[], puntos: number): Premio | null 
   return premios.find((p) => p.puntos_necesarios > puntos) ?? premios[premios.length - 1];
 }
 
-export function formatearHora(iso: string, zona: string) {
+function formatearHora(iso: string, zona: string) {
   return new Intl.DateTimeFormat("es-AR", { timeZone: zona, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 }
 

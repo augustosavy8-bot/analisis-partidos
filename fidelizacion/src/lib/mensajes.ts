@@ -1,7 +1,7 @@
 /** Mensajes del local a sus clientes (notificación en la billetera). */
 export const LIMITES_MENSAJE = { titulo: 40, texto: 150 } as const;
 
-export type EstadoEnvio = "enviando" | "enviado" | "error";
+type EstadoEnvio = "enviando" | "enviado" | "error";
 
 export type MensajeLocal = {
   id: string;

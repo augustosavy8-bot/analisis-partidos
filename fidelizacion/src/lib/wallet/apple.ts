@@ -61,7 +61,7 @@ function imagenesDelLocal(local: Local): Promise<ImagenesPase> {
 type FilaPase = { serial: string; tarjeta_id: string; local_id: string; auth_token: string; updated_at: string };
 
 /** Crea el registro del pase (con su authenticationToken) si todavía no existe. */
-export async function asegurarPaseApple(t: { serial: string; tarjetaId: string; clienteId: string; localId: string }): Promise<FilaPase> {
+async function asegurarPaseApple(t: { serial: string; tarjetaId: string; clienteId: string; localId: string }): Promise<FilaPase> {
   const db = crearClienteAdmin();
   const { data: existe } = await db.from("apple_passes").select("serial, tarjeta_id, local_id, auth_token, updated_at").eq("serial", t.serial).maybeSingle();
   if (existe) return existe;

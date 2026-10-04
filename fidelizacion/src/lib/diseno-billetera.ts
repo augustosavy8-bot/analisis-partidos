@@ -1,5 +1,5 @@
 /**
- * Piezas gráficas de la billetera (Pass2U hoy, Apple/Google Wallet más adelante),
+ * Piezas gráficas de la billetera (Apple y Google Wallet),
  * generadas con los colores de cada local a partir del diseño de Point.
  * Todo devuelve SVG en texto (sin fuentes: los textos se agregan aparte).
  */
@@ -35,7 +35,7 @@ export function luminancia(hex: string): number {
  * Sello de Point (aro + punto + ondas NFC) centrado en (cx, cy) con radio r.
  * Lleno: aro del color principal, punto y ondas del acento. Vacío: gris.
  */
-export function svgSello(cx: number, cy: number, r: number, lleno: boolean, { primario, acento }: Colores): string {
+function svgSello(cx: number, cy: number, r: number, lleno: boolean, { primario, acento }: Colores): string {
   const aro = lleno ? primario : GRIS_VACIO;
   const punto = lleno ? acento : GRIS_VACIO;
   const k = r / 33; // proporciones del diseño original (r = 33)

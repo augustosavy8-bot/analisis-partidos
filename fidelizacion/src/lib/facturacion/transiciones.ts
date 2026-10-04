@@ -9,7 +9,7 @@
 import type { EstadoSuscripcion } from "./estado";
 
 /** Transiciones permitidas. `cancelled` es terminal (en MP también es irreversible). */
-export const TRANSICIONES: Record<EstadoSuscripcion, EstadoSuscripcion[]> = {
+const TRANSICIONES: Record<EstadoSuscripcion, EstadoSuscripcion[]> = {
   cortesia: ["cancelled"],
   pending: ["trialing", "authorized", "paused", "cancelled"],
   trialing: ["authorized", "past_due", "paused", "cancelled"],

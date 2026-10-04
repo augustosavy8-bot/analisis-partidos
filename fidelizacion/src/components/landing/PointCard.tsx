@@ -137,7 +137,7 @@ export function PointCard({
 }
 
 /** ● ● ● ● ● ● ● ○ ○ ○ */
-export function FilaPuntos({
+function FilaPuntos({
   puntos,
   meta,
   destacarUltimo,

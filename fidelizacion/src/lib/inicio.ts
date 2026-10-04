@@ -1,7 +1,8 @@
 import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { tarjetasDelCliente } from "@/lib/app/servidor";
-import { contraste, mezclar } from "@/lib/colores";
+import { contraste } from "@/lib/colores";
+import { mezclar } from "@/lib/diseno-billetera";
 import { cuandoRelativo } from "@/lib/cuando";
 import { textoMovimiento, tituloMovimiento, type MotivoMovimiento, type TipoMovimiento } from "@/lib/movimientos";
 

@@ -5,8 +5,8 @@ import { AnimatePresence, m, useInView } from "motion/react";
 import { IPhoneMockup } from "./IPhoneMockup";
 import { WalletScreen } from "./WalletScreen";
 import { PointCard } from "./PointCard";
+import { EASE } from "./Reveal";
 
-const EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Fases de la secuencia (2,2 s):

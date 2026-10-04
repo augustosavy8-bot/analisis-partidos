@@ -10,13 +10,17 @@
     "ios": {
       "bundleIdentifier": "com.point.fidelizacion",
       "supportsTablet": false,
-      "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
       },
       "associatedDomains": [
         "applinks:fidelizacion-beta.vercel.app"
-      ]
+      ],
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      }
     },
     "android": {
       "package": "com.point.fidelizacion",

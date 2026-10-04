@@ -30,7 +30,8 @@ async function pedir<T>(ruta: string, opciones: { token?: string; metodo?: strin
 }
 
 export const apiAdmin = {
-  ingresar: (email: string, password: string) => pedir<SesionAdmin>("/sesion", { metodo: "POST", cuerpo: { email, password } }),
+  ingresar: (email: string, password: string, codigo: string) =>
+    pedir<SesionAdmin>("/sesion", { metodo: "POST", cuerpo: { email, password, codigo } }),
   locales: (token: string) => pedir<{ locales: LocalAdmin[] }>("/locales", { token }),
   claves: (token: string, uid: string) => pedir<ClavesChipApi>("/chips/claves", { metodo: "POST", token, cuerpo: { uid } }),
   registrar: (token: string, d: { uid: string; p: string; m: string; localId: string; mozoId: string | null; etiqueta: string | null }) =>

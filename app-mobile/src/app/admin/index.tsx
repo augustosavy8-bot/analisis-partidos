@@ -50,6 +50,7 @@ export default function Admin() {
 function IngresoAdmin({ onListo }: { onListo: (s: SesionAdmin) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -57,7 +58,7 @@ function IngresoAdmin({ onListo }: { onListo: (s: SesionAdmin) => void }) {
     setError(null);
     setCargando(true);
     try {
-      onListo(await apiAdmin.ingresar(email, password));
+      onListo(await apiAdmin.ingresar(email, password, codigo));
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo entrar.");
     } finally {
@@ -68,7 +69,7 @@ function IngresoAdmin({ onListo }: { onListo: (s: SesionAdmin) => void }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
-        <Text style={estilos.texto}>Entrá con tu cuenta de administrador de Point (la misma del panel).</Text>
+        <Text style={estilos.texto}>Entrá con tu cuenta de administrador de Point (la misma del panel) y el código de tu app autenticadora.</Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -87,11 +88,20 @@ function IngresoAdmin({ onListo }: { onListo: (s: SesionAdmin) => void }) {
           placeholderTextColor={color.tinta3}
           secureTextEntry
           textContentType="password"
+          style={estilos.input}
+        />
+        <TextInput
+          value={codigo}
+          onChangeText={(t) => setCodigo(t.replace(/\D/g, "").slice(0, 6))}
+          placeholder="Código de 6 números (app autenticadora)"
+          placeholderTextColor={color.tinta3}
+          keyboardType="number-pad"
+          textContentType="oneTimeCode"
           onSubmitEditing={entrar}
           style={estilos.input}
         />
         {error && <Text style={estilos.error}>{error}</Text>}
-        <Boton titulo="Entrar" onPress={entrar} cargando={cargando} disabled={!email || !password} />
+        <Boton titulo="Entrar" onPress={entrar} cargando={cargando} disabled={!email || !password || codigo.length !== 6} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

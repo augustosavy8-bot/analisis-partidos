@@ -1,21 +1,34 @@
 import "server-only";
 import { cache } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { randomInt } from "node:crypto";
 import { requerirUsuario } from "@/lib/panel";
 
-/** Sólo superadmins. Para cualquier otro usuario la sección no existe (404). */
+/** ¿La sesión ya pasó la verificación en dos pasos (código de la app autenticadora)? */
+async function conDosPasos(db: Awaited<ReturnType<typeof requerirUsuario>>["db"]) {
+  const { data } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
+  return data?.currentLevel === "aal2";
+}
+
+/**
+ * Sólo superadmins. Para cualquier otro usuario la sección no existe (404).
+ * Exige verificación en dos pasos: con sólo la contraseña no se entra al admin.
+ */
 export const requerirSuperadmin = cache(async () => {
   const u = await requerirUsuario();
   const { data } = await u.db.from("superadmins").select("user_id").eq("user_id", u.userId).maybeSingle();
   if (!data) notFound();
+  if (!(await conDosPasos(u.db))) redirect("/auth/dos-pasos");
   return u;
 });
 
+/** Superadmin con la verificación en dos pasos hecha. Si le falta el código, va a pedirlo. */
 export const esSuperadmin = cache(async () => {
   const u = await requerirUsuario();
   const { data } = await u.db.from("superadmins").select("user_id").eq("user_id", u.userId).maybeSingle();
-  return !!data;
+  if (!data) return false;
+  if (!(await conDosPasos(u.db))) redirect("/auth/dos-pasos");
+  return true;
 });
 
 const PALABRAS = ["cafe", "mate", "luna", "sol", "tango", "rio", "pampa", "faro", "nube", "limon", "canela", "brisa"];

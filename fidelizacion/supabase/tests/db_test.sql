@@ -186,8 +186,11 @@ select pg_temp.check((select count(*) from public.tarjetas) = 1, 'otro dueño ve
 select pg_temp.check((select count(*) from public.chips) = 0, 'otro dueño no ve chips ajenos');
 
 -- Superadmin
-select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 select pg_temp.check((select count(*) from public.locales) = 2, 'superadmin ve todos los locales');
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal1"}', false);
+select pg_temp.check(not public.es_superadmin(), 'superadmin sin el código de dos pasos no tiene permisos de superadmin');
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false);
 select pg_temp.check((select count(*) from public.clientes) = 2, 'superadmin ve todos los clientes');
 reset role;
 
@@ -230,7 +233,7 @@ reset role;
 -- ---------------------------------------------------------------- superadmin
 insert into public.rechazos (local_id, motivo, origen) values ('00000000-0000-4000-8000-000000000001', 'qr_usado', 'qr'), (null, 'chip_invalido', 'nfc');
 set role authenticated;
-select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 select pg_temp.check((public.admin_resumen()->'totales'->>'locales')::int = 2, 'admin_resumen cuenta locales');
 select pg_temp.check(jsonb_array_length(public.admin_resumen()->'rechazos_recientes') = 2, 'admin_resumen lista rechazos');
 select pg_temp.check((select count(*) from public.rechazos) = 2, 'superadmin ve todos los rechazos');
@@ -461,7 +464,7 @@ insert into public.interesados (nombre, local, rubro, whatsapp) values ('Juan', 
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
 select pg_temp.check((select count(*) from public.interesados) = 0, 'un dueño no ve los interesados');
-select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 select pg_temp.check((select count(*) from public.interesados) = 1, 'el superadmin ve los interesados');
 update public.interesados set estado = 'contactado';
 select pg_temp.check((select estado from public.interesados) = 'contactado', 'el superadmin cambia el estado');
@@ -481,7 +484,7 @@ do $$ begin
 exception when check_violation or unique_violation then null; end $$;
 select pg_temp.check(true, 'apple: rechaza tokens cortos o pases duplicados');
 set role authenticated;
-select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 do $$ begin
   perform 1 from public.apple_passes;
   raise exception 'debía fallar';
@@ -591,7 +594,7 @@ do $$ begin
   raise exception 'debía fallar';
 exception when check_violation then null; end $$;
 set role authenticated;
-select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","aal":"aal2"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000001', false);
 do $$ begin
   perform 1 from public.intentos_app;
   raise exception 'debía fallar';

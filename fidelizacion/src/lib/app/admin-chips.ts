@@ -26,25 +26,48 @@ export function clavesDelChip(uid: string) {
   return { k0: derivar("point-chip-k0", uid), kMeta: env.sdmMetaKey, kFile: derivar("point-chip-sdm-file", uid) };
 }
 
-/** Superadmin dueño del token (access token de Supabase Auth) o null. */
+/** Nivel de verificación del access token (aal1 = sólo contraseña, aal2 = con código). Ya validado por getUser. */
+function nivelDelToken(token: string): string | null {
+  try {
+    return (JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8")) as { aal?: string }).aal ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Superadmin dueño del token (access token de Supabase Auth, verificado en dos pasos) o null. */
 export async function superadminDeRequest(req: Request): Promise<{ userId: string } | null> {
   const token = req.headers.get("authorization")?.match(/^Bearer\s+([A-Za-z0-9._-]{20,4000})$/)?.[1];
   if (!token) return null;
   const admin = crearClienteAdmin();
   const { data } = await admin.auth.getUser(token);
-  if (!data.user) return null;
+  if (!data.user || nivelDelToken(token) !== "aal2") return null;
   const { data: sa } = await admin.from("superadmins").select("user_id").eq("user_id", data.user.id).maybeSingle();
   return sa ? { userId: data.user.id } : null;
 }
 
-/** Email y contraseña de Supabase Auth → access token, sólo si es superadmin. */
-export async function ingresarSuperadmin(email: string, password: string) {
+export type ResultadoIngresoAdmin =
+  | { ok: true; token: string; vence: number | null; email: string }
+  | { ok: false; error: string; status: number };
+
+/** Email, contraseña y código de la app autenticadora → access token aal2, sólo si es superadmin. */
+export async function ingresarSuperadmin(email: string, password: string, codigo: string): Promise<ResultadoIngresoAdmin> {
   const anon = createClient(env.supabaseUrl, env.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await anon.auth.signInWithPassword({ email, password });
-  if (error || !data.session) return null;
+  const fallo = { ok: false as const, error: "Email, contraseña o código incorrectos, o la cuenta no es de administrador.", status: 401 };
+  if (error || !data.session) return fallo;
   const { data: sa } = await crearClienteAdmin().from("superadmins").select("user_id").eq("user_id", data.user.id).maybeSingle();
-  if (!sa) return null;
-  return { token: data.session.access_token, vence: data.session.expires_at ?? null, email: data.user.email ?? email };
+  if (!sa) return fallo;
+
+  const { data: factores } = await anon.auth.mfa.listFactors();
+  const factor = factores?.totp.find((f) => f.status === "verified");
+  if (!factor) {
+    return { ok: false, error: "Primero activá la verificación en dos pasos entrando al admin desde la web.", status: 403 };
+  }
+  if (!/^\d{6}$/.test(codigo)) return { ok: false, error: "Escribí el código de 6 números de tu app autenticadora.", status: 400 };
+  const { data: verificado, error: errCodigo } = await anon.auth.mfa.challengeAndVerify({ factorId: factor.id, code: codigo });
+  if (errCodigo || !verificado) return fallo;
+  return { ok: true, token: verificado.access_token, vence: Math.floor(Date.now() / 1000) + verificado.expires_in, email: data.user.email ?? email };
 }
 
 export type AltaChip = { uid: string; p: string; m: string; localId: string; mozoId: string | null; etiqueta: string | null };

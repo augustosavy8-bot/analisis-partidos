@@ -94,7 +94,7 @@ function ContenidoPass2U({ url, qrSvg, franja }: { url: string; qrSvg: string; f
         Guardar la imagen con mis sellos
       </a>
       <div
-        className="mx-auto w-44 rounded-pt-sm bg-white p-2 ring-1 ring-pt-border [&>svg]:h-full [&>svg]:w-full"
+        className="blanco-fijo mx-auto w-44 rounded-pt-sm bg-white p-2 ring-1 ring-pt-border [&>svg]:h-full [&>svg]:w-full"
         role="img"
         aria-label="Código QR de tu tarjeta"
         dangerouslySetInnerHTML={{ __html: qrSvg }}

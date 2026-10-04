@@ -32,7 +32,7 @@ export default async function Panel() {
           <Encabezado titulo="Tus locales" detalle={email} />
         </div>
         {superadmin && (
-          <Link href="/admin" className="mb-4 flex items-center justify-between rounded-pt-card bg-pt-ink px-5 py-4 text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-black">
+          <Link href="/admin" className="mb-4 flex items-center justify-between rounded-pt-card bg-pt-ink px-5 py-4 text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-pt-ink/85">
             Administración (superadmin) <Icono nombre="chevron" tamaño={18} />
           </Link>
         )}

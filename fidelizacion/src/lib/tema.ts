@@ -21,6 +21,8 @@ const CASI_NEGRO = "#111311";
 export type Tema = {
   /** Variables CSS (sin el prefijo --). */
   variables: Record<string, string>;
+  /** Las mismas, para el modo nocturno (fondo oscuro teñido con el color del bar). */
+  variablesOscuro: Record<string, string>;
   /** Color del navegador (barra de Safari/Chrome). */
   themeColor: string;
 };
@@ -57,6 +59,7 @@ export function temaDelLocal(local: LocalTema): Tema {
 
   return {
     themeColor: bg,
+    variablesOscuro: temaOscuro(sobrio, acento),
     variables: {
       "color-pt-bg": bg,
       "color-pt-surface": superficie,
@@ -69,6 +72,8 @@ export function temaDelLocal(local: LocalTema): Tema {
       "color-pt-accent-dark": acentoOscuro,
       "color-pt-accent-soft": acentoSuave,
       "color-pt-accent-ink": acentoTexto,
+      // Texto sobre el acento: la tinta (separarDe ya le dio contraste).
+      "color-pt-sobre-acento": tinta,
       // Pantallas oscuras (celebración): la tinta, que siempre lleva texto blanco.
       "color-pt-card": tinta,
       // La tarjeta protagonista: exactamente los colores de su pase.
@@ -77,6 +82,43 @@ export function temaDelLocal(local: LocalTema): Tema {
       "pt-tarjeta-etiqueta": etiqueta,
       "pt-tarjeta-acento": acento,
     },
+  };
+}
+
+const NOCHE = "#0e100e";
+
+/**
+ * Modo nocturno del bar: lo mismo invertido. Fondo casi negro teñido con su color,
+ * la tinta pasa a ser el color del bar aclarado hasta leerse bien sobre ese fondo.
+ */
+function temaOscuro(color: string, acento: string): Record<string, string> {
+  const tinta = ajustarHasta(color, NOCHE, 12, BLANCO);
+  const bg = mezclar(NOCHE, tinta, 0.04);
+  const pure = mezclar(NOCHE, tinta, 0.075);
+  const superficie = mezclar(NOCHE, tinta, 0.1);
+  const superficieHover = mezclar(NOCHE, tinta, 0.14);
+  const borde = mezclar(NOCHE, tinta, 0.18);
+  const base = mezclar(tinta, BLANCO, 0.4);
+  const tinta2 = masClaroQueCumple(base, bg, 6);
+  const tinta3 = masClaroQueCumple(base, bg, 3.4);
+  const acentoUi = separarDe(acento, bg, 4.5);
+  return {
+    "color-pt-bg": bg,
+    "color-pt-pure": pure,
+    "color-pt-surface": superficie,
+    "color-pt-surface-hover": superficieHover,
+    "color-pt-border": borde,
+    "color-pt-ink": tinta,
+    "color-pt-ink-2": tinta2,
+    "color-pt-ink-3": tinta3,
+    "color-pt-accent": acentoUi,
+    "color-pt-accent-dark": mezclar(acentoUi, BLANCO, 0.15),
+    "color-pt-accent-soft": mezclar(bg, acentoUi, 0.2),
+    "color-pt-accent-ink": ajustarHasta(acentoUi, bg, 4.5, BLANCO),
+    "color-pt-sobre-acento": contraste(acentoUi, "#000000") >= contraste(acentoUi, BLANCO) ? "#111311" : BLANCO,
+    // Pantallas oscuras (celebración): siguen oscuras, con texto blanco.
+    "color-pt-card": mezclar(NOCHE, tinta, 0.12),
+    "color-white": pure,
   };
 }
 
@@ -93,9 +135,11 @@ function masClaroQueCumple(tinta: string, fondo: string, objetivo: number) {
 
 /** `:root{--color-pt-bg:#…;…}` para inyectar en la página del bar. */
 export function cssTema(tema: Tema) {
-  const declaraciones = Object.entries(tema.variables)
-    .filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v))
-    .map(([k, v]) => `--${k}:${v}`)
-    .join(";");
-  return `:root{${declaraciones}}`;
+  const declarar = (vars: Record<string, string>) =>
+    Object.entries(vars)
+      .filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v))
+      .map(([k, v]) => `--${k}:${v}`)
+      .join(";");
+  // Mismo selector que el modo nocturno de globals.css: esta etiqueta va después, así que gana.
+  return `:root{${declarar(tema.variables)}}:root[data-tema="oscuro"]:not(:has(.tema-claro)){${declarar(tema.variablesOscuro)}}`;
 }

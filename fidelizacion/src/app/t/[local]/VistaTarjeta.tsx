@@ -1,4 +1,5 @@
 import { Mascota } from "@/components/app/Mascota";
+import { BotonTema } from "@/components/app/BotonTema";
 import Link from "next/link";
 import type { Local } from "@/lib/locales";
 import { cuandoFuturo, type Movimiento, type Premio } from "@/lib/tarjeta";
@@ -86,13 +87,16 @@ export function VistaTarjeta(p: Props) {
         sobre="Hola,"
         titulo={primerNombre}
         accion={
-          <Link
-            href="/inicio"
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-pt-ink px-3.5 text-[13px] font-semibold text-pt-pure transition-transform duration-150 active:scale-95"
-          >
-            <Icono nombre="tarjeta" tamaño={16} />
-            Mis tarjetas
-          </Link>
+          <span className="flex items-center gap-2">
+            <BotonTema />
+            <Link
+              href="/inicio"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-pt-ink px-3.5 text-[13px] font-semibold text-pt-pure transition-transform duration-150 active:scale-95"
+            >
+              <Icono nombre="tarjeta" tamaño={16} />
+              Mis tarjetas
+            </Link>
+          </span>
         }
       />
 

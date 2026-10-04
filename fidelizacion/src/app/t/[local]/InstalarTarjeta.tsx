@@ -52,7 +52,7 @@ export function InstalarTarjeta() {
       className="pt-subir fixed inset-x-3 z-30 mx-auto max-w-md rounded-pt-card bg-pt-ink p-4 text-white shadow-pt-flotante bottom-[calc(var(--spacing-pt-tabbar)+env(safe-area-inset-bottom)+0.75rem)]"
     >
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-ink" aria-hidden>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-sobre-acento" aria-hidden>
           <Icono nombre="tarjeta" tamaño={18} />
         </span>
         <div className="flex-1 pt-app-detalle">

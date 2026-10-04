@@ -117,7 +117,7 @@ export function MockupApple({ d }: { d: DatosMockup }) {
         <Campo etiqueta="Cliente" valor={CLIENTE} color={d.texto} colorEtiqueta={d.etiqueta} />
       </div>
       <div className="flex justify-center pb-4 pt-4">
-        <span className="rounded-[6px] bg-white p-1.5">
+        <span className="blanco-fijo rounded-[6px] bg-white p-1.5">
           <QrFalso lado={84} />
         </span>
       </div>
@@ -154,7 +154,7 @@ export function MockupGoogle({ d }: { d: DatosMockup }) {
         )}
       </div>
       <div className="flex justify-center py-4">
-        <span className="rounded-[10px] bg-white p-2">
+        <span className="blanco-fijo rounded-[10px] bg-white p-2">
           <QrFalso lado={80} />
         </span>
       </div>

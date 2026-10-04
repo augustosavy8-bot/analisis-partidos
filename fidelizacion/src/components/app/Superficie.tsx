@@ -94,7 +94,7 @@ export function Insignia({ children, tono = "neutro" }: { children: React.ReactN
 export function Aviso({ children, icono, tono = "oscuro", className = "" }: { children: React.ReactNode; icono?: NombreIcono; tono?: "oscuro" | "acento" | "suave"; className?: string }) {
   const tonos = {
     oscuro: "bg-pt-ink text-white",
-    acento: "bg-pt-accent text-pt-ink",
+    acento: "bg-pt-accent text-pt-sobre-acento",
     suave: "bg-pt-surface text-pt-ink-2",
   };
   return (

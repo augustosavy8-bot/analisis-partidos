@@ -1,6 +1,7 @@
 /** Logo de la landing: el isotipo de Point en monocromo + POINT en Manrope. */
 export function LogoPoint({ oscuro = false, alto = 22 }: { oscuro?: boolean; alto?: number }) {
-  const color = oscuro ? "#fff" : "#111311";
+  // La tinta: en modo nocturno se aclara sola (en la landing siempre es #111311).
+  const color = oscuro ? "#fff" : "var(--color-pt-ink, #111311)";
   return (
     <span className="inline-flex items-center" style={{ gap: alto * 0.35, color }}>
       <svg viewBox="-4 46 454 454" width={alto} height={alto} aria-hidden>

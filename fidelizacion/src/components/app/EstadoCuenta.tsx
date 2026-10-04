@@ -19,7 +19,7 @@ export function EstadoCuenta({ aviso }: { aviso: AvisoCuenta }) {
       </div>
       <Link
         href="/panel/facturacion"
-        className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-pt-ink px-5 text-[14px] font-semibold text-white transition-colors hover:bg-black"
+        className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-pt-ink px-5 text-[14px] font-semibold text-white transition-colors hover:bg-pt-ink/85"
       >
         {aviso.boton}
       </Link>

@@ -18,7 +18,7 @@ export function MejorarPlan({
 }) {
   return (
     <div className={`flex flex-col gap-3 rounded-pt-card bg-pt-ink p-5 text-white sm:flex-row sm:items-center ${className}`}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-ink" aria-hidden>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pt-accent text-pt-sobre-acento" aria-hidden>
         <Icono nombre="premio" tamaño={20} />
       </span>
       <div className="min-w-0 flex-1">
@@ -27,7 +27,7 @@ export function MejorarPlan({
       </div>
       <Link
         href="/panel/facturacion#plan"
-        className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-pt-accent px-5 text-[14px] font-semibold text-pt-ink transition-colors hover:bg-pt-accent-dark"
+        className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-pt-accent px-5 text-[14px] font-semibold text-pt-sobre-acento transition-colors hover:bg-pt-accent-dark"
       >
         {boton}
       </Link>

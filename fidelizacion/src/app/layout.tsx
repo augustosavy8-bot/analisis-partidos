@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter, Manrope, Poppins } from "next/font/google";
 import "./globals.css";
+import { SCRIPT_TEMA } from "@/lib/tema-nocturno";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +43,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-AR" className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${manrope.variable} ${inter.variable} h-full antialiased`}>
+    // suppressHydrationWarning: el script del tema agrega data-tema antes de hidratar.
+    <html
+      lang="es-AR"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${manrope.variable} ${inter.variable} h-full antialiased`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

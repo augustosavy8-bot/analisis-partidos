@@ -45,7 +45,21 @@ describe("tema por bar", () => {
   });
 
   it("genera CSS sólo con hex válidos", () => {
-    const css = cssTema({ themeColor: "#fff", variables: { "color-pt-ink": "#111111", malo: "red;}body{x" } });
-    expect(css).toBe(":root{--color-pt-ink:#111111}");
+    const css = cssTema({
+      themeColor: "#fff",
+      variables: { "color-pt-ink": "#111111", malo: "red;}body{x" },
+      variablesOscuro: { "color-pt-ink": "#eeeeee", malo: "red;}body{x" },
+    });
+    expect(css).toBe(':root{--color-pt-ink:#111111}:root[data-tema="oscuro"]:not(:has(.tema-claro)){--color-pt-ink:#eeeeee}');
+  });
+
+  it("modo nocturno: fondo oscuro y textos que se leen (AA) para cada paleta", () => {
+    for (const p of Object.values(paletas)) {
+      const v = temaDelLocal(p).variablesOscuro;
+      expect(contraste(v["color-pt-bg"], "#000000")).toBeLessThan(1.6);
+      expect(contraste(v["color-pt-ink"], v["color-pt-bg"])).toBeGreaterThanOrEqual(7);
+      expect(contraste(v["color-pt-ink-2"], v["color-pt-bg"])).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(v["color-pt-accent-ink"], v["color-pt-bg"])).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

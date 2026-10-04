@@ -42,7 +42,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
 
   return (
     <div
-      className="anim-aparecer fixed inset-0 z-50 flex flex-col items-center justify-center bg-pt-card px-8 text-center text-white"
+      className="blanco-fijo anim-aparecer fixed inset-0 z-50 flex flex-col items-center justify-center bg-pt-card px-8 text-center text-white"
       style={{ backgroundImage: "radial-gradient(80% 50% at 50% 35%, color-mix(in oklab, var(--color-pt-accent) 20%, transparent), transparent 70%)" }}
       // El canje no se cierra tocando el fondo: el personal tiene que poder verlo.
       onClick={() => tipo === "suma" && setVisible(false)}
@@ -65,7 +65,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
           <div className="relative">
             <SelloAnimado aro="var(--color-pt-accent)" ondas="#fff" tamaño={176} />
             <span
-              className="anim-subir absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-pt-accent px-4 py-1.5 font-[family-name:var(--font-pt-display)] text-2xl font-bold tabular-nums text-pt-ink shadow-pt-flotante"
+              className="anim-subir absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-pt-accent px-4 py-1.5 font-[family-name:var(--font-pt-display)] text-2xl font-bold tabular-nums text-pt-sobre-acento shadow-pt-flotante"
               style={{ animationDelay: "450ms" }}
             >
               +{total}
@@ -96,7 +96,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
         </ul>
       )}
       {tipo === "canje" && premio && (
-        <div className="anim-subir mt-5 rounded-pt-card bg-pt-accent px-6 py-4 text-pt-ink" style={{ animationDelay: "400ms" }}>
+        <div className="anim-subir mt-5 rounded-pt-card bg-pt-accent px-6 py-4 text-pt-sobre-acento" style={{ animationDelay: "400ms" }}>
           <p className="pt-label uppercase">Premio</p>
           <p className="mt-0.5 font-[family-name:var(--font-pt-display)] text-2xl font-semibold tracking-tight">{premio}</p>
           <Reloj />

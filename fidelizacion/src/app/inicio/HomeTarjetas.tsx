@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
 import { flushSync } from "react-dom";
 import Link from "next/link";
 import { Icono } from "@/components/Icono";
+import { BotonTema } from "@/components/app/BotonTema";
 import type { MovimientoInicio, TarjetaInicio } from "@/lib/inicio";
 import s from "./inicio.module.css";
 
@@ -445,6 +446,7 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
           <div className={s.filaHola}>
             <h1 className={s.hola}>Hola{primerNombre ? ` ${primerNombre}` : ""}</h1>
             <div className={s.botones}>
+              <BotonTema estilo={s.circulo} />
               <button type="button" className={s.circulo} aria-label="Ver todas mis tarjetas" onClick={abrir}>
                 <Icono nombre="buscar" tamaño={20} />
               </button>

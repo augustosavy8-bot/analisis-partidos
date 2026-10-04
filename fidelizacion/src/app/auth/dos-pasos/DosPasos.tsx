@@ -52,7 +52,7 @@ export function DosPasos({ activada }: { activada: boolean }) {
       {qr && (
         <div className="flex flex-col items-center gap-2">
           {/* El QR lo genera Supabase como SVG (data URL). */}
-          <img src={qr} alt="Código QR para la app autenticadora" width={200} height={200} className="rounded-pt-sm bg-white p-2" />
+          <img src={qr} alt="Código QR para la app autenticadora" width={200} height={200} className="blanco-fijo rounded-pt-sm bg-white p-2" />
           {secreto && <p className="break-all text-center font-mono text-[12px] text-pt-ink-2">o cargá esta clave a mano: {secreto}</p>}
         </div>
       )}

@@ -1,5 +1,6 @@
 /** Marca de la plataforma (Point). Los locales usan su propia marca. */
-const COLORES_POINT = { naranja: "#E6633A", marino: "#0F172A" } as const;
+// El marino es una variable: en modo nocturno se aclara (ver globals.css).
+const COLORES_POINT = { naranja: "#E6633A", marino: "var(--pt-logo-marino, #0F172A)" } as const;
 
 type Tono = "color" | "blanco" | "negro";
 

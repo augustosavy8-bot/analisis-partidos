@@ -1,6 +1,7 @@
 import { LogoPoint } from "@/components/MarcaPoint";
 import Link from "next/link";
 import { requerirSuperadmin } from "@/lib/admin";
+import { BotonTema } from "@/components/app/BotonTema";
 import { salir } from "../panel/ingresar/actions";
 
 export const metadata = { title: { default: "Administración", template: "%s · Admin" }, robots: { index: false } };
@@ -27,6 +28,7 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm text-stone-500">
             <span className="hidden sm:inline">{email}</span>
+            <BotonTema />
             <form action={salir}>
               <button className="underline underline-offset-4">Salir</button>
             </form>

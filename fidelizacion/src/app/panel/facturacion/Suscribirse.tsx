@@ -114,7 +114,7 @@ export function Suscribirse({
                   <span className="text-[17px] font-semibold text-pt-ink">
                     {p.nombre}
                     {p.destacado && (
-                      <span className="ml-2 rounded-full bg-pt-accent px-2 py-0.5 align-middle text-[11px] font-semibold text-pt-ink">Recomendado</span>
+                      <span className="ml-2 rounded-full bg-pt-accent px-2 py-0.5 align-middle text-[11px] font-semibold text-pt-sobre-acento">Recomendado</span>
                     )}
                   </span>
                   <PrecioPlan precioCentavos={p.precioCentavos} precioListaCentavos={p.precioListaCentavos} />

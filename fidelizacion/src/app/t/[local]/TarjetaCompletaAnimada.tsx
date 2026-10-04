@@ -57,7 +57,7 @@ export function TarjetaCompletaAnimada({ meta, premio, comercio, logo }: Props) 
         {/* Sello ✓ */}
         {llena && (
           <span
-            className="pt-completa-sello absolute -right-6 -top-6 flex h-11 w-11 items-center justify-center rounded-full bg-pt-accent text-pt-ink shadow-pt-flotante ring-4 ring-pt-card"
+            className="pt-completa-sello absolute -right-6 -top-6 flex h-11 w-11 items-center justify-center rounded-full bg-pt-accent text-pt-sobre-acento shadow-pt-flotante ring-4 ring-pt-card"
             aria-hidden
           >
             <Icono nombre="check" tamaño={22} trazo={2.6} />

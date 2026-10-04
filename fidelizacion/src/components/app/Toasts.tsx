@@ -38,7 +38,7 @@ export function Toasts() {
           role={t.tono === "error" ? "alert" : "status"}
           className="pt-subir pointer-events-auto flex max-w-sm items-center gap-2.5 rounded-full bg-pt-ink py-2.5 pl-3 pr-4 pt-app-detalle font-medium text-white shadow-pt-flotante"
         >
-          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${t.tono === "ok" ? "bg-pt-accent text-pt-ink" : "bg-pt-error text-white"}`} aria-hidden>
+          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${t.tono === "ok" ? "bg-pt-accent text-pt-sobre-acento" : "blanco-fijo bg-pt-error text-white"}`} aria-hidden>
             {t.tono === "ok" ? <Icono nombre="check" tamaño={13} /> : "!"}
           </span>
           {t.texto}

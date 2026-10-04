@@ -535,3 +535,35 @@
     transition-delay: 0ms !important;
   }
 }
+
+/* ---------- Modo nocturno (html[data-tema="oscuro"]): el header ya es oscuro;
+   se invierte el cuerpo blanco y la lista de movimientos. ---------- */
+:global(html[data-tema="oscuro"]) .app {
+  background: #0e100e;
+  color: #f1f3f0;
+}
+:global(html[data-tema="oscuro"]) .header {
+  background: #171a17;
+}
+:global(html[data-tema="oscuro"]) .mov {
+  border-bottom-color: #232723;
+}
+:global(html[data-tema="oscuro"]) .movDetalle,
+:global(html[data-tema="oscuro"]) .vacio {
+  color: #a5aaa5;
+}
+:global(html[data-tema="oscuro"]) .suma {
+  background: #12301f;
+  color: #5fe39a;
+}
+:global(html[data-tema="oscuro"]) .canje {
+  background: #221c3d;
+  color: #b3a3ff;
+}
+:global(html[data-tema="oscuro"]) .regalo {
+  background: #36280c;
+  color: #f5c46b;
+}
+:global(html[data-tema="oscuro"]) .mas {
+  color: #5fe39a;
+}

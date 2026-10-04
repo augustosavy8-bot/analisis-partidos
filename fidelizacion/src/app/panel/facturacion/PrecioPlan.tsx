@@ -20,7 +20,7 @@ export function CartelPromo({ texto, precioCentavos, precioListaCentavos }: { te
   if (!precioListaCentavos) return null;
   const ahorro = Math.round((1 - precioCentavos / precioListaCentavos) * 100);
   return (
-    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+    <span className="mt-2 inline-flex items-center gap-1.5 blanco-fijo rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
       🔥 {texto ?? "Promo"} · -{ahorro}%
     </span>
   );

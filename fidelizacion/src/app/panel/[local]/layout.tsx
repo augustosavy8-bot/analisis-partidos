@@ -7,6 +7,7 @@ import { Dialogos } from "@/components/app/Dialogos";
 import { MotionProvider } from "@/components/landing/MotionProvider";
 import { salir } from "../ingresar/actions";
 import { NavPanel } from "./NavPanel";
+import { BotonTema } from "@/components/app/BotonTema";
 import { formasTermino } from "@/lib/terminos";
 import { EstadoCuenta } from "@/components/app/EstadoCuenta";
 import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
@@ -45,6 +46,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
                 <p className="truncate text-[15px] font-semibold leading-tight text-pt-ink">{local.nombre}</p>
                 <p className="truncate pt-app-detalle text-pt-ink-2">{email}</p>
               </div>
+              <BotonTema />
               <div className="hidden md:block">{cuenta}</div>
             </div>
             <div className="hidden md:mt-3 md:block md:pb-3">

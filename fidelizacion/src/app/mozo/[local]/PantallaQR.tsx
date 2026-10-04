@@ -105,7 +105,7 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
       </p>
 
       <div className="relative mt-6 w-full max-w-xs">
-        <div className="aspect-square overflow-hidden rounded-pt-lg bg-white p-4 shadow-pt-product ring-1 ring-pt-border">
+        <div className="blanco-fijo aspect-square overflow-hidden rounded-pt-lg bg-white p-4 shadow-pt-product ring-1 ring-pt-border">
           {qr && !usado ? (
             <div
               className="anim-aparecer h-full w-full [&>svg]:h-full [&>svg]:w-full"
@@ -113,7 +113,7 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
               dangerouslySetInnerHTML={{ __html: qr.svg }}
             />
           ) : usado ? (
-            <div className="anim-pop flex h-full w-full flex-col items-center justify-center rounded-pt-card bg-pt-accent text-pt-ink">
+            <div className="anim-pop flex h-full w-full flex-col items-center justify-center rounded-pt-card bg-pt-accent text-pt-sobre-acento">
               <CheckCanje color="var(--color-pt-ink)" tamaño={120} />
               <span className="mt-2 font-[family-name:var(--font-pt-display)] text-lg font-semibold">¡Listo!</span>
             </div>

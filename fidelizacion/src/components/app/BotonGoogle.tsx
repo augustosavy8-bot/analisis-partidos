@@ -36,7 +36,7 @@ export function BotonGoogle({ siguiente = "/panel", oscuro = false, proveedor = 
           proveedor === "apple"
             ? oscuro
               ? "bg-white text-black hover:bg-white/90"
-              : "bg-black text-white hover:bg-black/85"
+              : "bg-pt-ink text-white hover:bg-pt-ink/85"
             : oscuro
               ? "bg-white text-stone-900 hover:bg-white/90"
               : "bg-pt-pure text-pt-ink ring-1 ring-inset ring-pt-border hover:bg-pt-surface"

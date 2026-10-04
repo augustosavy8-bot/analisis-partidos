@@ -4,8 +4,8 @@ export type VarianteBoton = "primario" | "acento" | "secundario" | "fantasma" | 
 export type TamañoBoton = "sm" | "md" | "lg";
 
 const variantes: Record<VarianteBoton, string> = {
-  primario: "bg-pt-ink text-white hover:bg-black",
-  acento: "bg-pt-accent text-pt-ink hover:bg-pt-accent-dark",
+  primario: "bg-pt-ink text-white hover:bg-pt-ink/85",
+  acento: "bg-pt-accent text-pt-sobre-acento hover:bg-pt-accent-dark",
   secundario: "bg-pt-pure text-pt-ink ring-1 ring-inset ring-pt-border hover:bg-pt-surface",
   fantasma: "text-pt-ink-2 hover:bg-pt-surface hover:text-pt-ink",
   peligro: "bg-pt-pure text-pt-error-ink ring-1 ring-inset ring-pt-border hover:bg-pt-error-soft",

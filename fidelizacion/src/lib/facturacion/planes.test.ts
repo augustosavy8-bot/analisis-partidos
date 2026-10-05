@@ -29,7 +29,6 @@ describe("límites de los planes", () => {
       "1 programa de puntos",
       "Hasta 2 premios",
       "Estadísticas básicas: clientes, puntos y canjes del mes",
-      "Tarjeta con tus colores (sin logo propio)",
       "1 llavero NFC incluido",
     ]);
     const pro = beneficiosPlan(leerLimites(PRO));
@@ -37,6 +36,6 @@ describe("límites de los planes", () => {
     expect(pro).toContain("Clientes ilimitados");
     expect(pro).toContain("Premios ilimitados");
     expect(pro).toContain("Mensajes a tus clientes en la Wallet");
-    expect(pro).toContain("Tarjeta con tu logo e imágenes");
+    expect(pro.some((b) => /logo/i.test(b))).toBe(false);
   });
 });

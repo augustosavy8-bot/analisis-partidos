@@ -1,3 +1,4 @@
+import { SuscripcionActiva } from "./SuscripcionActiva";
 import { requerirLocal } from "@/lib/panel";
 import Link from "next/link";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
@@ -23,8 +24,9 @@ type Metricas = {
 
 export const metadata = { title: "Resumen" };
 
-export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
+export default async function Resumen({ params, searchParams }: PageProps<"/panel/[local]">) {
   const { local: slug } = await params;
+  const { bienvenida } = await searchParams;
   const { db, admin, local, userId } = await requerirLocal(slug);
   const { data, error } = await admin.rpc("panel_metricas_de", { p_user_id: userId, p_local_id: local.id, p_dias: 30 });
   if (error) throw new Error(error.message);
@@ -39,6 +41,7 @@ export default async function Resumen({ params }: PageProps<"/panel/[local]">) {
 
   return (
     <>
+      {bienvenida === "1" && <SuscripcionActiva />}
       <Titulo detalle="Últimos 30 días, salvo que diga otra cosa.">Resumen</Titulo>
 
       {m.clientes_total > 0 && <AvisosHoy db={db} localId={local.id} slug={slug} />}

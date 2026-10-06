@@ -26,6 +26,8 @@ export async function register() {
       stackFrameVariables: false,
     },
     integrations: [Sentry.captureConsoleIntegration({ levels: ["error"] })],
+    // Avisos de Node (ExperimentalWarning, DeprecationWarning) que salen por console.error: no son errores de Point.
+    ignoreErrors: [/ExperimentalWarning/, /DeprecationWarning/, /\(node:\d+\) \w*Warning/],
   });
 }
 

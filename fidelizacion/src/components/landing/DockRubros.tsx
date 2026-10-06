@@ -97,7 +97,7 @@ export function DockRubros() {
       <div className="mx-auto max-w-[1280px] px-5 pt-24 text-center md:px-8 md:pt-32">
         <Reveal>
           <Etiqueta>Rubros</Etiqueta>
-          <h2 className="pt-display mt-4 text-pt-ink">Funciona en cualquier mostrador.</h2>
+          <h2 className="pt-display mx-auto mt-4 max-w-[900px] text-pt-ink">Para los que viven de que la gente vuelva.</h2>
         </Reveal>
       </div>
 

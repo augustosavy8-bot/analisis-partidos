@@ -1,6 +1,6 @@
 /**
  * La tarjeta POINT (objeto protagonista). Sólo visual: la luz, el tilt y las
- * animaciones las agregan PointCard3D y NfcTapAnimation.
+ * animaciones las agrega PointCard3D.
  * Todo escala con el ancho de la tarjeta (unidades de contenedor, cqw).
  */
 /** Acento de la tarjeta: el del bar si hay tema, el verde de Point si no. */

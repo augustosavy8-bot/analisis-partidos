@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { LogoPoint } from "./LogoPoint";
 
 const LINKS = [
-  { href: "/#como-funciona", texto: "Cómo funciona" },
+  { href: "/#rubros", texto: "Rubros" },
   { href: "/#beneficios", texto: "Beneficios" },
   { href: "/#panel", texto: "Panel" },
   { href: "/#preguntas", texto: "Preguntas" },

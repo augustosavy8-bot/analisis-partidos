@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Nav } from "@/components/landing/Nav";
 import { Hero } from "@/components/landing/Hero";
-import { ComoFunciona } from "@/components/landing/ComoFunciona";
+import { DockRubros } from "@/components/landing/DockRubros";
 import { Beneficios } from "@/components/landing/Beneficios";
 import { PanelDemo } from "@/components/landing/PanelDemo";
 import { Faq } from "@/components/landing/Faq";
@@ -13,14 +13,14 @@ export const metadata: Metadata = {
   description: "POINT convierte cada compra en una razón para volver. Tarjeta de puntos con un tap NFC, que vive en la Wallet del cliente.",
 };
 
-/** Tarjeta → Tap → Wallet → Beneficio → Software → Conversión. */
+/** Tarjeta → Rubros → Wallet → Beneficio → Software → Conversión. */
 export default function Landing() {
   return (
     <>
       <Nav />
       <main>
         <Hero />
-        <ComoFunciona />
+        <DockRubros />
         <Beneficios />
         <PanelDemo />
         <Faq />

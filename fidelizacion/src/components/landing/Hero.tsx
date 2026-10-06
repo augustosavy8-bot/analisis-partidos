@@ -27,7 +27,7 @@ export function Hero() {
           <Boton href={linkWhatsappPoint()} externo etiqueta="Empezar: escribinos por WhatsApp">
             Empezar
           </Boton>
-          <Boton href="#como-funciona" variante="secundario">
+          <Boton href="#beneficios" variante="secundario">
             Ver cómo
           </Boton>
         </div>

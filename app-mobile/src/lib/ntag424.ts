@@ -238,11 +238,11 @@ async function leerSun(tx: Transceptor): Promise<{ p: string; m: string; url: st
   const nlen = await enviar(tx, hexABytes("00B0000002"), ["9000"], "Leer NDEF");
   const largo = (nlen[0] << 8) | nlen[1];
   const datos = await enviar(tx, concat([0x00, 0xb0, 0x00, 0x02, Math.min(largo, 250)]), ["9000"], "Leer NDEF");
-  const payload = datos.subarray(4);
-  const url = "https://" + new TextDecoder().decode(payload.subarray(1));
+  // La URL es ASCII: se decodifica a mano (sin depender de TextDecoder en Hermes).
+  const url = "https://" + String.fromCharCode(...datos.subarray(5));
   const p = /[?&]p=([0-9A-Fa-f]{32})/.exec(url)?.[1];
   const m = /[?&]m=([0-9A-Fa-f]{16})/.exec(url)?.[1];
-  if (!p || !m) throw new ErrorChip("El chip no devolvió la URL segura");
+  if (!p || !m) throw new ErrorChip(`El chip no devolvió la URL segura. Leyó: ${url.slice(0, 90) || "(vacío)"}`);
   if (p === PLANTILLA_P) throw new ErrorChip("El chip no está cifrando (SDM sin activar)");
   return { p: p.toUpperCase(), m: m.toUpperCase(), url };
 }
@@ -287,13 +287,15 @@ export async function programarChip(
   }
 
   paso("escribiendo");
-  // De fábrica la escritura es libre. Si ya le activamos SUN (escritura sólo con Key 0), la URL ya es la nuestra:
-  // seguimos y la verificación del final confirma que esté bien.
+  // Muchos llaveros vienen "pre-grabados" por el vendedor con la escritura bloqueada. Con la Key 0
+  // (de fábrica o la nuestra) dejamos el archivo NDEF como de fábrica: sin SUN y escritura libre.
   try {
-    await escribirNdef(tx, archivo);
+    await enviarFull(tx, s, 0x5f, [0x02], Uint8Array.from([0x00, 0xe0, 0xee]), "Abrir el archivo del llavero");
   } catch (e) {
-    if (!(e instanceof ErrorChip) || !["6982", "6985"].includes(e.sw ?? "")) throw e;
+    if (e instanceof ErrorChip && e.sw === "919D") throw new ErrorChip("El llavero vino bloqueado por el vendedor: no se puede reprogramar.", e.sw);
+    throw e;
   }
+  await escribirNdef(tx, archivo);
   await seleccionarAplicacion(tx);
   s = await autenticar(tx, 0, k0Actual, aleatorio);
 

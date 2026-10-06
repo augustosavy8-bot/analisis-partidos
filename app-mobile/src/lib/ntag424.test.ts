@@ -161,6 +161,12 @@ class ChipSimulado {
     if (cmd === 0x5f && this.sesion) {
       const claro = this.desenvolver(cmd, 1, datos);
       if (!claro) return err("911E");
+      if (claro[0] === 0x00) {
+        // Sin SDM (abrir el archivo): sólo permisos.
+        this.sdm = null;
+        this.write = claro[2] & 0x0f;
+        return ok(new Uint8Array(8));
+      }
       assert.equal(claro[0], 0x40);
       assert.equal(bytesAHex(claro.subarray(1, 3)), "00E0");
       assert.equal(claro[3], 0xc1);
@@ -229,6 +235,24 @@ test("reprogramar un chip que ya es de Point funciona", async () => {
   await programarChip((a) => chip.tx(a), op);
   await programarChip((a) => chip.tx(a), op);
   assert.equal(bytesAHex(chip.claves[2]), bytesAHex(claves.kFile));
+});
+
+test("un llavero pre-grabado por el vendedor (escritura bloqueada, Key 0 de fábrica) se reprograma", async () => {
+  const chip = new ChipSimulado();
+  chip.write = 0x0;
+  chip.archivo.set(new TextEncoder().encode("\u0000\u0020otra-url-del-vendedor.com"), 0);
+  let ok = false;
+  await programarChip((a) => chip.tx(a), {
+    base: "https://x.app",
+    claves,
+    aleatorio,
+    verificar: async ({ p, m }) => {
+      verificarComoServidor(p, m, claves.kMeta, claves.kFile);
+      ok = true;
+    },
+  });
+  assert.ok(ok);
+  assert.equal(chip.write, 0);
 });
 
 test("un chip con otra clave maestra no se toca", async () => {

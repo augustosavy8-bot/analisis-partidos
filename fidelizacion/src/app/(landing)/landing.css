@@ -76,3 +76,75 @@ html:has(.landing) {
     animation: none;
   }
 }
+
+/* ── Notificaciones: vidrio líquido estilo iOS 26 ─────────────────────────── */
+.vidrio-liquido {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.12) 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(190%) brightness(1.08);
+  backdrop-filter: blur(14px) saturate(190%) brightness(1.08);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.1),
+    0 6px 22px rgba(0, 0, 0, 0.16);
+}
+/* Borde especular: más brillante arriba a la izquierda y abajo a la derecha. */
+.vidrio-liquido::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.12) 32%,
+    rgba(255, 255, 255, 0.04) 60%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+/* Brillo interno suave, como la luz que se refracta en el vidrio. */
+.vidrio-liquido::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(120% 80% at 15% 0%, rgba(255, 255, 255, 0.22), transparent 55%);
+  pointer-events: none;
+}
+
+@keyframes pt-notif-entra {
+  0% {
+    opacity: 0;
+    transform: translateY(-40%) scale(0.88);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+.pt-notif-entra {
+  animation: pt-notif-entra 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes pt-cursor-texto {
+  50% {
+    opacity: 0;
+  }
+}
+.pt-cursor-texto {
+  animation: pt-cursor-texto 1s steps(1) infinite;
+}

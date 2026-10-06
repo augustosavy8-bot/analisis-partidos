@@ -3,7 +3,7 @@ import { Nav } from "@/components/landing/Nav";
 import { Hero } from "@/components/landing/Hero";
 import { DockRubros } from "@/components/landing/DockRubros";
 import { Beneficios } from "@/components/landing/Beneficios";
-import { PanelDemo } from "@/components/landing/PanelDemo";
+import { Notificaciones } from "@/components/landing/Notificaciones";
 import { Faq } from "@/components/landing/Faq";
 import { CtaFinal } from "@/components/landing/CtaFinal";
 import { Footer } from "@/components/landing/Footer";
@@ -22,7 +22,7 @@ export default function Landing() {
         <Hero />
         <DockRubros />
         <Beneficios />
-        <PanelDemo />
+        <Notificaciones />
         <Faq />
         <CtaFinal />
       </main>

@@ -98,6 +98,8 @@ class ChipSimulado {
     }
     if (apdu[0] === 0x00 && apdu[1] === 0xd6) {
       if (!this.efSeleccionado) return err("6986");
+      // Como el chip real: la escritura ISO no se acepta con una sesión autenticada abierta.
+      if (this.sesion) return err("6982");
       if (this.write !== 0xe) return err("6982");
       const off = (apdu[2] << 8) | apdu[3];
       this.archivo.set(apdu.subarray(5, 5 + apdu[4]), off);

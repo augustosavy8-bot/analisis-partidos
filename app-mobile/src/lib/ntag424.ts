@@ -287,14 +287,17 @@ export async function programarChip(
   }
 
   paso("escribiendo");
-  // Muchos llaveros vienen "pre-grabados" por el vendedor con la escritura bloqueada. Con la Key 0
-  // (de fábrica o la nuestra) dejamos el archivo NDEF como de fábrica: sin SUN y escritura libre.
+  // Muchos llaveros vienen con la escritura del NDEF bloqueada. Con la Key 0 (de fábrica o la
+  // nuestra) dejamos el archivo como de fábrica: sin SUN y escritura libre.
   try {
     await enviarFull(tx, s, 0x5f, [0x02], Uint8Array.from([0x00, 0xe0, 0xee]), "Abrir el archivo del llavero");
   } catch (e) {
     if (e instanceof ErrorChip && e.sw === "919D") throw new ErrorChip("El llavero vino bloqueado por el vendedor: no se puede reprogramar.", e.sw);
     throw e;
   }
+  // La escritura ISO (UpdateBinary) va SIN sesión autenticada: con la sesión abierta el chip la
+  // rechaza. Volver a seleccionar la aplicación cierra la sesión.
+  await seleccionarAplicacion(tx);
   await escribirNdef(tx, archivo);
   await seleccionarAplicacion(tx);
   s = await autenticar(tx, 0, k0Actual, aleatorio);

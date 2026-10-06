@@ -114,7 +114,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
         promoAhora={promoAhora}
         objetivo={objetivo}
         alToque={!!canjeAlToqueHasta(tarjeta.ultimo_toque_en)}
-        pedirCumple={local.puntos_cumple > 0 && !cumple}
+        pedirCumple={!cumple}
         limite={limite}
         pausado={sp.pausado === "1"}
         urlPase={urlPase}

@@ -4,7 +4,9 @@ import { Tarjeta } from "@/components/Panel";
 import { Mascota, type EstadoMascota } from "@/components/app/Mascota";
 import { SEGMENTOS, type Segmento } from "@/lib/reactivar";
 
-type Fila = { nombre: string | null; no_contactar: boolean };
+type Fila = { nombre: string | null; cumple_dia: number | null; cumple_mes: number | null; no_contactar: boolean };
+
+const DIAS_CUMPLE = 7;
 
 const DIAS_INACTIVOS = SEGMENTOS.inactivos.porDefecto;
 
@@ -15,25 +17,32 @@ export async function AvisosHoy({ db, localId, slug }: { db: Awaited<ReturnType<
     if (error) throw new Error(error.message);
     return ((data ?? []) as Fila[]).filter((f) => !f.no_contactar);
   };
-  const [cumple, premio, cerca, inactivos] = await Promise.all([
+  const [cumple, semana, premio, cerca, inactivos] = await Promise.all([
     pedir("cumple", 0),
+    pedir("cumple", DIAS_CUMPLE),
     pedir("premio", 0),
     pedir("cerca", 1),
     pedir("inactivos", DIAS_INACTIVOS),
   ]);
 
-  const avisos: { segmento: Segmento; valor?: number; texto: string }[] = [];
-  if (cumple.length) avisos.push({ segmento: "cumple", valor: 0, texto: textoCumple(cumple) });
-  if (premio.length) avisos.push({ segmento: "premio", texto: `${cuantos(premio.length)} ${premio.length === 1 ? "tiene" : "tienen"} un premio sin canjear` });
-  if (cerca.length) avisos.push({ segmento: "cerca", valor: 1, texto: `A ${cuantos(cerca.length)} ${cerca.length === 1 ? "le" : "les"} falta 1 punto para un premio` });
+  // Los que cumplen en los próximos días, sin repetir los de hoy.
+  const hoy = new Set(cumple.map((f) => `${f.cumple_dia}/${f.cumple_mes}`));
+  const proximos = semana.filter((f) => !hoy.has(`${f.cumple_dia}/${f.cumple_mes}`));
+
+  const avisos: { clave: string; segmento: Segmento; valor?: number; texto: string }[] = [];
+  if (cumple.length) avisos.push({ clave: "cumple-hoy", segmento: "cumple", valor: 0, texto: textoCumple(cumple) });
+  if (proximos.length) avisos.push({ clave: "cumple-semana", segmento: "cumple", valor: DIAS_CUMPLE, texto: textoProximos(proximos) });
+  if (premio.length) avisos.push({ clave: "premio", segmento: "premio", texto: `${cuantos(premio.length)} ${premio.length === 1 ? "tiene" : "tienen"} un premio sin canjear` });
+  if (cerca.length) avisos.push({ clave: "cerca", segmento: "cerca", valor: 1, texto: `A ${cuantos(cerca.length)} ${cerca.length === 1 ? "le" : "les"} falta 1 punto para un premio` });
   if (inactivos.length)
     avisos.push({
+      clave: "inactivos",
       segmento: "inactivos",
       valor: DIAS_INACTIVOS,
       texto: `${cuantos(inactivos.length)} no ${inactivos.length === 1 ? "viene" : "vienen"} hace ${DIAS_INACTIVOS} días o más`,
     });
 
-  const estado: EstadoMascota = cumple.length ? "cumple" : premio.length || cerca.length ? "premio" : inactivos.length ? "extranamos" : "tranqui";
+  const estado: EstadoMascota = cumple.length || proximos.length ? "cumple" : premio.length || cerca.length ? "premio" : inactivos.length ? "extranamos" : "tranqui";
   const titulo = avisos.length ? "Novedades de hoy" : "Todo tranqui por hoy";
 
   return (
@@ -47,7 +56,7 @@ export async function AvisosHoy({ db, localId, slug }: { db: Awaited<ReturnType<
           ) : (
             <ul className="mt-1.5 space-y-1.5">
               {avisos.map((a) => (
-                <li key={a.segmento}>
+                <li key={a.clave}>
                   <Link
                     href={`/panel/${slug}/whatsapp?s=${a.segmento}${a.valor != null ? `&v=${a.valor}` : ""}`}
                     className="flex items-center justify-between gap-2 rounded-pt-sm bg-pt-surface px-3 py-2 pt-app-detalle text-pt-ink hover:bg-pt-border/40"
@@ -68,6 +77,19 @@ export async function AvisosHoy({ db, localId, slug }: { db: Awaited<ReturnType<
 /** La lista viene cortada en 300 (límite de panel_reactivar). */
 function cuantos(n: number): string {
   return n === 1 ? "1 cliente" : n >= 300 ? "Más de 300 clientes" : `${n} clientes`;
+}
+
+function textoProximos(filas: Fila[]): string {
+  const nombres = filas
+    .map((f) => {
+      const nombre = (f.nombre ?? "").trim().split(/\s+/)[0];
+      return nombre ? `${nombre} (${f.cumple_dia}/${f.cumple_mes})` : "";
+    })
+    .filter(Boolean);
+  if (nombres.length === 0) return `Esta semana ${filas.length === 1 ? "cumple 1 cliente" : `cumplen ${filas.length} clientes`} 🎈`;
+  if (nombres.length === 1) return `Esta semana cumple años ${nombres[0]} 🎈`;
+  if (nombres.length <= 3) return `Esta semana cumplen años ${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)} 🎈`;
+  return `Esta semana cumplen años ${nombres.slice(0, 2).join(", ")} y ${nombres.length - 2} más 🎈`;
 }
 
 function textoCumple(filas: Fila[]): string {

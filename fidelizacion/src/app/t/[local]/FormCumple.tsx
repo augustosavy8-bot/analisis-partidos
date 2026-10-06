@@ -21,7 +21,9 @@ export function FormCumple({ slug, puntos }: { slug: string; puntos: number }) {
         <div>
           <p className="pt-app-seccion text-pt-ink">¿Cuándo es tu cumple?</p>
           <p className="mt-1 pt-app-detalle text-pt-ink-2">
-            La semana de tu cumple te regalamos {puntos} puntos en tu visita. Se carga una sola vez.
+            {puntos > 0
+              ? `La semana de tu cumple te regalamos ${puntos} puntos en tu visita. Se carga una sola vez.`
+              : "Así te saludamos ese día. No hace falta el año."}
           </p>
         </div>
       </div>

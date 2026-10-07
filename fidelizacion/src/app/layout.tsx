@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter, Manrope, Poppins } from "next/font/google";
 import "./globals.css";
 import { SCRIPT_TEMA } from "@/lib/tema-nocturno";
+import { Analiticas } from "@/components/Analiticas";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,7 +53,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Analiticas />
+      </body>
     </html>
   );
 }

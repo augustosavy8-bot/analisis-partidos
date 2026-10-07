@@ -2,6 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { contraseñaTemporal, requerirSuperadmin, slugDesde } from "@/lib/admin";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { cifrarClaveChip, descifrarClaveChip, esClaveChipValida } from "@/lib/cifrado";
@@ -111,6 +112,52 @@ export async function alternarLocal(slug: string, activo: boolean) {
   await requerirSuperadmin();
   await crearClienteAdmin().from("locales").update({ activo }).eq("slug", slug);
   refresh();
+}
+
+/**
+ * Borra el negocio entero de un local: el comercio, todos sus locales y lo que
+ * cuelga (clientes del local, tarjetas, movimientos, llaveros, equipo,
+ * suscripciones). Pide escribir el nombre del local para confirmar y no borra si
+ * hay una suscripción de Mercado Pago viva (se le seguiría cobrando).
+ */
+export async function eliminarNegocio(slug: string, confirmacion: string): Promise<{ error?: string }> {
+  await requerirSuperadmin();
+  const db = crearClienteAdmin();
+  const { data: local } = await db.from("locales").select("nombre, comercio_id").eq("slug", slug).maybeSingle();
+  if (!local) return { error: "Ese local ya no existe." };
+  if (confirmacion.trim().toLowerCase() !== local.nombre.trim().toLowerCase()) return { error: "El nombre no coincide." };
+
+  const comercioId = local.comercio_id;
+  const { count: vivas } = await db
+    .from("suscripciones")
+    .select("id", { count: "exact", head: true })
+    .eq("comercio_id", comercioId)
+    .not("mp_preapproval_id", "is", null)
+    .in("estado", ["trialing", "authorized", "pending", "paused", "past_due"]);
+  if (vivas) return { error: "Tiene una suscripción de Mercado Pago activa. Cancelala primero (desde Facturación) para que no se le siga cobrando." };
+
+  const ids = (filas: { id: string }[] | null) => (filas ?? []).map((f) => f.id);
+  const locales = ids((await db.from("locales").select("id").eq("comercio_id", comercioId)).data);
+  const tarjetas = ids((await db.from("tarjetas").select("id").in("local_id", locales)).data);
+  const mozos = ids((await db.from("mozos").select("id").in("local_id", locales)).data);
+
+  // canjes y movimientos no se borran en cascada desde los mozos: van primero.
+  const pasos = [
+    () => db.from("canjes").delete().in("tarjeta_id", tarjetas),
+    () => db.from("movimientos").delete().in("tarjeta_id", tarjetas),
+    () => db.from("movimientos").delete().in("mozo_id", mozos),
+    () => db.from("locales").delete().in("id", locales),
+    () => db.from("pedidos").delete().eq("comercio_id", comercioId),
+    () => db.from("comercios").delete().eq("id", comercioId),
+  ];
+  for (const paso of pasos) {
+    const { error } = await paso();
+    if (error) {
+      console.error("Admin: no se pudo eliminar el negocio", comercioId, error.message);
+      return { error: "No se pudo eliminar del todo. Probá de nuevo." };
+    }
+  }
+  redirect("/admin");
 }
 
 // --- Dueños ------------------------------------------------------------------

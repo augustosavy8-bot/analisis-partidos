@@ -5,7 +5,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { fechaHora } from "@/lib/panel";
 import { env } from "@/lib/env";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
-import { AccionesChip, AccionesDueno, FormChip, FormDueno, InterruptorLocal } from "./Componentes";
+import { AccionesChip, AccionesDueno, EliminarNegocio, FormChip, FormDueno, InterruptorLocal } from "./Componentes";
 import { GuiaChip } from "./GuiaChip";
 import { formasTermino } from "@/lib/terminos";
 
@@ -156,6 +156,11 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
         <p className="mt-3 text-xs text-stone-500">
           La franja acepta <code>?p=</code> (sellos llenos) y <code>?m=</code> (total, hasta 15). Por defecto el total es el primer premio.
         </p>
+      </Tarjeta>
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-widest text-red-700">Zona de peligro</h2>
+      <Tarjeta className="ring-1 ring-red-100">
+        <EliminarNegocio slug={local.slug} nombre={local.nombre} />
       </Tarjeta>
     </>
   );

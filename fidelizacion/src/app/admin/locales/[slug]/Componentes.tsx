@@ -8,6 +8,7 @@ import {
   asignarMozo,
   borrarChip,
   crearChip,
+  eliminarNegocio,
   nuevaContraseña,
   quitarDueno,
   regenerarTokenChip,
@@ -34,6 +35,58 @@ export function InterruptorLocal({ slug, activo }: { slug: string; activo: boole
     >
       {activo ? "Desactivar local" : "Activar local"}
     </BotonSecundario>
+  );
+}
+
+/** Zona de peligro: borra el negocio entero. Hay que escribir el nombre del local. */
+export function EliminarNegocio({ slug, nombre }: { slug: string; nombre: string }) {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [p, start] = useTransition();
+
+  if (!abierto) {
+    return (
+      <button type="button" onClick={() => setAbierto(true)} className="rounded-lg px-4 py-2 text-sm font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-50">
+        Eliminar negocio
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-stone-700">
+        Se borra <strong>{nombre}</strong> con todos sus clientes, tarjetas, puntos, llaveros, equipo y suscripciones. No se puede deshacer. Escribí{" "}
+        <strong>{nombre}</strong> para confirmar.
+      </p>
+      <input value={texto} onChange={(e) => setTexto(e.target.value)} className={inputPanel} placeholder={nombre} autoFocus />
+      <ErrorForm mensaje={error ?? undefined} />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={p || texto.trim().toLowerCase() !== nombre.trim().toLowerCase()}
+          onClick={() =>
+            start(async () => {
+              setError(null);
+              const r = await eliminarNegocio(slug, texto);
+              if (r?.error) setError(r.error);
+            })
+          }
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-40"
+        >
+          {p ? "Eliminando…" : "Eliminar para siempre"}
+        </button>
+        <BotonSecundario
+          disabled={p}
+          onClick={() => {
+            setAbierto(false);
+            setTexto("");
+            setError(null);
+          }}
+        >
+          Cancelar
+        </BotonSecundario>
+      </div>
+    </div>
   );
 }
 

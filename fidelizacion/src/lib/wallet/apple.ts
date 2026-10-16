@@ -2,7 +2,8 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
-import type { Local } from "@/lib/locales";
+import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
+import { comoSocio, nombreClub, socioDesde } from "@/lib/socios";
 import { imagenIcono, imagenLogoPase, imagenStripPase } from "@/lib/imagenes-billetera";
 import type { DatosPase, ProveedorWallet } from "./index";
 import { armarPassJson, enviarPushes, firmarPkpass, type ImagenesPase } from "./apple-core";
@@ -98,10 +99,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
   const [{ data: tarjeta }, { data: premios }, { data: novedad }, ultimo] = await Promise.all([
     db
       .from("tarjetas")
-      .select(
-        "serial, wallet_auth_token, puntos, clientes(nombre), " +
-          "locales(id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud)",
-      )
+      .select(`serial, wallet_auth_token, puntos, socio_desde, clientes(nombre), locales(${COLUMNAS_LOCAL})`)
       .eq("id", pase.tarjeta_id)
       .maybeSingle(),
     db.from("premios").select("nombre, puntos_necesarios").eq("local_id", pase.local_id).eq("activo", true).order("puntos_necesarios"),
@@ -119,11 +117,13 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
     serial: string;
     wallet_auth_token: string;
     puntos: number;
+    socio_desde: string | null;
     clientes: { nombre: string } | null;
     locales: Local | null;
   } | null;
   if (!t?.locales) throw new Error("La tarjeta del pase no existe");
-  const local = t.locales;
+  // Un socio lleva los colores del club (también en la franja y el logo generados).
+  const local = t.socio_desde ? comoSocio(t.locales) : t.locales;
   const base = env.appUrl;
 
   const passJson = armarPassJson(
@@ -137,6 +137,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       urlTarjeta: `${base}/t/${local.slug}`,
       ultimoMovimiento: ultimo,
       novedad,
+      socio: t.socio_desde ? { club: nombreClub(local), desde: socioDesde(t.socio_desde, local.zona_horaria) } : null,
       local: {
         nombre: local.nombre,
         colorPrimario: local.color_primario,

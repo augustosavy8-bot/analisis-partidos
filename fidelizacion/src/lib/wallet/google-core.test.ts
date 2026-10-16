@@ -138,6 +138,13 @@ describe("objeto de la tarjeta", () => {
     expect(armarObjeto(cred.issuerId, { ...tarjeta, franjaUrl: "https://s/f.png" }, APP).heroImage.sourceUri.uri).toBe("https://s/f.png");
   });
 
+  it("socio del club: la franja de los sellos con los colores del club y el módulo de socio primero", () => {
+    const socio = armarObjeto(cred.issuerId, { ...tarjeta, socio: { club: "Socios Aurora", desde: "10/2026" } }, APP);
+    expect(socio.heroImage.sourceUri.uri).toBe("https://point.app/t/cafe-aurora/franja?p=5&m=8&s=1");
+    expect(socio.textModulesData[0]).toEqual({ id: "socio", header: "★ Socio", body: "Sos socio de Socios Aurora desde 10/2026." });
+    expect(objeto.textModulesData.map((m) => m.id)).toEqual(["progreso"]);
+  });
+
   it("sin premios no muestra progreso", () => {
     const sin = armarObjeto(cred.issuerId, { ...tarjeta, proximo: null }, APP);
     expect(sin).not.toHaveProperty("secondaryLoyaltyPoints");

@@ -3,7 +3,7 @@ import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
-import type { Local } from "@/lib/locales";
+import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
 
 /** Usuario del panel logueado, o redirige al ingreso. */
 export const requerirUsuario = cache(async () => {
@@ -33,7 +33,7 @@ export const requerirLocal = cache(async (slug: string) => {
   const { db, userId, email } = await requerirUsuario();
   const { data: local } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud, plantillas_whatsapp")
+    .select(`${COLUMNAS_LOCAL}, plantillas_whatsapp`)
     .eq("slug", slug)
     .maybeSingle();
   if (!local) notFound();

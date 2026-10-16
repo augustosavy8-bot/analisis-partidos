@@ -26,7 +26,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
   const [{ data: miembros }, { data: mozos }, { data: chips }] = await Promise.all([
     db.from("miembros_local").select("user_id, created_at").eq("local_id", local.id),
     db.from("mozos").select("id, nombre, activo").eq("local_id", local.id).order("nombre"),
-    db.from("chips").select("id, uid, etiqueta, modo, mozo_id, activo, ultimo_contador, ultimo_uso").eq("local_id", local.id).order("created_at"),
+    db.from("chips").select("id, uid, etiqueta, modo, mozo_id, activo, da_socio, ultimo_contador, ultimo_uso").eq("local_id", local.id).order("created_at"),
   ]);
   const duenos = await Promise.all(
     (miembros ?? []).map(async (m) => {
@@ -110,6 +110,7 @@ export default async function AdminLocal({ params }: PageProps<"/admin/locales/[
                     <span className={`ml-1 rounded-full px-2 py-0.5 text-xs ${c.modo === "prueba" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
                       {c.modo === "prueba" ? "prueba" : "producción"}
                     </span>
+                    {c.da_socio && <span className="ml-1 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">★ de socios</span>}
                     {!c.activo && <span className="ml-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">inactivo</span>}
                   </p>
                   <p className="font-mono text-xs text-stone-500">

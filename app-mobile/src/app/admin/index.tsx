@@ -19,7 +19,7 @@ const TEXTO_PASO: Record<Paso, string> = {
   listo: "¡Listo!",
 };
 
-type Grabado = { uid: string; local: string; etiqueta: string | null };
+type Grabado = { uid: string; local: string; etiqueta: string | null; daSocio: boolean };
 
 /** Sólo superadmin: grabar llaveros NTAG 424 DNA con SUN y darlos de alta en un local. */
 export default function Admin() {
@@ -112,6 +112,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
   const [localId, setLocalId] = useState<string | null>(null);
   const [mozoId, setMozoId] = useState<string | null>(null);
   const [etiqueta, setEtiqueta] = useState("");
+  const [daSocio, setDaSocio] = useState(false);
   const [estado, setEstado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [grabando, setGrabando] = useState(false);
@@ -143,6 +144,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
   async function grabar() {
     if (!local || !mozoId) return;
     const duenoId = mozoId;
+    const deSocios = daSocio;
     setError(null);
     setEstado(null);
     setGrabando(true);
@@ -159,14 +161,14 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
             setEstado(TEXTO_PASO[p]);
           },
           verificar: async ({ p, m }) => {
-            await apiAdmin.registrar(sesion.token, { uid, p, m, localId: local.id, mozoId: duenoId, etiqueta: etiqueta.trim() || null });
+            await apiAdmin.registrar(sesion.token, { uid, p, m, localId: local.id, mozoId: duenoId, etiqueta: etiqueta.trim() || null, daSocio: deSocios });
           },
         });
         return uid;
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setGrabados((g) => [{ uid, local: local.nombre, etiqueta: etiqueta.trim() || null }, ...g]);
-      setEstado(`Chip ${uid} listo en ${local.nombre}.`);
+      setGrabados((g) => [{ uid, local: local.nombre, etiqueta: etiqueta.trim() || null, daSocio: deSocios }, ...g]);
+      setEstado(`${deSocios ? "Llavero de socios" : "Chip"} ${uid} listo en ${local.nombre}.`);
       setEtiqueta("");
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
@@ -195,6 +197,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
               onPress={() => {
                 setLocalId(l.id);
                 setMozoId(null);
+                setDaSocio(false);
               }}
             />
           ))}
@@ -220,6 +223,17 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
 
       {local && (
         <>
+          <Text style={estilos.seccion}>3. ¿Qué llavero es?</Text>
+          <View style={estilos.chips}>
+            <Chip texto="Común" activo={!daSocio} onPress={() => setDaSocio(false)} />
+            <Chip texto="★ De socios" activo={daSocio} onPress={() => setDaSocio(true)} />
+          </View>
+          <Text style={estilos.ayuda}>
+            {daSocio
+              ? "Cada cliente que toque con este llavero pasa a ser socio del club: su tarjeta cambia de color y dice SOCIO."
+              : "Suma puntos y canjea premios. No hace socios."}
+          </Text>
+
           <Text style={estilos.seccion}>Nombre del llavero (opcional)</Text>
           <TextInput
             value={etiqueta}
@@ -247,6 +261,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
               <Ionicons name="checkmark-circle" size={20} color={color.acentoTexto} />
               <Text style={estilos.filaTexto}>
                 {g.etiqueta ?? g.uid} · {g.local}
+                {g.daSocio ? " · de socios" : ""}
               </Text>
             </View>
           ))}

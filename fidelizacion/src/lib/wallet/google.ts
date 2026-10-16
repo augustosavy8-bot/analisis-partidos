@@ -2,6 +2,7 @@ import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { proximoPremio } from "@/lib/tarjeta";
+import { nombreClub, socioDesde } from "@/lib/socios";
 import type { DatosPase, ProveedorWallet } from "./index";
 import {
   agregarMensaje,
@@ -68,7 +69,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
   let consulta = db
     .from("tarjetas")
     .select(
-      `id, local_id, serial, wallet_auth_token, puntos, clientes(nombre), locales(slug, nombre, franja_url)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
+      `id, local_id, serial, wallet_auth_token, puntos, socio_desde, clientes(nombre), locales(slug, nombre, franja_url, zona_horaria, club_nombre)${soloRegistradas ? ", wallet_registros!inner(plataforma)" : ""}`,
     )
     .eq("serial", serial);
   if (soloRegistradas) consulta = consulta.eq("wallet_registros.plataforma", "google");
@@ -80,8 +81,9 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
     serial: string;
     wallet_auth_token: string;
     puntos: number;
+    socio_desde: string | null;
     clientes: { nombre: string } | null;
-    locales: { slug: string; nombre: string; franja_url: string | null } | null;
+    locales: { slug: string; nombre: string; franja_url: string | null; zona_horaria: string; club_nombre: string | null } | null;
   };
   if (!t.locales) return null;
   const { data: premios } = await db
@@ -101,6 +103,7 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
     localNombre: t.locales.nombre,
     franjaUrl: t.locales.franja_url,
     proximo: proximo ? { nombre: proximo.nombre, puntos: proximo.puntos_necesarios } : null,
+    socio: t.socio_desde ? { club: nombreClub(t.locales), desde: socioDesde(t.socio_desde, t.locales.zona_horaria) } : null,
   };
 }
 
@@ -125,6 +128,7 @@ export const proveedorGoogle: ProveedorWallet = {
         localNombre: datos.localNombre,
         franjaUrl: datos.franjaUrl,
         proximo: datos.proximoPremio ? { nombre: datos.proximoPremio.nombre, puntos: datos.proximoPremio.puntosNecesarios } : null,
+        socio: datos.socio,
       },
       env.appUrl,
     );

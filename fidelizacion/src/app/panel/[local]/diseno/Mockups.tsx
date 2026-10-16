@@ -16,10 +16,13 @@ export type DatosMockup = {
   franja: string | null;
   premio: { nombre: string; puntos: number } | null;
   textoDorso: string;
+  /** Tarjeta de socio (los colores ya son los del club): insignia y "socio desde". */
+  socio?: boolean;
 };
 
 const PUNTOS = 5;
 const CLIENTE = "Sofía";
+const MES_ANIO = new Intl.DateTimeFormat("es-AR", { month: "2-digit", year: "numeric" }).format(new Date());
 const svgUri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 /** Ícono como lo genera el servidor: color de fondo y la imagen al 80% (o la inicial). */
@@ -91,6 +94,11 @@ export function MockupApple({ d }: { d: DatosMockup }) {
         <span className="truncate text-[15px] font-semibold" style={{ color: d.texto }}>
           {d.programa}
         </span>
+        {d.socio && (
+          <span className="ml-auto shrink-0 text-[12px] font-semibold tracking-[0.04em]" style={{ color: d.texto }}>
+            ★ SOCIO
+          </span>
+        )}
       </div>
       <div className="relative aspect-[375/123] w-full">
         <img src={franja} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -113,8 +121,9 @@ export function MockupApple({ d }: { d: DatosMockup }) {
           <Campo etiqueta="Premios" valor="Próximamente" color={d.texto} colorEtiqueta={d.etiqueta} />
         )}
       </div>
-      <div className="px-3 pt-2">
-        <Campo etiqueta="Cliente" valor={CLIENTE} color={d.texto} colorEtiqueta={d.etiqueta} />
+      <div className="grid grid-cols-2 gap-3 px-3 pt-2">
+        <Campo etiqueta={d.socio ? "Socio" : "Cliente"} valor={CLIENTE} color={d.texto} colorEtiqueta={d.etiqueta} />
+        {d.socio && <Campo etiqueta="Desde" valor={MES_ANIO} color={d.texto} colorEtiqueta={d.etiqueta} alinear="right" />}
       </div>
       <div className="flex justify-center pb-4 pt-4">
         <span className="blanco-fijo rounded-[6px] bg-white p-1.5">
@@ -125,11 +134,15 @@ export function MockupApple({ d }: { d: DatosMockup }) {
   );
 }
 
-/** Tarjeta de lealtad de Google Wallet: logo redondo, programa, puntos, QR y la franja abajo. */
-export function MockupGoogle({ d }: { d: DatosMockup }) {
+/**
+ * Tarjeta de lealtad de Google Wallet: logo redondo, programa, puntos, QR y la franja abajo.
+ * `franjaSocio`: en Google el fondo es de la clase (igual para todos): el socio sólo cambia la franja.
+ */
+export function MockupGoogle({ d, franjaSocio }: { d: DatosMockup; franjaSocio?: { fondo: string; acento: string } }) {
   // Google elige solo el color del texto según el fondo.
   const texto = textoPorDefecto(d.fondo);
-  const hero = d.franja ?? svgUri(svgFranja({ primario: d.fondo, acento: d.acento, puntos: PUNTOS, meta: d.premio?.puntos ?? 8 }));
+  const colores = franjaSocio ?? { fondo: d.fondo, acento: d.acento };
+  const hero = d.franja ?? svgUri(svgFranja({ primario: colores.fondo, acento: colores.acento, puntos: PUNTOS, meta: d.premio?.puntos ?? 8 }));
   return (
     <div className="w-full overflow-hidden rounded-[20px] shadow-pt-card-app" style={{ background: d.fondo, color: texto, fontFamily: "'Google Sans', Roboto, Inter, sans-serif" }}>
       <div className="flex items-center gap-2 px-4 pt-4">

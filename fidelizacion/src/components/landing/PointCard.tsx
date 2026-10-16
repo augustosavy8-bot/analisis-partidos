@@ -24,6 +24,8 @@ export type PointCardProps = {
   logo?: string | null;
   /** Texto debajo del número (reemplaza "N puntos para …"). */
   leyenda?: string;
+  /** Tarjeta de socio: insignia (ej. "Socio") en lugar de la marca POINT. */
+  socio?: string;
 };
 
 export function PointCard({
@@ -38,6 +40,7 @@ export function PointCard({
   reflejo = true,
   logo,
   leyenda,
+  socio,
 }: PointCardProps) {
   const faltan = meta == null ? 0 : Math.max(0, meta - puntos);
   const texto =
@@ -52,7 +55,7 @@ export function PointCard({
         color: "var(--pt-tarjeta-texto, #ffffff)",
       }}
       role="img"
-      aria-label={`Tarjeta POINT de ${comercio}: ${puntos} ${meta == null ? "puntos" : `de ${meta} puntos`}`}
+      aria-label={`Tarjeta ${socio ? "de socio" : "POINT"} de ${comercio}: ${puntos} ${meta == null ? "puntos" : `de ${meta} puntos`}`}
     >
       {/* 1. Highlight superior muy suave */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.07),transparent_28%)]" />
@@ -89,9 +92,21 @@ export function PointCard({
               {comercio}
             </span>
           </div>
-          <span className="font-[family-name:var(--font-manrope)] font-bold tracking-[0.2em] text-current/45" style={{ fontSize: "2.2cqw" }}>
-            POINT
-          </span>
+          {socio ? (
+            <span
+              className="inline-flex shrink-0 items-center rounded-full font-[family-name:var(--font-manrope)] font-bold uppercase tracking-[0.16em]"
+              style={{ fontSize: "2.3cqw", gap: "1cqw", padding: "1.1cqw 2.4cqw", color: ACENTO, boxShadow: `inset 0 0 0 max(1px, 0.28cqw) ${ACENTO}` }}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ width: "2.6cqw", height: "2.6cqw" }}>
+                <path d="m12 2.5 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z" />
+              </svg>
+              {socio}
+            </span>
+          ) : (
+            <span className="font-[family-name:var(--font-manrope)] font-bold tracking-[0.2em] text-current/45" style={{ fontSize: "2.2cqw" }}>
+              POINT
+            </span>
+          )}
         </div>
 
         {/* Centro: el número domina */}

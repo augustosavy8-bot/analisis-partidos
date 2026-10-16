@@ -253,12 +253,13 @@ export async function crearChip(localId: string, _prev: EstadoChip, form: FormDa
   const etiqueta = String(form.get("etiqueta") ?? "").trim() || null;
   const mozoId = String(form.get("mozo") ?? "") || null;
   const modo = form.get("modo") === "produccion" ? "produccion" : "prueba";
+  const daSocio = form.get("da_socio") === "on";
   const clave = String(form.get("clave") ?? "").replace(/\s/g, "");
 
   if (!/^[0-9A-F]{8,20}$/.test(uid)) return { error: "El UID tiene que ser hexadecimal (ej: 04A1B2C3D4E5F6)." };
   if (etiqueta && etiqueta.length > 40) return { error: "La etiqueta es muy larga." };
 
-  const datos: Record<string, unknown> = { uid, etiqueta, mozo_id: mozoId, local_id: localId, modo };
+  const datos: Record<string, unknown> = { uid, etiqueta, mozo_id: mozoId, local_id: localId, modo, da_socio: daSocio };
   let urlPrueba: string | undefined;
   if (modo === "produccion") {
     if (!esClaveChipValida(clave)) return { error: "La clave AES-128 tiene que tener 32 caracteres hexadecimales." };
@@ -284,6 +285,13 @@ export async function crearChip(localId: string, _prev: EstadoChip, form: FormDa
 export async function alternarChip(chipId: string, activo: boolean) {
   await requerirSuperadmin();
   await crearClienteAdmin().from("chips").update({ activo }).eq("id", chipId);
+  refresh();
+}
+
+/** Llavero de socios: su toque hace socio al cliente (club de socios del local). */
+export async function alternarChipSocio(chipId: string, daSocio: boolean) {
+  await requerirSuperadmin();
+  await crearClienteAdmin().from("chips").update({ da_socio: daSocio }).eq("id", chipId);
   refresh();
 }
 

@@ -17,11 +17,14 @@ export type Toque = {
   origen: Origen;
 };
 
-/** Resultado de aplicar un toque a una tarjeta: a dónde mandar al cliente. */
+/**
+ * Resultado de aplicar un toque a una tarjeta: a dónde mandar al cliente.
+ * `nuevoSocio`: el toque fue con el llavero de socios y recién ahí pasó a ser socio.
+ */
 export type ResultadoToque =
-  | { tipo: "suma"; movimientoId: string }
-  | { tipo: "canje"; movimientoId: string }
-  | { tipo: "limite"; proximoEn: string }
+  | { tipo: "suma"; movimientoId: string; nuevoSocio?: boolean }
+  | { tipo: "canje"; movimientoId: string; nuevoSocio?: boolean }
+  | { tipo: "limite"; proximoEn: string; nuevoSocio?: boolean }
   | { tipo: "error"; motivo: string };
 
 /**
@@ -39,25 +42,32 @@ export async function aplicarToque(clienteId: string, toque: Toque): Promise<Res
     p_origen: toque.origen,
   });
   if (error || !r) return { tipo: "error", motivo: "error" };
+  const socio = r.nuevo_socio === true ? { nuevoSocio: true } : {};
 
   if (r.tipo === "suma" || r.tipo === "canje") {
     // Billeteras (Google Wallet): después de responder, para no sumar latencia al toque.
     // La suma incluye los regalos (bienvenida/cumple), que van en la misma transacción.
     after(() => notificarCambioTarjeta(r.serial));
-    return { tipo: r.tipo, movimientoId: r.movimiento_id };
+    return { tipo: r.tipo, movimientoId: r.movimiento_id, ...socio };
   }
-  if (r.tipo === "limite") return { tipo: "limite", proximoEn: r.proximo_en };
+  if (r.tipo === "limite") {
+    // No sumó, pero si pasó a ser socio la tarjeta cambia (colores, insignia) en las billeteras.
+    if (r.nuevo_socio) after(() => notificarCambioTarjeta(r.serial));
+    return { tipo: "limite", proximoEn: r.proximo_en, ...socio };
+  }
   return { tipo: "error", motivo: r.motivo ?? "error" };
 }
 
 /** URL a la que se redirige al cliente según el resultado. */
 export function urlResultado(slug: string, r: ResultadoToque): string {
+  // socio=1 sólo pide el festejo: la página lo muestra si la tarjeta de verdad se hizo socia recién.
+  const socio = r.tipo !== "error" && r.nuevoSocio ? "&socio=1" : "";
   switch (r.tipo) {
     case "suma":
     case "canje":
-      return `/t/${slug}?m=${r.movimientoId}`;
+      return `/t/${slug}?m=${r.movimientoId}${socio}`;
     case "limite":
-      return `/t/${slug}?limite=${encodeURIComponent(r.proximoEn)}`;
+      return `/t/${slug}?limite=${encodeURIComponent(r.proximoEn)}${socio}`;
     default:
       // Programa pausado: el toque quedó registrado, así que desde la tarjeta
       // puede canjear al toque los puntos que ya tiene.

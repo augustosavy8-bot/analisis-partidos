@@ -115,6 +115,11 @@ const ICONOS = {
       <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14"/><path d="M10 16.5 5.5 12 10 7.5"/><path d="M5.5 12H15"/>
     </>
   ),
+  "socio": (
+    <>
+      <path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/>
+    </>
+  ),
 } as const;
 
 export type NombreIcono = keyof typeof ICONOS;

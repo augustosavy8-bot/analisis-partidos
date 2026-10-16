@@ -145,6 +145,21 @@ describe("pass.json", () => {
     expect(pase.storeCard.backFields.some((f) => f.key === "sobre")).toBe(false);
   });
 
+  it("socio del club: insignia arriba (se ve apilado), SOCIO y desde, y el club en el dorso", () => {
+    const socio = armarPassJson(cred, { ...datos, socio: { club: "Club Aurora", desde: "10/2026" } }, "https://x.app");
+    expect(socio.description).toBe("Tarjeta de socio de Café Aurora");
+    expect(socio.storeCard.headerFields).toEqual([{ key: "socio", label: "", value: "★ SOCIO" }]);
+    expect(socio.storeCard.auxiliaryFields).toEqual([
+      { key: "cliente", label: "SOCIO", value: "Sofía Gómez" },
+      { key: "desde", label: "DESDE", value: "10/2026", textAlignment: "PKTextAlignmentRight" },
+    ]);
+    expect(socio.storeCard.backFields.find((f) => f.key === "club")).toEqual({ key: "club", label: "Club Aurora", value: "Sos socio del Club Aurora desde 10/2026." });
+    // Un cliente común no lleva nada del club.
+    expect(pase.storeCard).not.toHaveProperty("headerFields");
+    expect(pase.storeCard.auxiliaryFields).toEqual([{ key: "cliente", label: "CLIENTE", value: "Sofía Gómez" }]);
+    expect(pase.storeCard.backFields.some((f) => f.key === "club")).toBe(false);
+  });
+
   it("colores legibles: texto contrastado y etiqueta en el acento sólo si se lee", () => {
     const oscuro = coloresPase("#3b2a20", "#e6633a");
     expect(oscuro.foregroundColor).toBe("rgb(255, 255, 255)");

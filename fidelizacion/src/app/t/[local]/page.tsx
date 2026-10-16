@@ -19,6 +19,7 @@ import { appleWalletActivo } from "@/lib/wallet/apple";
 import { SinTarjeta, VistaTarjeta } from "./VistaTarjeta";
 import { TemaLocal } from "@/components/app/TemaLocal";
 import { temaDelLocal } from "@/lib/tema";
+import { nombreClub, varsTarjetaSocio } from "@/lib/socios";
 
 /** La barra del navegador toma el fondo del bar. */
 export async function generateViewport({ params }: PageProps<"/t/[local]">): Promise<Viewport> {
@@ -68,6 +69,9 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
     ? tarjeta.movimientos.find((m) => m.id === movId && m.tipo !== "regalo" && esReciente(m.created_at))
     : undefined;
   const limite = typeof sp.limite === "string" && !isNaN(Date.parse(sp.limite)) ? sp.limite : null;
+  // Socio del club: la tarjeta va con sus colores. El festejo, sólo si se hizo socio recién (tampoco se puede falsear).
+  const socio = tarjeta.socio_desde ? { club: nombreClub(local), desde: tarjeta.socio_desde, vars: varsTarjetaSocio(local) } : null;
+  const nuevoSocio = sp.socio === "1" && !!tarjeta.socio_desde && esReciente(tarjeta.socio_desde);
 
   const objetivo = proximoPremio(premios, tarjeta.puntos);
   // Billeteras nativas: Apple en iPhone/iPad, Google en Android, las dos en la compu.
@@ -117,6 +121,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
         pedirCumple={!cumple}
         limite={limite}
         pausado={sp.pausado === "1"}
+        socio={socio}
         urlPase={urlPase}
         qrPase={qrPase}
         googleWallet={(esAndroid || esCompu) && googleWalletActivo() ? `/t/${local.slug}/google-wallet` : undefined}
@@ -131,8 +136,12 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
                 completo: completado ? { meta: completado.puntos_necesarios, premio: completado.nombre } : null,
                 regalos: regalos.map((r) => ({ motivo: r.motivo === "cumple" ? "cumple" : "bienvenida", puntos: r.puntos })),
                 mensaje: mensajeCelebracion,
+                nuevoSocio,
               }
-            : null
+            : nuevoSocio
+              ? // Se hizo socio con un toque que no sumó (límite de tiempo): sólo el festejo del club.
+                { tipo: "socio", sumados: 0, promo: null, premio: null, completo: null, regalos: [], mensaje: "", nuevoSocio }
+              : null
         }
       />
     </>

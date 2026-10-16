@@ -7,6 +7,7 @@ import { Aviso, Encabezado, Lista, Seccion } from "@/components/app/Superficie";
 import { BotonLink } from "@/components/app/Boton";
 import { textoMovimiento } from "@/lib/movimientos";
 import { TemaLocal } from "@/components/app/TemaLocal";
+import { INSIGNIA_SOCIO, varsTarjetaSocio } from "@/lib/socios";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
@@ -27,7 +28,8 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
       <TemaLocal local={local} />
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-16 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <Encabezado sobre="Hola," titulo={pase.nombre.split(" ")[0]} />
-        <div className="rounded-pt-lg shadow-pt-card-app">
+        {/* Socio del club: la tarjeta con los colores del club y la insignia. */}
+        <div className="rounded-pt-lg shadow-pt-card-app" style={tarjeta.socio_desde ? varsTarjetaSocio(local) : undefined}>
           <PointCard
             comercio={local.nombre}
             inicial={local.nombre.charAt(0).toUpperCase()}
@@ -36,6 +38,7 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
             meta={objetivo?.puntos_necesarios ?? null}
             premio={objetivo?.nombre.toLowerCase()}
             reflejo={false}
+            socio={tarjeta.socio_desde ? INSIGNIA_SOCIO : undefined}
           />
         </div>
 

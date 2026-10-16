@@ -4,7 +4,10 @@ import { formatearWhatsapp } from "@/lib/whatsapp";
 import { Tarjeta, Titulo, Vacio, inputPanel } from "@/components/Panel";
 import { BotonLink, claseBoton } from "@/components/app/Boton";
 import { Icono } from "@/components/Icono";
+import { Insignia } from "@/components/app/Superficie";
+import { nombreClub } from "@/lib/socios";
 import { BotonEliminar } from "./BotonEliminar";
+import { BotonSocio } from "./BotonSocio";
 
 export const metadata = { title: "Clientes" };
 
@@ -24,14 +27,25 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
   const { q } = await searchParams;
   const busqueda = typeof q === "string" ? q.slice(0, 60) : "";
   const { db, local } = await requerirLocal(slug);
-  const { data, error } = await db.rpc("panel_clientes", { p_local_id: local.id, p_busqueda: busqueda || null, p_limite: 200 });
+  const [{ data, error }, { data: idsSocios }, { count: llaverosSocio }] = await Promise.all([
+    db.rpc("panel_clientes", { p_local_id: local.id, p_busqueda: busqueda || null, p_limite: 200 }),
+    db.rpc("panel_socios", { p_local_id: local.id }),
+    db.from("chips").select("id", { count: "exact", head: true }).eq("local_id", local.id).eq("da_socio", true),
+  ]);
   if (error) throw new Error(error.message);
   const filas = (data ?? []) as Fila[];
+  // Club de socios: se muestra si el local tiene llavero de socios o ya tiene socios.
+  const socios = new Set((idsSocios ?? []) as string[]);
+  const club = socios.size > 0 || (llaverosSocio ?? 0) > 0 ? nombreClub(local) : null;
 
   return (
     <>
       <Titulo
-        detalle={filas.length > 0 ? `${filas.length === 200 ? "200+" : filas.length} ${filas.length === 1 ? "cliente" : "clientes"}` : undefined}
+        detalle={
+          filas.length > 0
+            ? `${filas.length === 200 ? "200+" : filas.length} ${filas.length === 1 ? "cliente" : "clientes"}${club ? ` · ${socios.size} ${socios.size === 1 ? "socio" : "socios"}` : ""}`
+            : undefined
+        }
         accion={
           <BotonLink href={`/panel/${slug}/clientes/csv${busqueda ? `?q=${encodeURIComponent(busqueda)}` : ""}`} variante="secundario" tamaño="sm" descargar="clientes.csv">
             <Icono nombre="descargar" tamaño={16} /> CSV
@@ -85,7 +99,10 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                   {c.nombre.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-pt-ink">{c.nombre}</p>
+                  <p className="flex items-center gap-2 text-[15px] font-medium text-pt-ink">
+                    <span className="truncate">{c.nombre}</span>
+                    {socios.has(c.cliente_id) && <Insignia tono="acento">Socio</Insignia>}
+                  </p>
                   <p className="truncate pt-app-detalle text-pt-ink-2">
                     {formatearWhatsapp(c.whatsapp)} · {fechaHora(c.ultima_visita, local.zona_horaria)}
                   </p>
@@ -94,6 +111,7 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                   <p className="font-[family-name:var(--font-pt-display)] text-lg font-semibold tabular-nums text-pt-ink">{c.puntos}</p>
                   <p className="text-[11px] text-pt-ink-2">puntos</p>
                 </div>
+                {club && <BotonSocio slug={slug} clienteId={c.cliente_id} nombre={c.nombre} socio={socios.has(c.cliente_id)} club={club} />}
                 <BotonEliminar slug={slug} clienteId={c.cliente_id} nombre={c.nombre} />
               </li>
             ))}
@@ -114,7 +132,12 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
             <tbody className="divide-y divide-pt-border">
               {filas.map((c) => (
                 <tr key={c.cliente_id} className="transition-colors duration-150 hover:bg-pt-bg">
-                  <td className="px-4 py-3 text-[14px] font-medium text-pt-ink">{c.nombre}</td>
+                  <td className="px-4 py-3 text-[14px] font-medium text-pt-ink">
+                    <span className="flex items-center gap-2">
+                      {c.nombre}
+                      {socios.has(c.cliente_id) && <Insignia tono="acento">Socio</Insignia>}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`https://wa.me/${c.whatsapp.replace("+", "")}`}
@@ -130,7 +153,10 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
                   <td className="px-4 py-3 text-pt-ink-2">{fechaHora(c.ultima_visita, local.zona_horaria)}</td>
                   <td className="px-4 py-3 text-pt-ink-2">{fecha(c.alta, local.zona_horaria)}</td>
                   <td className="px-4 py-3 text-right">
-                    <BotonEliminar slug={slug} clienteId={c.cliente_id} nombre={c.nombre} />
+                    <span className="inline-flex items-center gap-1">
+                      {club && <BotonSocio slug={slug} clienteId={c.cliente_id} nombre={c.nombre} socio={socios.has(c.cliente_id)} club={club} />}
+                      <BotonEliminar slug={slug} clienteId={c.cliente_id} nombre={c.nombre} />
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -140,6 +166,12 @@ export default async function Clientes({ params, searchParams }: PageProps<"/pan
       )}
       {filas.length === 200 && (
         <p className="mt-3 text-center pt-app-detalle text-pt-ink-2">Mostrando los 200 más recientes. Usá la búsqueda o exportá el CSV para ver todos.</p>
+      )}
+      {club && (
+        <p className="mt-3 pt-app-detalle text-pt-ink-2">
+          {club}: cada cliente que toca con el llavero de socios pasa a ser socio y su tarjeta cambia. Con la estrella lo hacés socio o lo
+          quitás del club a mano.
+        </p>
       )}
       <p className="mt-3 pt-app-detalle text-pt-ink-2">
         Si un cliente te pide que borres sus datos, usá “Eliminar”: se borra su tarjeta de este local y, si no tiene tarjeta en otro local, todos sus datos.

@@ -7,6 +7,7 @@
  *       objeto = {ISSUER_ID}.{serial}
  */
 import { createSign } from "node:crypto";
+import { delClub } from "../socios";
 
 export const API_WALLET = "https://walletobjects.googleapis.com/walletobjects/v1";
 const URL_TOKEN = "https://oauth2.googleapis.com/token";
@@ -104,6 +105,8 @@ export type TarjetaGoogle = {
   proximo: { nombre: string; puntos: number } | null;
   /** Franja subida por el local: reemplaza la de los sellos. */
   franjaUrl?: string | null;
+  /** Socio del club: la franja de los sellos va con los colores del club y se avisa en el pase. */
+  socio?: { club: string; desde: string } | null;
 };
 
 export function textoProgreso(puntos: number, proximo: TarjetaGoogle["proximo"]) {
@@ -120,7 +123,7 @@ export function textoProgreso(puntos: number, proximo: TarjetaGoogle["proximo"])
 export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string, notificar = false) {
   const base = appUrl.replace(/\/$/, "");
   const urlPase = `${base}/w/${t.serial}/${t.token}`;
-  const franja = `${base}/t/${t.localSlug}/franja?p=${t.puntos}${t.proximo ? `&m=${t.proximo.puntos}` : ""}`;
+  const franja = `${base}/t/${t.localSlug}/franja?p=${t.puntos}${t.proximo ? `&m=${t.proximo.puntos}` : ""}${t.socio ? "&s=1" : ""}`;
   return {
     id: idObjeto(issuerId, t.serial),
     classId: idClase(issuerId, t.localSlug),
@@ -132,7 +135,11 @@ export function armarObjeto(issuerId: string, t: TarjetaGoogle, appUrl: string, 
       ? { secondaryLoyaltyPoints: { label: "Próximo premio", balance: { string: `${Math.min(t.puntos, t.proximo.puntos)}/${t.proximo.puntos}` } } }
       : {}),
     heroImage: t.franjaUrl ? imagen(t.franjaUrl, t.localNombre) : imagen(franja, `Tus sellos en ${t.localNombre}`),
-    textModulesData: [{ id: "progreso", header: "Próximo premio", body: textoProgreso(t.puntos, t.proximo) }],
+    // Google no deja cambiar el color de un objeto (es de la clase): el socio se ve en la franja y en este módulo.
+    textModulesData: [
+      ...(t.socio ? [{ id: "socio", header: "★ Socio", body: `Sos socio ${delClub(t.socio.club)} desde ${t.socio.desde}.` }] : []),
+      { id: "progreso", header: "Próximo premio", body: textoProgreso(t.puntos, t.proximo) },
+    ],
     barcode: { type: "QR_CODE", value: urlPase, alternateText: "Tu tarjeta" },
     linksModuleData: { uris: [{ id: "tarjeta", uri: `${base}/t/${t.localSlug}`, description: "Abrir mi tarjeta completa" }] },
     ...(notificar ? { notifyPreference: "NOTIFY_ON_UPDATE" } : {}),

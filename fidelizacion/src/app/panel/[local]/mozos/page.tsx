@@ -14,7 +14,7 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
   const t = formasTermino(local.termino_personal);
   const [{ data: mozos }, { data: chips }] = await Promise.all([
     db.from("mozos").select("id, nombre, activo").eq("local_id", local.id).order("activo", { ascending: false }).order("nombre"),
-    db.from("chips").select("id, uid, etiqueta, modo, mozo_id, activo").eq("local_id", local.id),
+    db.from("chips").select("id, uid, etiqueta, modo, mozo_id, activo, da_socio").eq("local_id", local.id),
   ]);
 
   return (
@@ -58,7 +58,7 @@ export default async function Mozos({ params }: PageProps<"/panel/[local]/mozos"
                     <p className="pt-app-detalle text-pt-ink-2">
                       {suyos.length === 0
                         ? "Sin llavero asignado"
-                        : suyos.map((c) => `${c.etiqueta ?? c.uid}${c.modo === "prueba" ? " (prueba)" : ""}`).join(", ")}
+                        : suyos.map((c) => `${c.etiqueta ?? c.uid}${c.da_socio ? " (★ de socios)" : ""}${c.modo === "prueba" ? " (prueba)" : ""}`).join(", ")}
                     </p>
                   </div>
                   <AccionesMozo slug={slug} id={m.id} activo={m.activo} />

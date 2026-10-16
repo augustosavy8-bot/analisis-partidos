@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import {
   agregarDueno,
   alternarChip,
+  alternarChipSocio,
   alternarLocal,
   asignarMozo,
   borrarChip,
@@ -174,6 +175,13 @@ export function FormChip({ localId, mozos, etiqueta = "Mozo" }: { localId: strin
             ))}
           </div>
         </fieldset>
+        <label className="flex cursor-pointer items-start gap-2 sm:col-span-2">
+          <input type="checkbox" name="da_socio" className="mt-1 h-4 w-4 accent-stone-900" />
+          <span className="text-sm">
+            <span className="font-medium">Llavero de socios</span>
+            <span className="block text-xs text-stone-500">Cada cliente que toque con este llavero pasa a ser socio del club (su tarjeta se ve distinta).</span>
+          </span>
+        </label>
         {modo === "produccion" && (
           <label className="block sm:col-span-2">
             <span className="text-xs font-medium text-stone-600">Clave AES-128 SDMFileRead (32 caracteres hex)</span>
@@ -216,7 +224,7 @@ export function AccionesChip({
   chip,
   mozos,
 }: {
-  chip: { id: string; activo: boolean; modo: string; mozo_id: string | null; uid: string };
+  chip: { id: string; activo: boolean; modo: string; mozo_id: string | null; uid: string; da_socio: boolean };
   mozos: Mozo[];
 }) {
   const [p, start] = useTransition();
@@ -265,6 +273,18 @@ export function AccionesChip({
             Nueva URL
           </BotonSecundario>
         )}
+        <BotonSecundario
+          disabled={p}
+          onClick={() =>
+            confirm(
+              chip.da_socio
+                ? "¿Volver a llavero común? Sus toques dejan de hacer socios (los que ya son socios siguen siéndolo)."
+                : "¿Hacerlo llavero de socios? Cada cliente que toque con este llavero pasa a ser socio del club.",
+            ) && start(() => alternarChipSocio(chip.id, !chip.da_socio))
+          }
+        >
+          {chip.da_socio ? "Quitar socios" : "De socios"}
+        </BotonSecundario>
         <BotonSecundario disabled={p} onClick={() => start(() => alternarChip(chip.id, !chip.activo))}>
           {chip.activo ? "Desactivar" : "Activar"}
         </BotonSecundario>

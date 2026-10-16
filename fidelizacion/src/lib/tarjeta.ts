@@ -46,7 +46,7 @@ export async function tarjetaDelCliente(clienteId: string, localId: string) {
   const { data } = await db
     .from("tarjetas")
     .select(
-      "id, puntos, serial, wallet_auth_token, created_at, ultimo_toque_en, movimientos(id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre)))",
+      "id, puntos, serial, wallet_auth_token, created_at, ultimo_toque_en, socio_desde, movimientos(id, tipo, puntos, motivo, detalle, origen, created_at, mozos(nombre), canjes(premios(nombre)))",
     )
     .eq("cliente_id", clienteId)
     .eq("local_id", localId)

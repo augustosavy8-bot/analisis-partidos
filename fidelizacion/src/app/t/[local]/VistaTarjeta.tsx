@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Mascota } from "@/components/app/Mascota";
 import { BotonTema } from "@/components/app/BotonTema";
 import Link from "next/link";
@@ -5,6 +6,7 @@ import type { Local } from "@/lib/locales";
 import { cuandoFuturo, type Movimiento, type Premio } from "@/lib/tarjeta";
 import { describirPromo, horaCorta, nombreMultiplicador, type Promo } from "@/lib/promos";
 import { formasTermino } from "@/lib/terminos";
+import { INSIGNIA_SOCIO } from "@/lib/socios";
 import { Icono } from "@/components/Icono";
 import { LogoPoint } from "@/components/MarcaPoint";
 import { OndasNfc } from "@/components/Animaciones";
@@ -24,14 +26,20 @@ import { ListaPremios } from "./ListaPremios";
 import { Historial } from "./Historial";
 
 type DatosCelebracion = {
-  tipo: "suma" | "canje";
+  /** "socio": se hizo socio con un toque que no sumó (límite de tiempo). */
+  tipo: "suma" | "canje" | "socio";
   sumados: number;
   promo: string | null;
   premio: string | null;
   completo: { meta: number; premio: string } | null;
   regalos: { motivo: "bienvenida" | "cumple"; puntos: number }[];
   mensaje: string;
+  /** El toque fue con el llavero de socios y recién ahí se hizo socio. */
+  nuevoSocio: boolean;
 };
+
+/** Socio del club: nombre del club, desde cuándo y las variables de su tarjeta. */
+type Socio = { club: string; desde: string; vars: Record<string, string> };
 
 type Props = {
   local: Local;
@@ -52,6 +60,7 @@ type Props = {
   limite: string | null;
   /** El local no está sumando (dejó de pagar Point): se avisa sin hablar de facturación. */
   pausado?: boolean;
+  socio: Socio | null;
   urlPase: string;
   qrPase: string;
   /** Link "Agregar a Google Wallet" (sólo Android con Google Wallet configurado). */
@@ -70,15 +79,19 @@ export function VistaTarjeta(p: Props) {
   const faltan = p.objetivo ? Math.max(0, p.objetivo.puntos_necesarios - tarjeta.puntos) : 0;
 
   const tarjetaPoint = (
-    <PointCard3D
-      modo="app"
-      comercio={local.nombre}
-      inicial={local.nombre.charAt(0).toUpperCase()}
-      logo={local.logo_url}
-      puntos={tarjeta.puntos}
-      meta={p.objetivo?.puntos_necesarios ?? null}
-      premio={p.objetivo?.nombre.toLowerCase()}
-    />
+    // Socio: la tarjeta con los colores del club (pisa las variables --pt-tarjeta-* del tema).
+    <div style={p.socio?.vars as CSSProperties | undefined}>
+      <PointCard3D
+        modo="app"
+        comercio={local.nombre}
+        inicial={local.nombre.charAt(0).toUpperCase()}
+        logo={local.logo_url}
+        puntos={tarjeta.puntos}
+        meta={p.objetivo?.puntos_necesarios ?? null}
+        premio={p.objetivo?.nombre.toLowerCase()}
+        socio={p.socio ? INSIGNIA_SOCIO : undefined}
+      />
+    </div>
   );
 
   const pestanaTarjeta = (
@@ -110,7 +123,9 @@ export function VistaTarjeta(p: Props) {
       {tarjetaPoint}
       <p className="mt-3 flex justify-between px-1 pt-app-detalle text-pt-ink-2">
         <span className="truncate">{p.nombre}</span>
-        <span className="shrink-0 tabular-nums">Desde {formatearMesAnio(tarjeta.created_at, local.zona_horaria)}</span>
+        <span className="shrink-0 tabular-nums">
+          {p.socio ? "Socio desde" : "Desde"} {formatearMesAnio(p.socio?.desde ?? tarjeta.created_at, local.zona_horaria)}
+        </span>
       </p>
 
       {alcanzaAlguno ? (
@@ -172,7 +187,7 @@ export function VistaTarjeta(p: Props) {
         qrSvg={p.qrPase}
         googleWallet={p.googleWallet}
         appleWallet={p.appleWallet}
-        franja={`/t/${local.slug}/franja?p=${tarjeta.puntos}${p.objetivo ? `&m=${p.objetivo.puntos_necesarios}` : ""}`}
+        franja={`/t/${local.slug}/franja?p=${tarjeta.puntos}${p.objetivo ? `&m=${p.objetivo.puntos_necesarios}` : ""}${p.socio ? "&s=1" : ""}`}
       />
 
       <footer className="mt-10 flex flex-col items-center gap-1.5 pt-app-detalle text-pt-ink-2">
@@ -223,7 +238,19 @@ export function VistaTarjeta(p: Props) {
     <div className="pt-app flex flex-1 flex-col">
       <MotionProvider>
         <main className="mx-auto w-full max-w-md flex-1 px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[calc(var(--spacing-pt-tabbar)+env(safe-area-inset-bottom)+2rem)]">
-          {p.celebracion && <Celebracion {...p.celebracion} puntos={tarjeta.puntos} comercio={local.nombre} logo={local.logo_url} />}
+          {p.celebracion && (
+            <Celebracion
+              {...p.celebracion}
+              puntos={tarjeta.puntos}
+              comercio={local.nombre}
+              logo={local.logo_url}
+              socio={
+                p.celebracion.nuevoSocio && p.socio
+                  ? { club: p.socio.club, vars: p.socio.vars, meta: p.objetivo?.puntos_necesarios ?? null, premio: p.objetivo?.nombre.toLowerCase() }
+                  : null
+              }
+            />
+          )}
 
           {/* Avisos que importan en cualquier pestaña */}
           {p.pausado && (

@@ -70,7 +70,8 @@ export async function ingresarSuperadmin(email: string, password: string, codigo
   return { ok: true, token: verificado.access_token, vence: Math.floor(Date.now() / 1000) + verificado.expires_in, email: data.user.email ?? email };
 }
 
-export type AltaChip = { uid: string; p: string; m: string; localId: string; mozoId: string; etiqueta: string | null };
+/** `daSocio`: llavero de socios (undefined = la app vieja no lo manda: se deja como estaba). */
+export type AltaChip = { uid: string; p: string; m: string; localId: string; mozoId: string; etiqueta: string | null; daSocio?: boolean };
 
 /**
  * Verifica una lectura real del chip recién grabado (como cualquier toque) y lo da de alta
@@ -99,6 +100,7 @@ export async function registrarChipGrabado(d: AltaChip): Promise<{ ok: true; chi
     token_prueba_hash: null,
     ultimo_contador: picc.contador,
     activo: true,
+    ...(d.daSocio === undefined ? {} : { da_socio: d.daSocio }),
   };
   const { data, error } = await admin.from("chips").upsert(fila, { onConflict: "uid" }).select("id").single();
   if (error || !data) return { ok: false, error: "No se pudo guardar el chip." };

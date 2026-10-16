@@ -20,6 +20,8 @@ export type TarjetaInicio = {
   c2: string;
   texto: string;
   acento: string;
+  /** Socio del club del local: la tarjeta va con los colores del club y la insignia. */
+  socio: boolean;
 };
 
 export type MovimientoInicio = { id: string; tipo: TipoMovimiento; titulo: string; negocio: string; cuando: string; puntos: number };
@@ -46,7 +48,7 @@ export async function datosInicio(clienteId: string): Promise<{ tarjetas: Tarjet
       .limit(8),
   ]);
 
-  const tarjetas = resumen.map(({ local, puntos, proximo }) => {
+  const tarjetas = resumen.map(({ local, puntos, proximo, socio }) => {
     const { fondo, texto, acento } = local.colores;
     return {
       slug: local.slug,
@@ -60,6 +62,7 @@ export async function datosInicio(clienteId: string): Promise<{ tarjetas: Tarjet
       texto,
       // La barra tiene que verse sobre el fondo; si el acento se pierde, va el color del texto.
       acento: contraste(acento, fondo) >= 1.6 ? acento : texto,
+      socio: !!socio,
     };
   });
 

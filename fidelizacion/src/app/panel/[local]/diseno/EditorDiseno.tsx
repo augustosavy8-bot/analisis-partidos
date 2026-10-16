@@ -29,6 +29,8 @@ type Props = {
   };
   premio: { nombre: string; puntos: number } | null;
   alcance: { google: number; apple: number };
+  /** Club de socios (si el local tiene llavero de socios o socios): nombre y colores de la tarjeta de socio. */
+  club: { nombre: string; porDefecto: string; fondo: string; acento: string } | null;
 };
 
 /** igual = la de hoy; borrador = subida recién (se publica al guardar); quitar = sin imagen. */
@@ -38,7 +40,7 @@ type EstadoImagen = { accion: AccionImagen; vista: string | null; subiendo: bool
 const svgUri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 const NOMBRE_IMAGEN: Record<TipoImagen, string> = { logo: "Logo", icono: "Ícono de notificaciones", franja: "Franja / cabecera" };
 
-export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props) {
+export function EditorDiseno({ slug, comercio, inicial, premio, alcance, club }: Props) {
   const [estado, accion, guardando] = useActionState<EstadoDiseno, FormData>(guardarDiseno.bind(null, slug), {});
   const [fondo, setFondo] = useState(inicial.fondo);
   const [texto, setTexto] = useState(inicial.texto);
@@ -46,6 +48,10 @@ export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props
   const [acento, setAcento] = useState(inicial.acento);
   const [programa, setPrograma] = useState(inicial.programa);
   const [textoDorso, setTextoDorso] = useState(inicial.textoDorso);
+  const [clubNombre, setClubNombre] = useState(club?.nombre ?? "");
+  const [clubFondo, setClubFondo] = useState(club?.fondo ?? "");
+  const [clubAcento, setClubAcento] = useState(club?.acento ?? "");
+  const [vista, setVista] = useState<"clientes" | "socios">("clientes");
   const [imagenes, setImagenes] = useState<Record<TipoImagen, EstadoImagen>>(() => {
     const e = {} as Record<TipoImagen, EstadoImagen>;
     for (const t of TIPOS_IMAGEN) e[t] = { accion: "igual", vista: inicial.imagenes[t], subiendo: false, error: null };
@@ -70,6 +76,14 @@ export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props
     premio,
     textoDorso,
   };
+  // Tarjeta de socio: los colores del club; texto y etiquetas, calculados (igual que en los pases).
+  const fondoClub = HEX_COLOR.test(clubFondo) ? clubFondo : (club?.fondo ?? d.fondo);
+  const acentoClub = HEX_COLOR.test(clubAcento) ? clubAcento : (club?.acento ?? d.acento);
+  const textoClub = textoPorDefecto(fondoClub);
+  const verSocio = !!club && vista === "socios";
+  const dApple: DatosMockup = verSocio
+    ? { ...d, fondo: fondoClub, texto: textoClub, etiqueta: etiquetaPorDefecto(fondoClub, acentoClub, textoClub), acento: acentoClub, socio: true }
+    : d;
   const contrasteTexto = nivelContraste(d.fondo, d.texto);
   const contrasteEtiqueta = nivelContraste(d.fondo, d.etiqueta, 3);
   const subiendoAlguna = TIPOS_IMAGEN.some((t) => imagenes[t].subiendo);
@@ -110,14 +124,32 @@ export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props
       {/* Vista previa: arriba en celu, a la derecha (fija) en escritorio */}
       <div className="min-w-0 lg:order-2">
         <div className="lg:sticky lg:top-40">
-          <p className="pt-label mb-2 uppercase text-pt-ink-2">Vista previa</p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="pt-label uppercase text-pt-ink-2">Vista previa</p>
+            {club && (
+              <div role="tablist" aria-label="Qué tarjeta ver" className="inline-flex rounded-full bg-pt-surface p-1">
+                {(["clientes", "socios"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={vista === v}
+                    onClick={() => setVista(v)}
+                    className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors duration-150 ${vista === v ? "bg-pt-pure text-pt-ink shadow-pt-ui" : "text-pt-ink-2 hover:text-pt-ink"}`}
+                  >
+                    {v === "clientes" ? "Clientes" : "★ Socios"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0">
             <figure className="w-[250px] shrink-0 snap-center sm:w-auto">
-              <MockupApple d={d} />
+              <MockupApple d={dApple} />
               <figcaption className="mt-2 text-center pt-app-detalle font-medium text-pt-ink-2">Apple Wallet</figcaption>
             </figure>
             <figure className="w-[250px] shrink-0 snap-center sm:w-auto">
-              <MockupGoogle d={d} />
+              <MockupGoogle d={d} franjaSocio={verSocio ? { fondo: fondoClub, acento: acentoClub } : undefined} />
               <figcaption className="mt-2 text-center pt-app-detalle font-medium text-pt-ink-2">Google Wallet</figcaption>
             </figure>
           </div>
@@ -125,7 +157,11 @@ export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props
             <MockupNotificacion d={d} />
             <MockupDorso d={d} />
           </div>
-          <p className="mt-2 pt-app-detalle text-pt-ink-2">En Google Wallet el color del texto lo elige Google según el fondo.</p>
+          <p className="mt-2 pt-app-detalle text-pt-ink-2">
+            {verSocio
+              ? "En Google Wallet el fondo es el mismo para todos: el socio se ve en la franja y en los detalles del pase."
+              : "En Google Wallet el color del texto lo elige Google según el fondo."}
+          </p>
         </div>
       </div>
 
@@ -152,6 +188,35 @@ export function EditorDiseno({ slug, comercio, inicial, premio, alcance }: Props
             Calcular texto y etiquetas según el fondo
           </button>
         </Tarjeta>
+
+        {club && (
+          <Tarjeta>
+            {/* Al editar el club, la vista previa muestra la tarjeta de socio. */}
+            <div onFocusCapture={() => setVista("socios")}>
+              <h2 className="pt-app-seccion text-pt-ink">Tarjeta de socio</h2>
+              <p className="mt-1 pt-app-detalle text-pt-ink-2">
+                La tienen los clientes que tocaron con el llavero de socios: dice SOCIO y usa estos colores.
+              </p>
+              <label className="mt-3 block">
+                <EtiquetaPanel>Nombre del club</EtiquetaPanel>
+                <input
+                  name="club_nombre"
+                  maxLength={LIMITES_TEXTO.club}
+                  value={clubNombre}
+                  onChange={(e) => setClubNombre(e.target.value)}
+                  placeholder={club.porDefecto}
+                  className={inputPanel}
+                />
+                <span className="mt-1.5 block pt-app-detalle text-pt-ink-2">Vacío = “{club.porDefecto}”. Aparece cuando alguien se hace socio y en el pase.</span>
+              </label>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <SelectorColor nombre="club_color_fondo" etiqueta="Fondo" valor={clubFondo} onChange={setClubFondo} />
+                <SelectorColor nombre="club_color_acento" etiqueta="Acento" valor={clubAcento} onChange={setClubAcento} ayuda="La insignia SOCIO y los sellos." />
+              </div>
+              <AvisoContraste nivel={nivelContraste(fondoClub, acentoClub, 3)} que="el fondo y el acento de la tarjeta de socio" />
+            </div>
+          </Tarjeta>
+        )}
 
         <Tarjeta>
           <h2 className="pt-app-seccion text-pt-ink">Imágenes</h2>

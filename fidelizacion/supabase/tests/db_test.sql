@@ -459,6 +459,64 @@ select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006'
   '00000000-0000-4000-8000-000000000101', null, 'nfc')->>'tipo' = 'limite',
   'aplicar_toque respeta el límite de tiempo');
 
+-- ---------------------------------------------------------------- club de socios
+update public.chips set da_socio = true where id = '00000000-0000-4000-8000-000000000202';
+select pg_temp.check(not (public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000201', 'nfc') ? 'nuevo_socio')
+  and (select socio_desde is null from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
+  'socios: un llavero común no hace socio');
+select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-0000000001ff', '00000000-0000-4000-8000-000000000202', 'nfc')->>'motivo' = 'mozo_invalido'
+  and (select socio_desde is null from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
+  'socios: un toque rechazado no hace socio');
+select public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000202', 'nfc') as r \gset
+select pg_temp.check(:'r'::jsonb->>'tipo' = 'limite' and (:'r'::jsonb->>'nuevo_socio')::boolean
+  and (select socio_desde is not null from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
+  'socios: el llavero de socios hace socio (aunque el toque no sume por el límite)');
+select pg_temp.check(not (public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000202', 'nfc') ? 'nuevo_socio'),
+  'socios: si ya es socio no lo vuelve a anunciar');
+update public.locales set minutos_entre_puntos = 0 where id = '00000000-0000-4000-8000-000000000001';
+insert into public.clientes (id, nombre, whatsapp, consentimiento) values ('cccccccc-0000-4000-8000-0000000000d1', 'Socia', '+5493410000071', true);
+select public.aplicar_toque('cccccccc-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000202', 'nfc') as r \gset
+select pg_temp.check(:'r'::jsonb->>'tipo' = 'suma' and (:'r'::jsonb->>'nuevo_socio')::boolean,
+  'socios: un cliente nuevo que suma con el llavero de socios entra como socio');
+update public.locales set minutos_entre_puntos = 60 where id = '00000000-0000-4000-8000-000000000001';
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
+select pg_temp.check(cardinality(public.panel_socios('00000000-0000-4000-8000-000000000001')) = 2
+  and (select count(*) from public.chips where da_socio) = 1,
+  'socios: el dueño ve sus socios y cuál es el llavero de socios');
+do $$
+declare
+  v_primero text;
+  v_segundo text;
+begin
+  -- En orden (Postgres no garantiza el orden dentro de un AND).
+  v_primero := public.panel_cambiar_socio('00000000-0000-4000-8000-000000000001', 'cccccccc-0000-4000-8000-000000000006', false);
+  v_segundo := public.panel_cambiar_socio('00000000-0000-4000-8000-000000000001', 'cccccccc-0000-4000-8000-000000000006', false);
+  perform pg_temp.check(v_primero is not null and v_segundo is null and cardinality(public.panel_socios('00000000-0000-4000-8000-000000000001')) = 1,
+    'socios: el dueño quita a un socio (y quitarlo de nuevo no cambia nada)');
+  v_primero := public.panel_cambiar_socio('00000000-0000-4000-8000-000000000001', 'cccccccc-0000-4000-8000-000000000006', true);
+  perform pg_temp.check(v_primero is not null and cardinality(public.panel_socios('00000000-0000-4000-8000-000000000001')) = 2,
+    'socios: el dueño lo vuelve a hacer socio');
+end $$;
+do $$ begin
+  begin
+    perform public.panel_socios('00000000-0000-4000-8000-00000000000f');
+    raise exception 'FALLÓ: dueño ve socios de otro local';
+  exception when insufficient_privilege then raise notice 'ok - panel_socios rechaza otro local';
+  end;
+  begin
+    perform public.panel_cambiar_socio('00000000-0000-4000-8000-00000000000f', 'cccccccc-0000-4000-8000-000000000006', true);
+    raise exception 'FALLÓ: dueño cambia socios de otro local';
+  exception when insufficient_privilege then raise notice 'ok - panel_cambiar_socio rechaza otro local';
+  end;
+end $$;
+reset role;
+
 -- ---------------------------------------------------------------- interesados (landing)
 insert into public.interesados (nombre, local, rubro, whatsapp) values ('Juan', 'Bar Juan', 'Bar', '+5493410000099');
 set role authenticated;

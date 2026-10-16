@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { clienteDesdeToken, hashToken, nuevoTokenDispositivo, type ClienteActual } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
-import type { Local } from "@/lib/locales";
+import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
+import { comoSocio, nombreClub } from "@/lib/socios";
 import { textoMovimiento } from "@/lib/movimientos";
 import { appleWalletActivo } from "@/lib/wallet/apple";
 import { ingresoBloqueado, LIMITE_INGRESO, localApp, resumenTarjeta, tokenBearer, type TarjetaDetalleApp, type TarjetaResumenApp } from "./contrato";
@@ -85,15 +86,22 @@ export async function revocarDispositivo(req: Request) {
 
 // --- Tarjetas ------------------------------------------------------------------------------
 
-const COLUMNAS_LOCAL =
-  "id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud, activo";
+const COLUMNAS = `${COLUMNAS_LOCAL}, activo`;
 
-type FilaTarjeta = { id: string; serial: string; wallet_auth_token: string; puntos: number; actualizada_en?: string; locales: (Local & { activo: boolean }) | null };
+type FilaTarjeta = {
+  id: string;
+  serial: string;
+  wallet_auth_token: string;
+  puntos: number;
+  socio_desde: string | null;
+  actualizada_en?: string;
+  locales: (Local & { activo: boolean }) | null;
+};
 
 async function tarjetasConLocal(clienteId: string, slug?: string): Promise<FilaTarjeta[]> {
   let q = crearClienteAdmin()
     .from("tarjetas")
-    .select(`id, serial, wallet_auth_token, puntos, locales!inner(${COLUMNAS_LOCAL})`)
+    .select(`id, serial, wallet_auth_token, puntos, socio_desde, locales!inner(${COLUMNAS})`)
     .eq("cliente_id", clienteId)
     .eq("locales.activo", true);
   if (slug) q = q.eq("locales.slug", slug);
@@ -118,8 +126,15 @@ export async function tarjetasDelCliente(clienteId: string): Promise<TarjetaResu
   const filas = await tarjetasConLocal(clienteId);
   const premios = await premiosPorLocal(filas.map((t) => t.locales!.id));
   return filas
-    .map((t) => resumenTarjeta(localApp(t.locales!, env.appUrl), t.puntos, premios.get(t.locales!.id) ?? []))
+    .map((t) => resumenDeFila(t, premios.get(t.locales!.id) ?? []))
     .sort((a, b) => b.puntos - a.puntos || a.local.nombre.localeCompare(b.local.nombre, "es"));
+}
+
+/** Resumen de la tarjeta; la de un socio, con los colores y el nombre del club. */
+function resumenDeFila(t: FilaTarjeta, premios: { nombre: string; puntos_necesarios: number }[]): TarjetaResumenApp {
+  const local = t.locales!;
+  const resumen = resumenTarjeta(localApp(t.socio_desde ? comoSocio(local) : local, env.appUrl), t.puntos, premios);
+  return t.socio_desde ? { ...resumen, socio: nombreClub(local) } : resumen;
 }
 
 export async function detalleTarjeta(clienteId: string, slug: string): Promise<{ detalle: TarjetaDetalleApp; local: Local } | null> {
@@ -142,7 +157,7 @@ export async function detalleTarjeta(clienteId: string, slug: string): Promise<{
   return {
     local,
     detalle: {
-      ...resumenTarjeta(localApp(local, env.appUrl), t.puntos, premios),
+      ...resumenDeFila(t, premios),
       premios: premios.map((p) => ({ id: p.id, nombre: p.nombre, descripcion: p.descripcion, puntos: p.puntos_necesarios, alcanza: t.puntos >= p.puntos_necesarios })),
       qr,
       qrSvg,

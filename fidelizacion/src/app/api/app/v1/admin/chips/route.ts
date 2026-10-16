@@ -16,10 +16,11 @@ export async function POST(req: Request) {
   const localId = typeof c?.localId === "string" && UUID.test(c.localId) ? c.localId : "";
   const mozoId = typeof c?.mozoId === "string" && UUID.test(c.mozoId) ? c.mozoId : "";
   const etiqueta = typeof c?.etiqueta === "string" && c.etiqueta.trim() ? c.etiqueta.trim().slice(0, 40) : null;
+  const daSocio = typeof c?.daSocio === "boolean" ? c.daSocio : undefined;
   if (!UID_424.test(uid) || !p || !m || !localId) return error("Faltan datos del chip.", 400);
   if (!mozoId) return error("Elegí de quién es el llavero.", 400);
 
-  const r = await registrarChipGrabado({ uid, p, m, localId, mozoId, etiqueta });
+  const r = await registrarChipGrabado({ uid, p, m, localId, mozoId, etiqueta, daSocio });
   if (!r.ok) return error(r.error, 422);
   return json(r);
 }

@@ -7,11 +7,17 @@ import Link from "next/link";
 import { Icono } from "@/components/Icono";
 import { BotonTema } from "@/components/app/BotonTema";
 import type { MovimientoInicio, TarjetaInicio } from "@/lib/inicio";
+import { INSIGNIA_SOCIO } from "@/lib/socios";
 import s from "./inicio.module.css";
 
 const CLAVE_ACTIVA = "point.tarjeta-activa";
-/** Resorte del diseño: stiffness 140, damping 18 (~500 ms con un rebote chiquito). */
-const RESORTE = { k: 140, c: 18 };
+/**
+ * Resorte del diseño (~450 ms, con un rebote apenas visible). Antes era 140/18: oscilaba
+ * más y tardaba ~800 ms en quedarse quieto, y mientras tanto no se podía tocar nada.
+ */
+const RESORTE = { k: 190, c: 24 };
+/** Para mover el carrusel: sin rebote (críticamente amortiguado). */
+const RESORTE_CARRUSEL = { k: 220, c: 30 };
 const UMBRAL_CIERRE = 110;
 
 type Props = { nombre: string; tarjetas: TarjetaInicio[]; movimientos: MovimientoInicio[] };
@@ -41,16 +47,17 @@ const vibrar = (ms: number) => {
   } catch {}
 };
 
-/** Resorte con integración propia (60 fps, sin estado de React en el medio). */
-function resorte(alMover: (p: number) => void, alTerminar?: () => void, opts = RESORTE) {
+/** Resorte con integración propia (60 fps, sin estado de React en el medio). Devuelve cómo frenarlo. */
+function resorte(alMover: (p: number) => void, alTerminar?: () => void, opts = RESORTE): () => void {
   if (reducirMovimiento()) {
     alMover(1);
     alTerminar?.();
-    return;
+    return () => {};
   }
   let x = 0;
   let v = 0;
   let ultimo = performance.now();
+  let id = 0;
   const paso = (ahora: number) => {
     const dt = Math.min(0.034, (ahora - ultimo) / 1000);
     ultimo = ahora;
@@ -60,14 +67,16 @@ function resorte(alMover: (p: number) => void, alTerminar?: () => void, opts = R
       x += v * h;
     }
     alMover(x);
-    if (Math.abs(x - 1) < 0.0008 && Math.abs(v) < 0.002) {
+    // Menos de ~1 px del destino y casi quieto: se termina (antes esperaba hasta 0,08 %).
+    if (Math.abs(x - 1) < 0.003 && Math.abs(v) < 0.02) {
       alMover(1);
       alTerminar?.();
       return;
     }
-    requestAnimationFrame(paso);
+    id = requestAnimationFrame(paso);
   };
-  requestAnimationFrame(paso);
+  id = requestAnimationFrame(paso);
+  return () => cancelAnimationFrame(id);
 }
 
 function textoFalta(t: TarjetaInicio, corto = false) {
@@ -99,7 +108,17 @@ function Tarjeta({ t }: { t: TarjetaInicio }) {
       <div className={s.cuerpo}>
         <div className={s.cardArriba}>
           <div className={s.logo}>{t.logo ? <img src={t.logo} alt="" /> : t.nombre.charAt(0).toUpperCase()}</div>
-          <IconoNfc />
+          <div className={s.cardMarcas}>
+            {t.socio && (
+              <span className={s.socio}>
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="m12 2.5 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z" />
+                </svg>
+                {INSIGNIA_SOCIO}
+              </span>
+            )}
+            <IconoNfc />
+          </div>
         </div>
         <div className={s.cardAbajo}>
           <div className={s.cardFila}>
@@ -154,7 +173,7 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
   const infoRef = useRef<HTMLDivElement>(null);
   const capasRef = useRef<HTMLDivElement>(null);
   const linkRef = useRef<HTMLAnchorElement>(null);
-  const estado = useRef({ abierto: false, animando: false, centrada: 0, g: null as Geometria | null });
+  const estado = useRef({ abierto: false, animando: false, centrada: 0, g: null as Geometria | null, frenarDesplazamiento: null as (() => void) | null });
 
   const slots = () => Array.from(carruselRef.current?.children ?? []) as HTMLElement[];
   const interior = (el: HTMLElement) => el.firstElementChild as HTMLElement;
@@ -183,6 +202,13 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
     },
     [tarjetas],
   );
+
+  /** La tarjeta que de verdad está en el centro ahora (no la última que se anotó). */
+  const enElCentro = useCallback(() => {
+    const e = estado.current;
+    if (!e.g || !carruselRef.current) return e.centrada;
+    return Math.max(0, Math.min(tarjetas.length - 1, Math.round(carruselRef.current.scrollLeft / e.g.paso)));
+  }, [tarjetas.length]);
 
   // Escala, opacidad, giro (rotateY) y brillo según la distancia al centro.
   const interpolar = useCallback(() => {
@@ -260,8 +286,12 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
 
     const desde = rect(homeRef.current!);
     const destino = rect(interior(lista[activa]));
-    homeRef.current!.style.visibility = "hidden";
     const vuela = volador(activa);
+    ubicar(vuela, desde, destino, 0, 0, 90);
+    homeRef.current!.style.visibility = "hidden";
+    // Mientras vuela, el carrusel no se mueve: si se deslizaba, la tarjeta aterrizaba
+    // en un lugar y el carrusel quedaba en otro (y el nombre de abajo, desfasado).
+    carrusel.style.pointerEvents = "none";
     let vecinas = false;
     resorte(
       (p) => {
@@ -278,9 +308,12 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
         infoRef.current!.style.opacity = "1";
         lista[activa].style.opacity = "1";
         vuela.remove();
+        carrusel.style.pointerEvents = "";
         e.abierto = true;
         e.animando = false;
-        lista[activa].focus({ preventScroll: true });
+        e.centrada = enElCentro();
+        mostrarInfo(e.centrada);
+        lista[e.centrada].focus({ preventScroll: true });
       },
     );
   }
@@ -302,9 +335,13 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
   function cerrar(i: number) {
     const e = estado.current;
     if (!e.abierto || e.animando) return;
+    e.frenarDesplazamiento?.();
+    e.frenarDesplazamiento = null;
     e.animando = true;
     e.abierto = false;
     vibrar(10);
+    carruselRef.current!.style.pointerEvents = "none";
+    carruselRef.current!.style.scrollSnapType = "";
     const lista = slots();
     const desde = rect(interior(lista[i]));
     const fondoInicial = parseFloat(fondoRef.current!.style.opacity) || 0.95;
@@ -319,6 +356,9 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
     homeRef.current!.style.visibility = "hidden";
     const hasta = rect(homeRef.current!);
 
+    // La elegida desaparece en el acto: si era una vecina, tenía la transición de entrada
+    // y se desvanecía en ~350 ms debajo de la que vuela (se veían dos tarjetas).
+    lista[i].classList.remove(s.entra);
     lista[i].style.opacity = "0";
     lista.forEach((el, j) => j !== i && el.classList.add(s.sale));
     infoRef.current!.style.opacity = "0";
@@ -333,6 +373,7 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
         overlayRef.current!.hidden = true;
         bloquearScroll(false);
         carruselRef.current!.style.transform = "";
+        carruselRef.current!.style.pointerEvents = "";
         e.animando = false;
         homeRef.current!.focus({ preventScroll: true });
       },
@@ -342,8 +383,39 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
   function tocarLugar(i: number) {
     const e = estado.current;
     if (!e.abierto || e.animando || !e.g) return;
-    if (i === e.centrada) cerrar(i);
-    else carruselRef.current!.scrollTo({ left: i * e.g.paso, behavior: reducirMovimiento() ? "auto" : "smooth" });
+    if (i === enElCentro()) cerrar(i);
+    else irA(i);
+  }
+
+  /**
+   * Lleva el carrusel a la tarjeta i. No usa scrollTo({ behavior: "smooth" }): en el
+   * iPhone, el desplazamiento suave con "snap" obligatorio rebota y se traba. Se apaga
+   * el snap, se mueve con un resorte sin rebote y se vuelve a prender al llegar.
+   */
+  function irA(i: number) {
+    const e = estado.current;
+    const carrusel = carruselRef.current!;
+    const hasta = i * e.g!.paso;
+    e.frenarDesplazamiento?.();
+    if (reducirMovimiento()) {
+      carrusel.scrollLeft = hasta;
+      return;
+    }
+    const desde = carrusel.scrollLeft;
+    carrusel.style.scrollSnapType = "none";
+    const frenar = resorte(
+      (p) => (carrusel.scrollLeft = mezcla(desde, hasta, p)),
+      () => {
+        carrusel.scrollLeft = hasta;
+        carrusel.style.scrollSnapType = "";
+        e.frenarDesplazamiento = null;
+      },
+      RESORTE_CARRUSEL,
+    );
+    e.frenarDesplazamiento = () => {
+      frenar();
+      carrusel.style.scrollSnapType = "";
+    };
   }
 
   // Scroll del carrusel, Escape, resize y "deslizar hacia abajo para cerrar".
@@ -353,7 +425,7 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
     if (!carrusel || !overlay) return;
     const alScroll = () => requestAnimationFrame(interpolar);
     const alTeclado = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape" && estado.current.abierto) cerrar(estado.current.centrada);
+      if (ev.key === "Escape" && estado.current.abierto) cerrar(enElCentro());
     };
     const alRedimensionar = () => {
       const e = estado.current;
@@ -365,7 +437,11 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
 
     let arrastre: { x: number; y: number; dy: number; vertical: boolean | null } | null = null;
     const bajar = (ev: PointerEvent) => {
-      if (estado.current.abierto && !estado.current.animando) arrastre = { x: ev.clientX, y: ev.clientY, dy: 0, vertical: null };
+      const e = estado.current;
+      // Si el carrusel se estaba moviendo solo, el dedo manda: se frena ahí.
+      e.frenarDesplazamiento?.();
+      e.frenarDesplazamiento = null;
+      if (e.abierto && !e.animando) arrastre = { x: ev.clientX, y: ev.clientY, dy: 0, vertical: null };
     };
     const mover = (ev: PointerEvent) => {
       if (!arrastre) return;
@@ -383,7 +459,7 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
       const { dy, vertical } = arrastre;
       arrastre = null;
       if (!vertical) return;
-      if (dy > UMBRAL_CIERRE) return cerrar(estado.current.centrada);
+      if (dy > UMBRAL_CIERRE) return cerrar(enElCentro());
       const inicio = dy * 0.7;
       const fondoDesde = 0.95 * Math.max(0.35, 1 - dy / 500);
       resorte(
@@ -559,13 +635,14 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
               <div key={t.slug} className={s.capa}>
                 <b>{t.nombre}</b>
                 <span>
+                  {t.socio && "Socio · "}
                   {t.puntos} pts · {textoFalta(t, true)}
                 </span>
               </div>
             ))}
           </div>
           <div className={s.acciones}>
-            <button type="button" className={s.usar} onClick={() => cerrar(estado.current.centrada)}>
+            <button type="button" className={s.usar} onClick={() => cerrar(enElCentro())}>
               Usar esta
             </button>
             <a ref={linkRef} href={`/t/${activaT.slug}`} className={s.link}>

@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { premiosDelLocal, proximoPremio } from "@/lib/tarjeta";
 import { proveedorWallet } from "@/lib/wallet";
 import { sincronizarClaseLocal } from "@/lib/wallet/google";
+import { nombreClub, socioDesde } from "@/lib/socios";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/t/[local]
 
   const db = crearClienteAdmin();
   const [{ data: tarjeta }, premios] = await Promise.all([
-    db.from("tarjetas").select("id, serial, wallet_auth_token, puntos").eq("cliente_id", cliente.clienteId).eq("local_id", local.id).maybeSingle(),
+    db.from("tarjetas").select("id, serial, wallet_auth_token, puntos, socio_desde").eq("cliente_id", cliente.clienteId).eq("local_id", local.id).maybeSingle(),
     premiosDelLocal(local.id),
   ]);
   if (!tarjeta) return ir(`/t/${slug}`);
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/t/[local]
       colorSecundario: local.color_secundario,
       logoUrl: local.logo_url,
       franjaUrl: local.franja_url,
+      socio: tarjeta.socio_desde ? { club: nombreClub(local), desde: socioDesde(tarjeta.socio_desde, local.zona_horaria) } : null,
       urlTarjeta: `${env.appUrl}/t/${local.slug}`,
     });
     if (!url) throw new Error("sin url");

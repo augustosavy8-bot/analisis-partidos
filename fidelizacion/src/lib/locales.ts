@@ -26,14 +26,22 @@ export type Local = {
   /** Coordenadas (opcionales) para las locations del pase de Apple Wallet. */
   latitud: number | null;
   longitud: number | null;
+  /** Club de socios (ver lib/socios). null = nombre y colores por defecto. */
+  club_nombre: string | null;
+  club_color_primario: string | null;
+  club_color_secundario: string | null;
 };
+
+/** Las columnas de `Local`, para los select (también anidados: `locales(${COLUMNAS_LOCAL})`). */
+export const COLUMNAS_LOCAL =
+  "id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud, club_nombre, club_color_primario, club_color_secundario";
 
 export const buscarLocal = cache(async (slug: string): Promise<Local | null> => {
   if (!/^[a-z0-9-]{2,60}$/.test(slug)) return null;
   const db = crearClienteAdmin();
   const { data } = await db
     .from("locales")
-    .select("id, slug, nombre, rubro, logo_url, icono_url, color_primario, color_secundario, color_texto, color_etiqueta, franja_url, nombre_programa, texto_dorso, minutos_entre_puntos, zona_horaria, termino_personal, puntos_bienvenida, puntos_cumple, latitud, longitud")
+    .select(COLUMNAS_LOCAL)
     .eq("slug", slug)
     .eq("activo", true)
     .maybeSingle();

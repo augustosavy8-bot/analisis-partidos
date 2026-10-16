@@ -19,8 +19,13 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/panel/[lo
   if (bloqueo) return new NextResponse(bloqueo, { status: 403 });
 
   const q = req.nextUrl.searchParams.get("q")?.slice(0, 60) || null;
-  const { data, error } = await db.rpc("panel_clientes", { p_local_id: local.id, p_busqueda: q, p_limite: 10000 });
+  const [{ data, error }, { data: idsSocios }] = await Promise.all([
+    db.rpc("panel_clientes", { p_local_id: local.id, p_busqueda: q, p_limite: 10000 }),
+    db.rpc("panel_socios", { p_local_id: local.id }),
+  ]);
   if (error) return new NextResponse("Error", { status: 500 });
+  // Columna "Socio" sólo si el local tiene club (algún socio).
+  const socios = new Set((idsSocios ?? []) as string[]);
 
   const fmt = (iso: string | null) =>
     iso
@@ -33,13 +38,17 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/panel/[lo
       : "";
 
   type Fila = {
-    nombre: string; whatsapp: string; puntos: number; visitas: number; canjes: number;
+    cliente_id: string; nombre: string; whatsapp: string; puntos: number; visitas: number; canjes: number;
     ultima_visita: string | null; alta: string; consentimiento_fecha: string;
   };
   const filas = (data ?? []) as Fila[];
+  const club = socios.size > 0;
   const csv = aCSV([
-    ["Nombre", "WhatsApp", "Puntos", "Visitas", "Canjes", "Última visita", "Alta", "Consentimiento"],
-    ...filas.map((c) => [c.nombre, c.whatsapp.replace("+", ""), c.puntos, c.visitas, c.canjes, fmt(c.ultima_visita), fmt(c.alta), fmt(c.consentimiento_fecha)]),
+    ["Nombre", "WhatsApp", "Puntos", "Visitas", "Canjes", "Última visita", "Alta", "Consentimiento", ...(club ? ["Socio"] : [])],
+    ...filas.map((c) => [
+      c.nombre, c.whatsapp.replace("+", ""), c.puntos, c.visitas, c.canjes, fmt(c.ultima_visita), fmt(c.alta), fmt(c.consentimiento_fecha),
+      ...(club ? [socios.has(c.cliente_id) ? "Sí" : "No"] : []),
+    ]),
   ]);
 
   const hoy = new Date().toISOString().slice(0, 10);

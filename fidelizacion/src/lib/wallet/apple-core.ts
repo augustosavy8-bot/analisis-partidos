@@ -7,6 +7,7 @@ import { connect, type ClientHttp2Session } from "node:http2";
 import { timingSafeEqual } from "node:crypto";
 import { PKPass } from "passkit-generator";
 import { coloresTarjeta, contraste, cssRgb } from "@/lib/colores";
+import { delClub } from "@/lib/socios";
 
 export type CredencialesApple = {
   passTypeId: string;
@@ -73,6 +74,8 @@ export type DatosPaseApple = {
   ultimoMovimiento?: "suma" | "canje" | "regalo" | null;
   /** Último mensaje del local (campo Novedades del dorso). */
   novedad?: { titulo: string; texto: string } | null;
+  /** Socio del club (los colores del local ya vienen con los del club): insignia y "desde". */
+  socio?: { club: string; desde: string } | null;
   urlTarjeta: string;
   local: {
     nombre: string;
@@ -119,11 +122,13 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
     authenticationToken: d.authToken,
     webServiceURL: `${base}/api/apple-wallet`,
     organizationName: local.nombre,
-    description: `Tarjeta de puntos de ${programa}`,
+    description: d.socio ? `Tarjeta de socio de ${programa}` : `Tarjeta de puntos de ${programa}`,
     logoText: programa,
     sharingProhibited: true,
     ...coloresPase(local.colorPrimario, local.colorSecundario, local.colorTexto, local.colorEtiqueta),
     storeCard: {
+      // Arriba a la derecha: se ve también con el pase apilado en Wallet.
+      ...(d.socio ? { headerFields: [{ key: "socio", label: "", value: "★ SOCIO" }] } : {}),
       primaryFields: [
         {
           key: "puntos",
@@ -140,7 +145,12 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
               : { key: "faltan", label: "ESTADO", value: "¡Listo para canjear!", textAlignment: "PKTextAlignmentRight" },
           ]
         : [{ key: "proximo", label: "PREMIOS", value: "Próximamente" }],
-      auxiliaryFields: [{ key: "cliente", label: "CLIENTE", value: d.clienteNombre }],
+      auxiliaryFields: d.socio
+        ? [
+            { key: "cliente", label: "SOCIO", value: d.clienteNombre },
+            { key: "desde", label: "DESDE", value: d.socio.desde, textAlignment: "PKTextAlignmentRight" },
+          ]
+        : [{ key: "cliente", label: "CLIENTE", value: d.clienteNombre }],
       backFields: [
         // Siempre presente: cuando el local manda un mensaje cambia el valor e iOS lo notifica.
         {
@@ -150,6 +160,7 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
           changeMessage: "%@",
         },
         { key: "premios", label: "Premios", value: premios },
+        ...(d.socio ? [{ key: "club", label: d.socio.club, value: `Sos socio ${delClub(d.socio.club)} desde ${d.socio.desde}.` }] : []),
         ...(local.textoDorso ? [{ key: "sobre", label: programa, value: local.textoDorso }] : []),
         {
           key: "tarjeta",

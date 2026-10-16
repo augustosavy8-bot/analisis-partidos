@@ -20,6 +20,8 @@ export type TarjetaResumenApp = {
   puntos: number;
   proximo: { nombre: string; puntos: number; faltan: number } | null;
   premiosDisponibles: number;
+  /** Nombre del club si es socio (los colores del local ya vienen con los del club). */
+  socio?: string;
 };
 
 type MovimientoApp = { id: string; tipo: "suma" | "canje" | "regalo"; texto: string; puntos: number; fecha: string };

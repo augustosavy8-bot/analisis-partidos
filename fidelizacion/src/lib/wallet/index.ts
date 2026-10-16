@@ -32,6 +32,8 @@ export interface DatosPase {
   logoUrl?: string | null;
   /** Franja subida por el local (Google: heroImage del objeto). */
   franjaUrl?: string | null;
+  /** Socio del club del local (Google; Apple lo lee de la tarjeta al armar el pase). */
+  socio?: { club: string; desde: string } | null;
   urlTarjeta: string;
   /** Ids de la tarjeta (Apple guarda el pase por tarjeta). */
   tarjetaId?: string;

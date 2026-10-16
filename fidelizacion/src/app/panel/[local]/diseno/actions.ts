@@ -93,6 +93,18 @@ export async function guardarDiseno(slug: string, _prev: EstadoDiseno, form: For
   }
   if (dorso.length > LIMITES_TEXTO.dorso) return { error: `El texto del dorso tiene hasta ${LIMITES_TEXTO.dorso} caracteres.` };
 
+  // Tarjeta de socio: sólo viene si el local tiene club (llavero de socios o socios).
+  const conClub = form.has("club_color_fondo");
+  const clubFondo = color("club_color_fondo");
+  const clubAcento = color("club_color_acento");
+  const clubNombre = String(form.get("club_nombre") ?? "").trim().replace(/\s+/g, " ");
+  if (conClub) {
+    if (![clubFondo, clubAcento].every((c) => HEX_COLOR.test(c))) return { error: "Elegí colores válidos para la tarjeta de socio." };
+    if (clubNombre && (clubNombre.length < 2 || clubNombre.length > LIMITES_TEXTO.club)) {
+      return { error: `El nombre del club va de 2 a ${LIMITES_TEXTO.club} caracteres.` };
+    }
+  }
+
   const cambios: Record<string, string | null> = {
     color_primario: fondo,
     color_secundario: acento,
@@ -101,6 +113,7 @@ export async function guardarDiseno(slug: string, _prev: EstadoDiseno, form: For
     // Igual al nombre del local = sin nombre propio (sigue al local si lo renombran).
     nombre_programa: programa && programa !== local.nombre ? programa : null,
     texto_dorso: dorso || null,
+    ...(conClub ? { club_nombre: clubNombre || null, club_color_primario: clubFondo, club_color_secundario: clubAcento } : {}),
   };
 
   const storage = crearClienteAdmin().storage.from(BUCKET);

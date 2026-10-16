@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { CheckCanje, SelloAnimado } from "@/components/Animaciones";
 import { TarjetaCompletaAnimada } from "./TarjetaCompletaAnimada";
+import { TarjetaSocioAnimada } from "./TarjetaSocioAnimada";
+import { alClub, delClub } from "@/lib/socios";
 import { claseBoton } from "@/components/app/Boton";
 import { Mascota } from "@/components/app/Mascota";
 import { Confeti } from "@/components/app/Confeti";
 
 type Props = {
-  tipo: "suma" | "canje";
+  /** "socio": se hizo socio con un toque que no sumó (límite de tiempo). */
+  tipo: "suma" | "canje" | "socio";
   /** Puntos que sumó este toque (más de 1 si había promo). */
   sumados: number;
   promo: string | null;
@@ -22,22 +25,27 @@ type Props = {
   /** Local (para dibujar su tarjeta cuando se completa). */
   comercio: string;
   logo: string | null;
+  /** Se hizo socio con este toque: la tarjeta gira y aparece la de socio. */
+  socio?: { club: string; vars: Record<string, string>; meta: number | null; premio?: string } | null;
 };
 
-export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje, comercio, logo }: Props) {
+export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, puntos, mensaje, comercio, logo, socio }: Props) {
   const total = sumados + regalos.reduce((a, r) => a + r.puntos, 0);
   const cumple = regalos.some((r) => r.motivo === "cumple");
+  // En un canje manda el canje (el personal tiene que ver el check); el club va como insignia.
+  const esSocio = !!socio && tipo !== "canje";
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    // Sacamos el parámetro de la URL para que recargar no repita la animación.
+    // Sacamos los parámetros de la URL para que recargar no repita la animación.
     const url = new URL(window.location.href);
     url.searchParams.delete("m");
+    url.searchParams.delete("socio");
     window.history.replaceState(null, "", url);
     try {
-      navigator.vibrate?.(tipo === "canje" ? [60, 40, 120] : 50);
+      navigator.vibrate?.(tipo === "canje" || esSocio ? [60, 40, 120] : 50);
     } catch {}
-  }, [tipo]);
+  }, [tipo, esSocio]);
 
   if (!visible) return null;
 
@@ -46,7 +54,7 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
       className="blanco-fijo anim-aparecer fixed inset-0 z-50 flex flex-col items-center justify-center bg-pt-card px-8 text-center text-white"
       style={{ backgroundImage: "radial-gradient(80% 50% at 50% 35%, color-mix(in oklab, var(--color-pt-accent) 20%, transparent), transparent 70%)" }}
       // El canje no se cierra tocando el fondo: el personal tiene que poder verlo.
-      onClick={() => tipo === "suma" && setVisible(false)}
+      onClick={() => tipo !== "canje" && setVisible(false)}
       role="dialog"
       aria-live="polite"
     >
@@ -59,6 +67,11 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
             <span className="anim-pop absolute -bottom-1 -right-3 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-pt-flotante" style={{ animationDelay: "350ms" }}>
               <CheckCanje color="var(--color-pt-accent-dark)" tamaño={56} />
             </span>
+          </div>
+        ) : esSocio ? (
+          <div className="relative">
+            <Confeti />
+            <TarjetaSocioAnimada comercio={comercio} logo={logo} puntos={puntos} meta={socio.meta} premio={socio.premio} vars={socio.vars} />
           </div>
         ) : completo ? (
           <TarjetaCompletaAnimada meta={completo.meta} premio={completo.premio} comercio={comercio} logo={logo} />
@@ -75,10 +88,12 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
         )}
       </div>
 
-      <h1 className="pt-app-titulo anim-subir mt-10" style={{ animationDelay: completo ? "900ms" : "350ms" }}>
+      <h1 className="pt-app-titulo anim-subir mt-10" style={{ animationDelay: completo || esSocio ? "900ms" : "350ms" }}>
         {tipo === "canje"
           ? "¡Premio canjeado!"
-          : completo
+          : esSocio
+            ? "¡Ya sos socio!"
+            : completo
             ? "¡Completaste tu tarjeta!"
             : cumple
             ? "¡Feliz cumple! 🎂"
@@ -86,6 +101,12 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
               ? "¡Sumaste un punto!"
               : `¡Sumaste ${total} puntos!`}
       </h1>
+      {esSocio && (
+        <p className="anim-subir mt-3 max-w-[340px] pt-app-texto text-white/85" style={{ animationDelay: "950ms" }}>
+          Te damos la bienvenida {alClub(socio.club)}.{" "}
+          {tipo === "suma" ? `Y sumaste ${total === 1 ? "1 punto" : `${total} puntos`}.` : "Desde hoy tu tarjeta es de socio."}
+        </p>
+      )}
       {tipo === "suma" && (promo || regalos.length > 0) && (
         <ul className="anim-subir mt-3 space-y-1 pt-app-texto text-white/85" style={{ animationDelay: "400ms" }}>
           {promo && <li>🔥 {promo}: +{sumados}</li>}
@@ -108,7 +129,15 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
           Mostrale esta pantalla a quien te atiende.
         </p>
       )}
-      {completo ? (
+      {tipo === "canje" && socio && (
+        <p
+          className="anim-subir mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 pt-app-detalle font-semibold ring-1 ring-white/15"
+          style={{ animationDelay: "500ms" }}
+        >
+          ★ Ahora sos socio {delClub(socio.club)}
+        </p>
+      )}
+      {completo && !esSocio ? (
         <>
           <p className="anim-subir mt-3 pt-app-texto text-white/80" style={{ animationDelay: "1000ms" }}>
             Desbloqueaste
@@ -137,17 +166,19 @@ export function Celebracion({ tipo, sumados, promo, premio, completo, regalos, p
         </>
       ) : (
         <>
-          <p className="anim-subir mt-3 pt-app-texto text-white/85" style={{ animationDelay: "450ms" }}>
-            {mensaje}
-          </p>
-          <p className="anim-subir mt-1 pt-app-detalle text-white/70" style={{ animationDelay: "500ms" }}>
+          {mensaje && (
+            <p className="anim-subir mt-3 pt-app-texto text-white/85" style={{ animationDelay: esSocio ? "1000ms" : "450ms" }}>
+              {mensaje}
+            </p>
+          )}
+          <p className="anim-subir mt-1 pt-app-detalle text-white/70" style={{ animationDelay: esSocio ? "1050ms" : "500ms" }}>
             Tenés <Contador hasta={puntos} desde={Math.max(0, puntos - (tipo === "suma" ? total : 0))} /> {puntos === 1 ? "punto" : "puntos"}
           </p>
 
           <button
             onClick={() => setVisible(false)}
             className={`anim-subir ${claseBoton("acento", "md", "mt-12 !h-pt-control !px-8")}`}
-            style={{ animationDelay: "700ms" }}
+            style={{ animationDelay: esSocio ? "1200ms" : "700ms" }}
           >
             Ver mi tarjeta
           </button>

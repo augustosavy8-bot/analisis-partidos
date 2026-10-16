@@ -7,13 +7,29 @@ import { EditorDiseno } from "./EditorDiseno";
 import { MejorarPlan } from "@/components/app/MejorarPlan";
 import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
 import { puedeUsar } from "@/lib/facturacion/acceso";
+import { coloresClub, nombreClub } from "@/lib/socios";
+
+/** Fondo y acento de la tarjeta de socio (lo guardado o lo por defecto). */
+function colorClub(local: Parameters<typeof coloresClub>[0]) {
+  const c = coloresClub(local);
+  return { fondo: c.primario, acento: c.secundario };
+}
 
 export const metadata = { title: "Diseño de tarjeta" };
 
 export default async function Diseno({ params }: PageProps<"/panel/[local]/diseno">) {
   const { local: slug } = await params;
-  const { local } = await requerirLocal(slug);
-  const [premios, alcance, acceso] = await Promise.all([premiosDelLocal(local.id), alcanceBilleteras(local.id), accesoDelLocal(local.id)]);
+  const { db, local } = await requerirLocal(slug);
+  const [premios, alcance, acceso, { data: idsSocios }, { count: llaverosSocio }] = await Promise.all([
+    premiosDelLocal(local.id),
+    alcanceBilleteras(local.id),
+    accesoDelLocal(local.id),
+    db.rpc("panel_socios", { p_local_id: local.id }),
+    db.from("chips").select("id", { count: "exact", head: true }).eq("local_id", local.id).eq("da_socio", true),
+  ]);
+  // Club de socios: la sección aparece si el local tiene llavero de socios o ya tiene socios.
+  const conClub = ((idsSocios as string[] | null)?.length ?? 0) > 0 || (llaverosSocio ?? 0) > 0;
+  const club = conClub ? { nombre: local.club_nombre ?? "", porDefecto: nombreClub({ ...local, club_nombre: null }), ...colorClub(local) } : null;
   // Punto de partida: lo que hoy usan las tarjetas (lo guardado o lo calculado).
   const colores = coloresTarjeta(local);
   const premio = premios[0] ? { nombre: premios[0].nombre, puntos: premios[0].puntos_necesarios } : null;
@@ -31,6 +47,7 @@ export default async function Diseno({ params }: PageProps<"/panel/[local]/disen
         comercio={local.nombre}
         premio={premio}
         alcance={alcance}
+        club={club}
         inicial={{
           fondo: colores.fondo,
           texto: colores.texto,

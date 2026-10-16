@@ -37,15 +37,14 @@ async function pedir<T>(ruta: string, opciones: { token?: string | null; metodo?
 }
 
 export const api = {
-  ingresar: (whatsapp: string) => pedir<Sesion>("/sesion", { metodo: "POST", cuerpo: { whatsapp } }),
+  /** Entrar con el WhatsApp: exige el toque pendiente (estar en el local) y lo aplica. */
+  ingresar: (whatsapp: string, toquePendiente: string) =>
+    pedir<Sesion & Extract<RespuestaToqueApp, { estado: "aplicado" }>>("/sesion", { metodo: "POST", cuerpo: { whatsapp, toquePendiente } }),
   salir: (token: string) => pedir<{ ok: true }>("/sesion", { metodo: "DELETE", token }),
   tarjetas: (token: string) => pedir<{ nombre: string; tarjetas: TarjetaResumenApp[] }>("/tarjetas", { token }),
   tarjeta: (token: string, slug: string) => pedir<TarjetaDetalleApp>(`/tarjetas/${encodeURIComponent(slug)}`, { token }),
   /** El llavero abrió la app: aplica el toque (con sesión) o devuelve el toque firmado para registrarse. */
   toque: (token: string | null, params: ParamsToque) => pedir<RespuestaToqueApp>("/toque", { metodo: "POST", token, cuerpo: { params } }),
-  /** El toque que quedó esperando mientras el cliente entraba con su WhatsApp. */
-  toquePendiente: (token: string, toquePendiente: string) =>
-    pedir<RespuestaToqueApp>("/toque", { metodo: "POST", token, cuerpo: { toquePendiente } }),
   /** Crear la tarjeta desde la app (después del primer toque). */
   registro: (datos: DatosRegistro) =>
     pedir<Sesion & Extract<RespuestaToqueApp, { estado: "aplicado" }>>("/registro", { metodo: "POST", cuerpo: datos }),

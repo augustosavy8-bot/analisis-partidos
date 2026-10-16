@@ -36,9 +36,21 @@ export async function registrarse(_prev: EstadoForm, form: FormData): Promise<Es
   const toque = await toquePendienteActual();
   if (!toque) redirect("/aviso?m=toque_vencido");
 
-  const { resultado, clienteId } = await vincularCelular({ nombre, whatsapp, localId: toque.localId });
-  if (cumple) await guardarCumpleCliente(clienteId, cumple.dia, cumple.mes);
-  redirect(resultado ? urlResultado(toque.localSlug, resultado) : `/t/${toque.localSlug}`);
+  // Si el número ya tiene tarjeta, esto es en la práctica "recuperarla": mismos
+  // límites por IP y por número que en recuperar (todavía no hay código por WhatsApp).
+  const { data: existente } = await crearClienteAdmin().from("clientes").select("id").eq("whatsapp", whatsapp).maybeSingle();
+  if (existente) {
+    const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? null;
+    if (!(await ingresoPermitidoIp(ip)) || !(await numeroPermitido(whatsapp))) {
+      return { error: "Hiciste muchos intentos. Esperá un rato y probá de nuevo.", valores };
+    }
+    await Promise.all([registrarIntentoIp(ip, true), registrarIntentoNumero(whatsapp, true)]);
+  }
+
+  const vinculo = await vincularCelular({ nombre, whatsapp, localId: toque.localId });
+  if (!vinculo) redirect("/aviso?m=toque_vencido");
+  if (cumple) await guardarCumpleCliente(vinculo.clienteId, cumple.dia, cumple.mes);
+  redirect(urlResultado(toque.localSlug, vinculo.resultado));
 }
 
 export async function recuperar(_prev: EstadoForm, form: FormData): Promise<EstadoForm> {
@@ -68,6 +80,7 @@ export async function recuperar(_prev: EstadoForm, form: FormData): Promise<Esta
     return { error: "No encontramos una tarjeta con ese WhatsApp. ¿Lo escribiste bien?", valores };
   }
 
-  const { resultado } = await vincularCelular({ nombre: cliente.nombre, whatsapp, localId: local.id });
-  redirect(resultado ? urlResultado(local.slug, resultado) : `/t/${local.slug}`);
+  const vinculo = await vincularCelular({ nombre: cliente.nombre, whatsapp, localId: local.id });
+  if (!vinculo) redirect("/aviso?m=toque_vencido");
+  redirect(urlResultado(local.slug, vinculo.resultado));
 }

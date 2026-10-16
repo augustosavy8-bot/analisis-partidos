@@ -116,9 +116,14 @@ export async function alternarLocal(slug: string, activo: boolean) {
 
 /**
  * Borra el negocio entero de un local: el comercio, todos sus locales y lo que
- * cuelga (clientes del local, tarjetas, movimientos, llaveros, equipo,
- * suscripciones). Pide escribir el nombre del local para confirmar y no borra si
- * hay una suscripción de Mercado Pago viva (se le seguiría cobrando).
+ * cuelga (tarjetas, movimientos, canjes, llaveros, equipo, suscripciones) y los
+ * clientes que se quedan sin tarjetas. Pide escribir el nombre del local para
+ * confirmar y no borra si hay una suscripción de Mercado Pago viva (se le
+ * seguiría cobrando).
+ *
+ * Primero apaga los locales: si algo falla a mitad de camino, el negocio queda
+ * fuera de servicio (nunca a medio vivir) y volver a tocar el botón termina el
+ * trabajo. Borra por local/comercio, no por listas de ids, así no hay tope de filas.
  */
 export async function eliminarNegocio(slug: string, confirmacion: string): Promise<{ error?: string }> {
   await requerirSuperadmin();
@@ -136,28 +141,68 @@ export async function eliminarNegocio(slug: string, confirmacion: string): Promi
     .in("estado", ["trialing", "authorized", "pending", "paused", "past_due"]);
   if (vivas) return { error: "Tiene una suscripción de Mercado Pago activa. Cancelala primero (desde Facturación) para que no se le siga cobrando." };
 
-  const ids = (filas: { id: string }[] | null) => (filas ?? []).map((f) => f.id);
-  const locales = ids((await db.from("locales").select("id").eq("comercio_id", comercioId)).data);
-  const tarjetas = ids((await db.from("tarjetas").select("id").in("local_id", locales)).data);
-  const mozos = ids((await db.from("mozos").select("id").in("local_id", locales)).data);
+  const { data: filasLocales } = await db.from("locales").select("id").eq("comercio_id", comercioId);
+  const locales = (filasLocales ?? []).map((l) => l.id);
+  const clientes = await clientesDeLocales(db, locales);
 
-  // canjes y movimientos no se borran en cascada desde los mozos: van primero.
+  // Orden: los movimientos antes que los canjes (el movimiento de un canje no puede
+  // quedar sin su canje) y los dos antes que los locales (apuntan al equipo sin cascada).
   const pasos = [
-    () => db.from("canjes").delete().in("tarjeta_id", tarjetas),
-    () => db.from("movimientos").delete().in("tarjeta_id", tarjetas),
-    () => db.from("movimientos").delete().in("mozo_id", mozos),
-    () => db.from("locales").delete().in("id", locales),
+    () => db.from("locales").update({ activo: false }).eq("comercio_id", comercioId),
+    () => db.from("movimientos").delete().in("local_id", locales),
+    () => db.from("canjes").delete().in("local_id", locales),
     () => db.from("pedidos").delete().eq("comercio_id", comercioId),
+    () => db.from("locales").delete().eq("comercio_id", comercioId),
     () => db.from("comercios").delete().eq("id", comercioId),
   ];
   for (const paso of pasos) {
     const { error } = await paso();
     if (error) {
       console.error("Admin: no se pudo eliminar el negocio", comercioId, error.message);
-      return { error: "No se pudo eliminar del todo. Probá de nuevo." };
+      return { error: "No se pudo eliminar del todo (el negocio quedó desactivado). Probá de nuevo." };
     }
   }
+
+  // Datos personales (nombre, WhatsApp, cumple) de quienes sólo eran clientes de este negocio.
+  try {
+    await borrarClientesSinTarjetas(db, clientes);
+  } catch (e) {
+    console.error("Admin: quedaron clientes sin tarjetas para borrar", comercioId, e instanceof Error ? e.message : e);
+  }
   redirect("/admin");
+}
+
+type Db = ReturnType<typeof crearClienteAdmin>;
+
+/** Clientes con tarjeta en estos locales (de a 1000: es el tope de filas por consulta). */
+async function clientesDeLocales(db: Db, locales: string[]): Promise<string[]> {
+  const ids = new Set<string>();
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await db.from("tarjetas").select("cliente_id").in("local_id", locales).order("id").range(desde, desde + 999);
+    if (error) throw new Error(error.message);
+    for (const t of data ?? []) ids.add(t.cliente_id);
+    if ((data ?? []).length < 1000) return [...ids];
+  }
+}
+
+/** Borra los que ya no tienen ninguna tarjeta. Si tienen en otro negocio, no se tocan. */
+async function borrarClientesSinTarjetas(db: Db, clientes: string[]) {
+  for (let i = 0; i < clientes.length; i += 200) {
+    const tanda = clientes.slice(i, i + 200);
+    // Paginado: si se cortara en 1000 filas, se borraría a alguien que sí tiene tarjetas.
+    const siguen = new Set<string>();
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await db.from("tarjetas").select("cliente_id").in("cliente_id", tanda).order("id").range(desde, desde + 999);
+      if (error) throw new Error(error.message);
+      for (const t of data ?? []) siguen.add(t.cliente_id);
+      if ((data ?? []).length < 1000) break;
+    }
+    const borrar = tanda.filter((id) => !siguen.has(id));
+    if (borrar.length) {
+      const { error: e } = await db.from("clientes").delete().in("id", borrar);
+      if (e) throw new Error(e.message);
+    }
+  }
 }
 
 // --- Dueños ------------------------------------------------------------------

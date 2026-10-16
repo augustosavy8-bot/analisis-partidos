@@ -27,7 +27,7 @@ const CLAVES = ["p", "m", "picc_data", "cmac", "t", "q"] as const;
  */
 export default function Toque() {
   const q = useLocalSearchParams<Record<string, string>>();
-  const { sesion, iniciar, entrar } = useSesion();
+  const { sesion, iniciar } = useSesion();
   const [estado, setEstado] = useState<Estado>({ fase: "cargando" });
   // Cada toque se manda una sola vez (el contador del chip no se puede repetir); si
   // llega otro toque con la pantalla abierta, cambian los parámetros y se procesa.
@@ -87,12 +87,9 @@ export default function Toque() {
             setEstado({ fase: "listo", respuesta: r });
           }}
           onEntrar={async (whatsapp) => {
-            const s = await entrar(whatsapp);
-            try {
-              mostrar(await api.toquePendiente(s.token, estado.toquePendiente));
-            } catch (e) {
-              setEstado(error(e));
-            }
+            const r = await api.ingresar(whatsapp, estado.toquePendiente);
+            await iniciar(r);
+            setEstado({ fase: "listo", respuesta: r });
           }}
         />
       )}

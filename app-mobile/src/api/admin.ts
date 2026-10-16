@@ -34,7 +34,7 @@ export const apiAdmin = {
     pedir<SesionAdmin>("/sesion", { metodo: "POST", cuerpo: { email, password, codigo } }),
   locales: (token: string) => pedir<{ locales: LocalAdmin[] }>("/locales", { token }),
   claves: (token: string, uid: string) => pedir<ClavesChipApi>("/chips/claves", { metodo: "POST", token, cuerpo: { uid } }),
-  registrar: (token: string, d: { uid: string; p: string; m: string; localId: string; mozoId: string | null; etiqueta: string | null }) =>
+  registrar: (token: string, d: { uid: string; p: string; m: string; localId: string; mozoId: string; etiqueta: string | null }) =>
     pedir<{ ok: true; chipId: string }>("/chips", { metodo: "POST", token, cuerpo: d }),
 };
 

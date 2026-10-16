@@ -39,7 +39,7 @@ npm run dev
 ```
 
 Abrí:
-- http://localhost:3000/api/salud → `{"ok":true, ...conteos}`
+- http://localhost:3000/api/salud → `{"ok":true}`
 - http://localhost:3000/demo → local demo, mozos, chips de prueba con sus URLs y premios
 
 Crear usuarios del panel:

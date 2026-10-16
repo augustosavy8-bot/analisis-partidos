@@ -1,4 +1,5 @@
-import { SuscripcionActiva } from "./SuscripcionActiva";
+import { SuscripcionActiva, type AltaSuscripcion } from "./SuscripcionActiva";
+import { suscripcionVigente } from "@/lib/facturacion/comercio";
 import { requerirLocal } from "@/lib/panel";
 import Link from "next/link";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
@@ -36,12 +37,14 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
   const avanzadas = puedeUsar(acceso, "estadisticas_avanzadas");
   const t = formasTermino(local.termino_personal);
 
+  const alta = bienvenida === "1" ? await altaReciente(admin, local.id) : null;
+
   const pctRecurrentes = m.clientes_activos ? Math.round((m.clientes_recurrentes / m.clientes_activos) * 100) : 0;
   const maxMozo = Math.max(1, ...m.ranking_mozos.map((r) => r.sumas));
 
   return (
     <>
-      {bienvenida === "1" && <SuscripcionActiva />}
+      {alta && <SuscripcionActiva alta={alta} />}
       <Titulo detalle="Últimos 30 días, salvo que diga otra cosa.">Resumen</Titulo>
 
       {m.clientes_total > 0 && <AvisosHoy db={db} localId={local.id} slug={slug} />}
@@ -153,4 +156,20 @@ function Numero({ icono, etiqueta, valor, detalle }: { icono: NombreIcono; etiqu
       <p className="mt-1 pt-app-detalle text-pt-ink-2">{detalle}</p>
     </Tarjeta>
   );
+}
+
+/** Al volver de suscribirse: qué pasó de verdad con la suscripción (no alcanza con el parámetro de la URL). */
+async function altaReciente(admin: Awaited<ReturnType<typeof requerirLocal>>["admin"], localId: string): Promise<AltaSuscripcion | null> {
+  const { data: fila } = await admin.from("locales").select("comercio_id").eq("id", localId).maybeSingle();
+  const s = fila ? await suscripcionVigente(fila.comercio_id) : null;
+  if (!s || !s.mpPreapprovalId) return null;
+  if (s.estado === "authorized") return { estado: "authorized", plan: s.planNombre };
+  if (s.estado === "pending") return { estado: "pending", plan: s.planNombre };
+  if (s.estado === "trialing") {
+    const finPrueba = s.trialEndsAt
+      ? new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(s.trialEndsAt))
+      : null;
+    return { estado: "trialing", plan: s.planNombre, finPrueba };
+  }
+  return null;
 }

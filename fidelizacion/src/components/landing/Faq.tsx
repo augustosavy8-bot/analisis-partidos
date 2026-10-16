@@ -23,7 +23,7 @@ const PREGUNTAS = [
   },
   {
     p: "¿Cuánto cuesta?",
-    r: "El precio es personalizado: cada presupuesto es único y se arma según tu local, tu equipo y lo que necesites. Escribinos y te lo preparamos.",
+    r: "Hay planes mensuales según el tamaño de tu negocio, con prueba gratis y sin permanencia: cancelás cuando quieras desde tu panel. Los precios los ves al crear tu cuenta, o escribinos y te ayudamos a elegir.",
   },
 ];
 

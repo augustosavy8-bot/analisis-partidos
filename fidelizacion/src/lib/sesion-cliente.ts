@@ -28,18 +28,24 @@ export async function toquePendienteActual() {
 }
 
 /**
- * Da de alta (o reutiliza) al cliente, vincula este celular y aplica el toque
- * pendiente si lo hay. Sólo para Server Actions.
+ * Usa el toque pendiente (un solo uso: si ya se usó o venció, devuelve null y no
+ * hace nada), da de alta (o reutiliza) al cliente, vincula este celular y aplica
+ * el toque. El toque se marca usado ANTES del alta: así un mismo toque no sirve
+ * para dar de alta números ajenos ni para entrar a varias tarjetas. Sólo para
+ * Server Actions.
  */
 export async function vincularCelular(opts: {
   nombre: string;
   whatsapp: string;
   localId: string;
-}): Promise<{ clienteId: string; clienteExistia: boolean; resultado: ResultadoToque | null }> {
+}): Promise<{ clienteId: string; clienteExistia: boolean; resultado: ResultadoToque } | null> {
   const store = await cookies();
+  const toque = leerToquePendiente(store.get(COOKIE_TOQUE)?.value);
+  store.delete(COOKIE_TOQUE);
+  if (!toque || !(await consumirToquePendiente(toque))) return null;
+
   const ua = (await headers()).get("user-agent") ?? "";
   const { token, hash } = nuevoTokenDispositivo();
-
   const db = crearClienteAdmin();
   const { data, error } = await db.rpc("alta_cliente", {
     p_nombre: opts.nombre,
@@ -51,13 +57,6 @@ export async function vincularCelular(opts: {
   if (error || !data) throw new Error(error?.message ?? "No se pudo registrar");
 
   store.set(COOKIE_DISPOSITIVO, token, opcionesCookie(DURACION_DISPOSITIVO));
-
-  let resultado: ResultadoToque | null = null;
-  const toque = leerToquePendiente(store.get(COOKIE_TOQUE)?.value);
-  if (toque && (await consumirToquePendiente(toque))) {
-    resultado = await aplicarToque(data.cliente_id, toque);
-  }
-  store.delete(COOKIE_TOQUE);
-
+  const resultado = await aplicarToque(data.cliente_id, toque);
   return { clienteId: data.cliente_id, clienteExistia: data.cliente_existia, resultado };
 }

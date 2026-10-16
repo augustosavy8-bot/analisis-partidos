@@ -3,6 +3,7 @@ import { crearClienteAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { env } from "@/lib/env";
 import { clienteActual } from "@/lib/sesion-cliente";
+import { requerirSuperadmin } from "@/lib/admin";
 import { olvidarCelular } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +17,12 @@ const TOKENS_SEED: Record<string, string> = {
 
 /**
  * Página de verificación de la Fase 1: muestra lo que cargó el seed.
- * Sólo existe con PERMITIR_MODO_PRUEBA=true.
+ * Sólo existe con PERMITIR_MODO_PRUEBA=true y sólo la ve el superadmin (lista
+ * todos los locales con su equipo y sus llaveros).
  */
 export default async function Demo() {
   if (!env.permitirModoPrueba) notFound();
+  await requerirSuperadmin();
 
   const db = crearClienteAdmin();
   const cliente = await clienteActual();

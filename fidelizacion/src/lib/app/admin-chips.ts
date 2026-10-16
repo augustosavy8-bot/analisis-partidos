@@ -70,7 +70,7 @@ export async function ingresarSuperadmin(email: string, password: string, codigo
   return { ok: true, token: verificado.access_token, vence: Math.floor(Date.now() / 1000) + verificado.expires_in, email: data.user.email ?? email };
 }
 
-export type AltaChip = { uid: string; p: string; m: string; localId: string; mozoId: string | null; etiqueta: string | null };
+export type AltaChip = { uid: string; p: string; m: string; localId: string; mozoId: string; etiqueta: string | null };
 
 /**
  * Verifica una lectura real del chip recién grabado (como cualquier toque) y lo da de alta
@@ -85,10 +85,9 @@ export async function registrarChipGrabado(d: AltaChip): Promise<{ ok: true; chi
   const admin = crearClienteAdmin();
   const { data: local } = await admin.from("locales").select("id").eq("id", d.localId).maybeSingle();
   if (!local) return { ok: false, error: "Ese local no existe." };
-  if (d.mozoId) {
-    const { data: mozo } = await admin.from("mozos").select("id").eq("id", d.mozoId).eq("local_id", d.localId).maybeSingle();
-    if (!mozo) return { ok: false, error: "Esa persona no es de ese local." };
-  }
+  // Todo llavero tiene dueño: sin persona asignada el toque falla (chip_sin_mozo).
+  const { data: mozo } = await admin.from("mozos").select("id").eq("id", d.mozoId).eq("local_id", d.localId).eq("activo", true).maybeSingle();
+  if (!mozo) return { ok: false, error: "Elegí de quién es el llavero (una persona activa de ese local)." };
 
   const fila = {
     uid: d.uid,

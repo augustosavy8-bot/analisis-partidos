@@ -8,7 +8,6 @@ const CLAVE = "point.sesion";
 type ValorSesion = {
   /** undefined = todavía leyendo el llavero; null = sin sesión. */
   sesion: Sesion | null | undefined;
-  entrar: (whatsapp: string) => Promise<Sesion>;
   /** Guarda una sesión que ya vino del servidor (por ejemplo, al crear la tarjeta). */
   iniciar: (s: Sesion) => Promise<void>;
   salir: () => Promise<void>;
@@ -35,14 +34,6 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     setSesion(s);
   }, []);
 
-  const entrar = useCallback(
-    async (whatsapp: string) => {
-      const s = await api.ingresar(whatsapp);
-      await guardar(s);
-      return s;
-    },
-    [guardar],
-  );
   const iniciar = useCallback((s: Sesion) => guardar({ token: s.token, nombre: s.nombre }), [guardar]);
 
   const salir = useCallback(async () => {
@@ -66,8 +57,8 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   );
 
   const valor = useMemo(
-    () => ({ sesion, entrar, iniciar, salir, eliminarCuenta, manejarError }),
-    [sesion, entrar, iniciar, salir, eliminarCuenta, manejarError],
+    () => ({ sesion, iniciar, salir, eliminarCuenta, manejarError }),
+    [sesion, iniciar, salir, eliminarCuenta, manejarError],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

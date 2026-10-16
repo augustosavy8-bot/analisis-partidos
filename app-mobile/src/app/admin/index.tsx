@@ -141,7 +141,8 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
   const local = locales?.find((l) => l.id === localId) ?? null;
 
   async function grabar() {
-    if (!local) return;
+    if (!local || !mozoId) return;
+    const duenoId = mozoId;
     setError(null);
     setEstado(null);
     setGrabando(true);
@@ -158,7 +159,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
             setEstado(TEXTO_PASO[p]);
           },
           verificar: async ({ p, m }) => {
-            await apiAdmin.registrar(sesion.token, { uid, p, m, localId: local.id, mozoId, etiqueta: etiqueta.trim() || null });
+            await apiAdmin.registrar(sesion.token, { uid, p, m, localId: local.id, mozoId: duenoId, etiqueta: etiqueta.trim() || null });
           },
         });
         return uid;
@@ -200,15 +201,20 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
         </View>
       )}
 
-      {local && local.equipo.length > 0 && (
+      {local && (
         <>
-          <Text style={estilos.seccion}>2. ¿De quién es el llavero? (opcional)</Text>
-          <View style={estilos.chips}>
-            <Chip texto="Del local" activo={mozoId === null} onPress={() => setMozoId(null)} />
-            {local.equipo.map((m) => (
-              <Chip key={m.id} texto={m.nombre} activo={m.id === mozoId} onPress={() => setMozoId(m.id)} />
-            ))}
-          </View>
+          <Text style={estilos.seccion}>2. ¿De quién es el llavero?</Text>
+          {local.equipo.length === 0 ? (
+            <Text style={estilos.error}>
+              Este local no tiene equipo. El dueño tiene que crear al menos una persona en su panel (por ejemplo, “Local”) y después grabás el llavero.
+            </Text>
+          ) : (
+            <View style={estilos.chips}>
+              {local.equipo.map((m) => (
+                <Chip key={m.id} texto={m.nombre} activo={m.id === mozoId} onPress={() => setMozoId(m.id)} />
+              ))}
+            </View>
+          )}
         </>
       )}
 
@@ -223,7 +229,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
             maxLength={40}
             style={estilos.input}
           />
-          <Boton titulo={grabando ? "Grabando…" : "Grabar llavero"} onPress={grabar} cargando={grabando} disabled={!conNfc} />
+          <Boton titulo={grabando ? "Grabando…" : "Grabar llavero"} onPress={grabar} cargando={grabando} disabled={!conNfc || !mozoId} />
           <Text style={estilos.ayuda}>
             Sirve con llaveros NTAG 424 DNA nuevos. Queda con URL cifrada: no se puede copiar ni sumar puntos desde otro lado.
           </Text>

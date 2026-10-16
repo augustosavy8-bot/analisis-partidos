@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
+  // Sin "X-Powered-By: Next.js": no hace falta anunciar con qué está hecho.
+  poweredByHeader: false,
   // La fuente de las imágenes de billetera se lee con fs: la incluimos en las funciones.
   outputFileTracingIncludes: {
     "/t/[local]/franja": ["./assets/**"],

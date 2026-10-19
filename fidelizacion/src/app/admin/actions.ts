@@ -239,6 +239,25 @@ export async function nuevaContraseña(userId: string): Promise<{ password?: str
   return { password };
 }
 
+/**
+ * Link para que el dueño elija su contraseña (sin pasarle una temporal). Es el
+ * mismo link de "olvidé mi contraseña", pero sin mandar el mail: se lo pasás vos.
+ * Sirve una sola vez y vence como los links de Supabase Auth (1 hora por defecto).
+ */
+export async function linkContraseña(userId: string): Promise<{ link?: string; error?: string }> {
+  await requerirSuperadmin();
+  const db = crearClienteAdmin();
+  const { data: u, error: e1 } = await db.auth.admin.getUserById(userId);
+  if (e1 || !u.user?.email) return { error: e1?.message ?? "Usuario sin email" };
+  const { data, error } = await db.auth.admin.generateLink({
+    type: "recovery",
+    email: u.user.email,
+    options: { redirectTo: `${env.appUrl}/auth/recuperar` },
+  });
+  if (error || !data.properties?.action_link) return { error: error?.message ?? "No se pudo generar el link" };
+  return { link: data.properties.action_link };
+}
+
 // --- Chips -------------------------------------------------------------------
 
 export type EstadoChip = { error?: string; ok?: number; urlPrueba?: string };

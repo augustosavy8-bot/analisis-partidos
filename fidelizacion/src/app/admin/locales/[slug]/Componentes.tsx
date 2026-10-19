@@ -11,6 +11,7 @@ import {
   crearChip,
   eliminarNegocio,
   nuevaContraseña,
+  linkContraseña,
   quitarDueno,
   regenerarTokenChip,
   simularToqueSun,
@@ -113,9 +114,22 @@ export function FormDueno({ localId, appUrl }: { localId: string; appUrl: string
 export function AccionesDueno({ localId, userId, email, appUrl }: { localId: string; userId: string; email: string; appUrl: string }) {
   const [p, start] = useTransition();
   const [pass, setPass] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
   return (
     <div className="w-full space-y-2 sm:w-auto">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        <BotonSecundario
+          disabled={p}
+          onClick={() =>
+            start(async () => {
+              const r = await linkContraseña(userId);
+              if (r.link) setLink(r.link);
+              else alert(r.error ?? "No se pudo");
+            })
+          }
+        >
+          Link para elegir contraseña
+        </BotonSecundario>
         <BotonSecundario
           disabled={p}
           onClick={() =>
@@ -137,6 +151,15 @@ export function AccionesDueno({ localId, userId, email, appUrl }: { localId: str
         </BotonSecundario>
       </div>
       {pass && <Credenciales email={email} password={pass} url={`${appUrl}/panel`} />}
+      {link && (
+        <div className="space-y-1 rounded-lg bg-stone-50 p-3 text-sm">
+          <p className="text-stone-700">
+            Mandale este link a {email}. Entra, elige su contraseña y queda adentro del panel. Sirve una sola vez y vence en 1 hora.
+          </p>
+          <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className={`${inputPanel} w-full font-mono text-xs`} />
+          <BotonSecundario onClick={() => navigator.clipboard.writeText(link)}>Copiar link</BotonSecundario>
+        </div>
+      )}
     </div>
   );
 }

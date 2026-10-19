@@ -30,6 +30,7 @@ export async function enviarMail(m: Mail): Promise<boolean> {
         subject: m.asunto,
         html: m.html,
         text: m.texto,
+        ...(cfg.responderA ? { reply_to: cfg.responderA } : {}),
         ...(m.baja ? { headers: { "List-Unsubscribe": `<${m.baja}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
       }),
     });

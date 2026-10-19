@@ -23,6 +23,7 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
             <Link href="/admin" className="hover:text-stone-900">Estado</Link>
             <Link href="/admin/facturacion" className="hover:text-stone-900">Facturación</Link>
             <Link href="/admin/interesados" className="hover:text-stone-900">Interesados</Link>
+            <Link href="/admin/anuncio" className="hover:text-stone-900">Anuncio</Link>
             <Link href="/admin/locales/nuevo" className="hover:text-stone-900">Nuevo local</Link>
             <Link href="/panel" className="hover:text-stone-900">Paneles</Link>
           </nav>

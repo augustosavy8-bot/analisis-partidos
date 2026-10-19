@@ -105,10 +105,12 @@ export const env = {
    * Mails propios (Resend): RESEND_API_KEY y MAIL_DESDE ("Point <hola@tudominio>",
    * con el dominio verificado en Resend). Sin las dos, no se manda nada.
    */
-  get mail(): { apiKey: string; desde: string } | null {
+  get mail(): { apiKey: string; desde: string; responderA: string | null } | null {
     const apiKey = process.env.RESEND_API_KEY?.trim();
     const desde = process.env.MAIL_DESDE?.trim();
-    return apiKey && desde ? { apiKey, desde } : null;
+    // Opcional: a dónde llegan las respuestas (la casilla de MAIL_DESDE no recibe).
+    const responderA = process.env.MAIL_RESPONDER_A?.trim() || null;
+    return apiKey && desde ? { apiKey, desde, responderA } : null;
   },
   /** ¿Están cargadas las credenciales de Mercado Pago? (para no romper páginas sin configurar) */
   get mpConfigurado() {

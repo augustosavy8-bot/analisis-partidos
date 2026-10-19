@@ -101,6 +101,15 @@ export const env = {
   get cronSecret() {
     return requerida("CRON_SECRET");
   },
+  /**
+   * Mails propios (Resend): RESEND_API_KEY y MAIL_DESDE ("Point <hola@tudominio>",
+   * con el dominio verificado en Resend). Sin las dos, no se manda nada.
+   */
+  get mail(): { apiKey: string; desde: string } | null {
+    const apiKey = process.env.RESEND_API_KEY?.trim();
+    const desde = process.env.MAIL_DESDE?.trim();
+    return apiKey && desde ? { apiKey, desde } : null;
+  },
   /** ¿Están cargadas las credenciales de Mercado Pago? (para no romper páginas sin configurar) */
   get mpConfigurado() {
     return Boolean(process.env.MP_ACCESS_TOKEN && process.env.NEXT_PUBLIC_MP_PUBLIC_KEY);

@@ -7,7 +7,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * un token de un tipo nunca sirve como otro: por ejemplo, el "toque pendiente"
  * que recibe el cliente no puede usarse como sesión de mozo.
  */
-export type TipoToken = "mozo" | "toque" | "qr";
+export type TipoToken = "mozo" | "toque" | "qr" | "baja";
 
 function clave(tipo: TipoToken, secreto: string): Buffer {
   return createHmac("sha256", secreto).update(`fid-token:${tipo}`).digest();

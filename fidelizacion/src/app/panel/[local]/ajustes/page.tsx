@@ -2,17 +2,21 @@ import Link from "next/link";
 import { requerirLocal } from "@/lib/panel";
 import { Tarjeta, Titulo } from "@/components/Panel";
 import { FormAjustes } from "./FormAjustes";
+import { ResumenSemanal } from "./ResumenSemanal";
 import { Icono } from "@/components/Icono";
 
 export const metadata = { title: "Ajustes" };
 
 export default async function Ajustes({ params }: PageProps<"/panel/[local]/ajustes">) {
   const { local: slug } = await params;
-  const { local } = await requerirLocal(slug);
+  const { local, admin, userId } = await requerirLocal(slug);
+  // Sólo los dueños del local (el superadmin mirando un local no es miembro).
+  const { data: miembro } = await admin.from("miembros_local").select("resumen_semanal").eq("user_id", userId).eq("local_id", local.id).maybeSingle();
   return (
     <>
       <Titulo detalle="Reglas de puntos y datos del local.">Ajustes</Titulo>
       <FormAjustes local={local} />
+      {miembro && <ResumenSemanal slug={slug} recibe={miembro.resumen_semanal} />}
       <Tarjeta className="mt-4 overflow-hidden !pb-0">
         <h2 className="pt-app-seccion text-pt-ink">Links útiles</h2>
         <ul className="-mx-5 mt-2 divide-y divide-pt-border border-t border-pt-border">

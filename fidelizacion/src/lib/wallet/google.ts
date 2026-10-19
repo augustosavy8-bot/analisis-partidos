@@ -17,6 +17,7 @@ import {
   type TarjetaGoogle,
 } from "./google-core";
 import { ultimoMovimiento } from "./movimiento";
+import { casiPremio } from "./casi";
 
 /** ¿Hay credenciales válidas de Google Wallet? Sin ellas, todo esto no hace nada. */
 export function googleWalletActivo() {
@@ -146,8 +147,19 @@ export const proveedorGoogle: ProveedorWallet = {
     const datos = await datosTarjeta(serial, true);
     if (!datos) return;
     const avisar = (await ultimoMovimiento(datos.tarjetaId)) !== "canje";
+    // A un punto del premio: en vez del aviso genérico de saldo, un mensaje que lo dice
+    // (cuenta igual que un aviso para el límite de Google de 3 por pase cada 24 hs).
+    const casi = avisar ? casiPremio(datos.puntos, datos.proximo) : null;
     // 404: el objeto no existe en Google (no debería pasar: se crea al pedir el pase).
-    await patchObjeto(cred, datos, env.appUrl, fetch, avisar);
+    const existe = await patchObjeto(cred, datos, env.appUrl, fetch, avisar && !casi);
+    if (existe && casi) {
+      await agregarMensaje(cred, datos.serial, {
+        id: `casi-${datos.tarjetaId}-${Date.now()}`,
+        titulo: casi.titulo,
+        texto: casi.texto,
+        hasta: new Date(Date.now() + 7 * 86_400_000),
+      });
+    }
   },
 };
 

@@ -102,6 +102,11 @@ describe("pass.json", () => {
     expect(pase.storeCard.primaryFields[0]).toMatchObject({ key: "puntos", value: 5, changeMessage: "Sumaste puntos: ahora tenés %@" });
     const canje = armarPassJson(cred, { ...datos, ultimoMovimiento: "canje" }, "https://x.app");
     expect(canje.storeCard.primaryFields[0].changeMessage).toBe("Canjeaste tu premio: ahora tenés %@");
+    // A un punto del premio, la notificación lo dice (y un canje no).
+    const casi = armarPassJson(cred, { ...datos, puntos: 7, ultimoMovimiento: "suma" }, "https://x.app");
+    expect(casi.storeCard.primaryFields[0].changeMessage).toBe("¡Te falta 1 punto para Café gratis! Tenés %@");
+    const casiCanje = armarPassJson(cred, { ...datos, puntos: 7, ultimoMovimiento: "canje" }, "https://x.app");
+    expect(casiCanje.storeCard.primaryFields[0].changeMessage).toBe("Canjeaste tu premio: ahora tenés %@");
     expect(pase.storeCard.secondaryFields).toEqual([
       { key: "proximo", label: "PRÓXIMO PREMIO", value: "Café gratis" },
       { key: "faltan", label: "TE FALTAN", value: 3, textAlignment: "PKTextAlignmentRight" },

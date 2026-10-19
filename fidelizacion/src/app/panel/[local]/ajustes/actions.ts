@@ -50,3 +50,12 @@ export async function guardarAjustes(slug: string, _prev: EstadoAjustes, form: F
   refresh();
   return { ok: Date.now() };
 }
+
+/** Recibir (o no) el resumen semanal por mail de este local. Es de cada dueño. */
+export async function cambiarResumenSemanal(slug: string, recibir: boolean): Promise<{ error?: string }> {
+  const { admin, local, userId } = await requerirLocal(slug);
+  const { error } = await admin.from("miembros_local").update({ resumen_semanal: recibir }).eq("user_id", userId).eq("local_id", local.id);
+  if (error) return { error: "No se pudo guardar." };
+  refresh();
+  return {};
+}

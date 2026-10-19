@@ -1257,4 +1257,40 @@ exception when insufficient_privilege then null; end $$;
 reset role;
 select pg_temp.check(true, 'arrepentimiento: las solicitudes (con emails) no se leen desde afuera');
 
+-- ---------------------------------------------------------------- resumen semanal
+do $$
+declare
+  v jsonb;
+  v_t uuid;
+begin
+  -- Un cliente nuevo que vino esta semana (y cumple mañana) y uno que no vuelve hace 40 días.
+  insert into public.clientes (id, nombre, whatsapp, consentimiento, cumple_dia, cumple_mes)
+    values ('cccccccc-0000-4000-8000-0000000000e1', 'Rita', '+5493410000091', true,
+            extract(day from (now() at time zone 'America/Argentina/Buenos_Aires')::date + 1)::int,
+            extract(month from (now() at time zone 'America/Argentina/Buenos_Aires')::date + 1)::int);
+  insert into public.tarjetas (cliente_id, local_id) values ('cccccccc-0000-4000-8000-0000000000e1', '00000000-0000-4000-8000-00000000000f') returning id into v_t;
+  insert into public.movimientos (tarjeta_id, local_id, mozo_id, tipo, puntos, origen)
+    values (v_t, '00000000-0000-4000-8000-00000000000f', '00000000-0000-4000-8000-0000000001ff', 'suma', 1, 'nfc');
+  insert into public.clientes (id, nombre, whatsapp, consentimiento) values ('cccccccc-0000-4000-8000-0000000000e2', 'Leo', '+5493410000092', true);
+  insert into public.tarjetas (cliente_id, local_id, created_at, ultima_visita)
+    values ('cccccccc-0000-4000-8000-0000000000e2', '00000000-0000-4000-8000-00000000000f', now() - interval '60 days', now() - interval '40 days');
+
+  v := public.resumen_semanal('00000000-0000-4000-8000-00000000000f', now() + interval '1 minute');
+  perform pg_temp.check((v->>'visitas')::int >= 1 and (v->>'nuevos')::int >= 1, 'resumen: cuenta visitas y nuevos de la semana');
+  perform pg_temp.check((v->>'inactivos')::int >= 1, 'resumen: cuenta los que no vuelven hace 30 días');
+  perform pg_temp.check(v->'mozo_top'->>'nombre' = 'Mozo Otro', 'resumen: el mozo que más sumó');
+  perform pg_temp.check(v->'cumples' @> '[{"nombre":"Rita"}]', 'resumen: cumpleaños de la semana que viene');
+  perform pg_temp.check(exists (select 1 from public.destinatarios_resumen() where email = 'dueno.otro@test'), 'resumen: el dueño está entre los destinatarios');
+  update public.miembros_local set resumen_semanal = false where user_id = 'aaaaaaaa-0000-4000-8000-000000000003';
+  perform pg_temp.check(not exists (select 1 from public.destinatarios_resumen() where email = 'dueno.otro@test'), 'resumen: el que se dio de baja no lo recibe');
+  update public.miembros_local set resumen_semanal = true where user_id = 'aaaaaaaa-0000-4000-8000-000000000003';
+end $$;
+set role authenticated;
+do $$ begin
+  perform public.destinatarios_resumen();
+  raise exception 'debía fallar';
+exception when insufficient_privilege then null; end $$;
+reset role;
+select pg_temp.check(true, 'resumen: los destinatarios (emails) no se leen desde afuera');
+
 \echo 'TODOS LOS TESTS DE BASE PASARON'

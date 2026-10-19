@@ -238,6 +238,18 @@ describe("API (con fetch simulado)", () => {
     expect(cuerpo).toMatchObject({ loyaltyPoints: { balance: { int: 5 } }, notifyPreference: "NOTIFY_ON_UPDATE" });
   });
 
+  it("addMessage con vencimiento: displayInterval.end", async () => {
+    let cuerpo: { message?: Record<string, unknown> } = {};
+    const f = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).includes("oauth2")) return respuestaToken();
+      cuerpo = JSON.parse(String(init?.body));
+      return new Response("{}", { status: 200 });
+    });
+    const hasta = new Date("2026-10-26T12:00:00.000Z");
+    await agregarMensaje(cred, tarjeta.serial, { id: "casi-1", titulo: "¡Te falta 1 punto!", texto: "Una visita más.", hasta }, f as typeof fetch);
+    expect(cuerpo.message).toMatchObject({ messageType: "TEXT_AND_NOTIFY", displayInterval: { end: { date: "2026-10-26T12:00:00.000Z" } } });
+  });
+
   it("addMessage: TEXT_AND_NOTIFY al objeto de la tarjeta; 404 no es error", async () => {
     const llamadas: { url: string; cuerpo: unknown }[] = [];
     const f = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {

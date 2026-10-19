@@ -8,6 +8,7 @@ import { timingSafeEqual } from "node:crypto";
 import { PKPass } from "passkit-generator";
 import { coloresTarjeta, contraste, cssRgb } from "@/lib/colores";
 import { delClub } from "@/lib/socios";
+import { casiPremio } from "./casi";
 
 export type CredencialesApple = {
   passTypeId: string;
@@ -99,9 +100,15 @@ function proximoPremioApple(puntos: number, premios: DatosPaseApple["local"]["pr
 
 const SIN_NOVEDADES = "Todavía no hay novedades.";
 
-/** Texto de la notificación de iOS cuando cambian los puntos (%@ = puntos nuevos). */
-function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"]) {
-  return ultimo === "canje" ? "Canjeaste tu premio: ahora tenés %@" : "Sumaste puntos: ahora tenés %@";
+/**
+ * Texto de la notificación de iOS cuando cambian los puntos (%@ = puntos nuevos).
+ * Si la suma lo dejó a un punto del premio, se lo decimos (el "%" se saca: iOS lo
+ * leería como formato).
+ */
+function mensajeCambioPuntos(ultimo: DatosPaseApple["ultimoMovimiento"], casi: ReturnType<typeof casiPremio>) {
+  if (ultimo === "canje") return "Canjeaste tu premio: ahora tenés %@";
+  if (casi) return `¡Te falta 1 punto para ${casi.premio.replace(/%/g, "")}! Tenés %@`;
+  return "Sumaste puntos: ahora tenés %@";
 }
 
 export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "teamId">, d: DatosPaseApple, appUrl: string) {
@@ -134,7 +141,7 @@ export function armarPassJson(cred: Pick<CredencialesApple, "passTypeId" | "team
           key: "puntos",
           label: "PUNTOS",
           value: d.puntos,
-          changeMessage: mensajeCambioPuntos(d.ultimoMovimiento),
+          changeMessage: mensajeCambioPuntos(d.ultimoMovimiento, proximo ? casiPremio(d.puntos, proximo) : null),
         },
       ],
       secondaryFields: proximo

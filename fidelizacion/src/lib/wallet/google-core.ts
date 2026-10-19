@@ -250,7 +250,13 @@ export async function patchObjeto(cred: CredencialesGoogle, t: TarjetaGoogle, ap
 
 // --- Mensajes (Add Message API) ---------------------------------------------------
 
-export type MensajeGoogle = { id: string; titulo: string; texto: string };
+export type MensajeGoogle = {
+  id: string;
+  titulo: string;
+  texto: string;
+  /** Hasta cuándo se ve en el pase (sin esto queda para siempre). */
+  hasta?: Date;
+};
 
 /**
  * Agrega un mensaje al dorso del pase y manda la notificación (TEXT_AND_NOTIFY).
@@ -259,7 +265,13 @@ export type MensajeGoogle = { id: string; titulo: string; texto: string };
 export async function agregarMensaje(cred: CredencialesGoogle, serial: string, m: MensajeGoogle, f: Fetch = fetch) {
   const id = idObjeto(cred.issuerId, serial);
   const res = await llamar(cred, "POST", `/loyaltyObject/${encodeURIComponent(id)}/addMessage`, {
-    message: { id: m.id, header: m.titulo, body: m.texto, messageType: "TEXT_AND_NOTIFY" },
+    message: {
+      id: m.id,
+      header: m.titulo,
+      body: m.texto,
+      messageType: "TEXT_AND_NOTIFY",
+      ...(m.hasta ? { displayInterval: { end: { date: m.hasta.toISOString() } } } : {}),
+    },
   }, f);
   if (res.status === 404) return false;
   if (!res.ok) return fallar(res, "addMessage");

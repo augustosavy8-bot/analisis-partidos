@@ -93,7 +93,8 @@ export function armarMailResumen(p: {
 <body style="margin:0;padding:0;background:#f7f8f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f8f6"><tr><td align="center" style="padding:24px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:24px">
-  <tr><td style="font-size:13px;color:#949994;letter-spacing:.04em;text-transform:uppercase">Point · Resumen semanal</td></tr>
+<tr><td style="padding-bottom:16px"><img src="${new URL(p.urlPanel).origin}/marcas/point-logo.png" width="96" height="34" alt="Point" style="display:block;border:0;height:34px;width:96px"></td></tr>
+  <tr><td style="font-size:13px;color:#949994;letter-spacing:.04em;text-transform:uppercase">Resumen semanal</td></tr>
   <tr><td style="padding-top:6px;font-size:22px;font-weight:700;color:#111311">Tu semana en ${escapar(p.local)}</td></tr>
   <tr><td style="padding-top:2px;font-size:14px;color:#656a65">${escapar(p.semana)}</td></tr>
   <tr><td style="padding-top:20px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${celdas}</tr></table></td></tr>

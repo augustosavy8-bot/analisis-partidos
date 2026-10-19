@@ -7,6 +7,7 @@ import { clienteDesdeToken, hashToken, nuevoTokenDispositivo, type ClienteActual
 import { env } from "@/lib/env";
 import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
 import { comoSocio, nombreClub } from "@/lib/socios";
+import { limpiarDeVezEnCuando } from "@/lib/limpieza";
 import { textoMovimiento } from "@/lib/movimientos";
 import { appleWalletActivo } from "@/lib/wallet/apple";
 import { ingresoBloqueado, LIMITE_INGRESO, localApp, resumenTarjeta, tokenBearer, type TarjetaDetalleApp, type TarjetaResumenApp } from "./contrato";
@@ -34,6 +35,7 @@ export async function ingresoPermitido(req: Request) {
 
 export async function registrarIntento(req: Request, exitoso: boolean) {
   await crearClienteAdmin().from("intentos_app").insert({ ip_hash: hashIp(req), exitoso });
+  await limpiarDeVezEnCuando("intentos_app");
 }
 
 // --- Límite por número ----------------------------------------------------------------------

@@ -355,6 +355,7 @@ select pg_temp.check((public.registrar_suma('dddddddd-0000-4000-8000-00000000000
 
 -- ---------------------------------------------------------------- reactivar por WhatsApp
 update public.movimientos set created_at = created_at - interval '40 days' where tarjeta_id = 'dddddddd-0000-4000-8000-000000000005';
+update public.tarjetas set ultima_visita = ultima_visita - interval '40 days' where id = 'dddddddd-0000-4000-8000-000000000005';
 update public.beneficios_cobrados set ultima_suma_en = ultima_suma_en - interval '40 days';
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000002"}', false), set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-4000-8000-000000000002', false);
@@ -446,6 +447,9 @@ select public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-00
 select pg_temp.check(:'r'::jsonb->>'tipo' = 'suma' and :'r'::jsonb->>'serial' is not null
   and (select ultimo_toque_en is not null from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006'),
   'aplicar_toque suma, devuelve el serial y marca el toque');
+select pg_temp.check((select ultima_visita from public.tarjetas where id = 'dddddddd-0000-4000-8000-000000000006')
+  = (select max(created_at) from public.movimientos where tarjeta_id = 'dddddddd-0000-4000-8000-000000000006' and tipo = 'suma'),
+  'la tarjeta guarda su última visita (la usa el panel)');
 update public.tarjetas set puntos = 20 where id = 'dddddddd-0000-4000-8000-000000000006';
 select public.solicitar_canje('dddddddd-0000-4000-8000-000000000006', (select id from public.premios where nombre = 'Café gratis'));
 select pg_temp.check(public.aplicar_toque('cccccccc-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001',

@@ -6,6 +6,7 @@ import { firmar, verificarFirma } from "@/lib/firmas";
 import { env } from "@/lib/env";
 import { opcionesCookie } from "@/lib/dispositivo";
 import { verificarPin } from "@/lib/pin";
+import { limpiarDeVezEnCuando } from "@/lib/limpieza";
 
 const COOKIE_MOZO = "fid_mozo";
 const DURACION_TURNO = 12 * 60 * 60;
@@ -73,12 +74,14 @@ export async function comprobarPinMozo(
   });
   if (errIntento) return { ok: false, error: "No pudimos verificar el PIN. Probá de nuevo." };
   const r = intento as { id: number | null; fallos: number };
+  await limpiarDeVezEnCuando("intentos_pin");
   if (r.id === null) {
     return { ok: false, error: `Demasiados intentos. Esperá ${VENTANA_FALLOS_MIN} minutos o pedile ayuda al encargado.` };
   }
 
   if (!verificarPin(pin, mozo.pin_hash)) {
     await db.from("intentos_app").insert({ ip_hash: ipHash, exitoso: false });
+    await limpiarDeVezEnCuando("intentos_app");
     const quedan = MAX_FALLOS - r.fallos;
     return { ok: false, error: quedan > 0 ? `PIN incorrecto. Te quedan ${quedan} intentos.` : "PIN incorrecto." };
   }

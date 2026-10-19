@@ -1,5 +1,6 @@
 import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { limpiarDeVezEnCuando } from "@/lib/limpieza";
 
 /** Registra un toque rechazado (best-effort: nunca rompe el flujo del cliente). */
 export async function registrarRechazo(r: {
@@ -12,5 +13,6 @@ export async function registrarRechazo(r: {
     await crearClienteAdmin()
       .from("rechazos")
       .insert({ motivo: r.motivo.slice(0, 40), origen: r.origen, local_id: r.localId ?? null, chip_id: r.chipId ?? null });
+    await limpiarDeVezEnCuando("rechazos");
   } catch {}
 }

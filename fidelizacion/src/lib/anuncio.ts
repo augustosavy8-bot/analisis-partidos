@@ -27,7 +27,7 @@ function armar(p: { asunto: string; etiqueta: string; titulo: string; intro: str
   <tr><td style="padding-top:12px;font-size:15px;color:#111311;line-height:1.55">${p.intro}</td></tr>
   ${bloques}
   <tr><td style="padding-top:20px"><a href="${escapar(p.urlPanel)}" style="display:inline-block;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;text-decoration:none;background:#111311;color:#ffffff">Ir a mi panel</a></td></tr>
-  <tr><td style="padding-top:20px;font-size:14px;color:#656a65;line-height:1.55">Cualquier duda, respondé este mail y te contestamos.<br><br>Gracias por confiar en Point,<br><strong style="color:#111311">El equipo de Point</strong></td></tr>
+  <tr><td style="padding-top:20px;font-size:14px;color:#656a65;line-height:1.55">Cualquier duda, respondé este mail y te contestamos.<br><br>Gracias por confiar en Point,<br><strong style="color:#111311">POINT TEAM</strong></td></tr>
 </table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px"><tr><td style="padding:16px 8px;font-size:12px;color:#949994;text-align:center;line-height:1.5">Te llega porque gestionás un local en Point.</td></tr></table>
 </td></tr></table></body></html>`;
@@ -41,7 +41,7 @@ function armar(p: { asunto: string; etiqueta: string; titulo: string; intro: str
     "Cualquier duda, respondé este mail y te contestamos.",
     "",
     "Gracias por confiar en Point,",
-    "El equipo de Point",
+    "POINT TEAM",
   ].join("\n");
   return { asunto: p.asunto, html, texto };
 }

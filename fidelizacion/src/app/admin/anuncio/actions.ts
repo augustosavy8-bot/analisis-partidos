@@ -8,29 +8,39 @@ import { esIdMailDueno, MAILS_DUENOS, type IdMailDueno } from "@/lib/anuncio";
 
 export type ResultadoAnuncio = { error?: string; enviados?: number; fallidos?: number };
 
-/** Emails de los dueños de locales activos (sin repetir). */
-async function emailsDuenos(): Promise<string[]> {
+export type Dueno = { email: string; locales: string[] };
+
+/** Dueños de locales activos (un email una vez, con sus locales). */
+async function duenos(): Promise<Dueno[]> {
   const { data, error } = await crearClienteAdmin().rpc("destinatarios_resumen");
   if (error) throw new Error(error.message);
-  return [...new Set(((data ?? []) as { email: string }[]).map((d) => d.email.toLowerCase()))];
+  const porEmail = new Map<string, string[]>();
+  for (const d of (data ?? []) as { email: string; local_nombre: string }[]) {
+    const e = d.email.toLowerCase();
+    porEmail.set(e, [...(porEmail.get(e) ?? []), d.local_nombre]);
+  }
+  return [...porEmail].map(([email, locales]) => ({ email, locales }));
 }
 
-export async function contarDestinatarios() {
+export async function listarDuenos() {
   await requerirSuperadmin();
-  return (await emailsDuenos()).length;
+  return duenos();
 }
 
 /**
- * `prueba`: sólo a tu mail. Si no, a todos los dueños. La clave de idempotencia
- * evita que Resend lo mande dos veces a la misma persona (en 24 hs).
+ * `destino`: "prueba" (sólo a tu mail), "todos" (todos los dueños) o el email de un
+ * dueño. La clave de idempotencia evita que Resend lo mande dos veces a la misma
+ * persona (en 24 hs).
  */
-export async function mandarAnuncio(id: IdMailDueno, prueba: boolean): Promise<ResultadoAnuncio> {
+export async function mandarAnuncio(id: IdMailDueno, destino: string): Promise<ResultadoAnuncio> {
   const { email } = await requerirSuperadmin();
   if (!esIdMailDueno(id)) return { error: "Mail desconocido." };
   if (!env.mail) return { error: "Faltan RESEND_API_KEY o MAIL_DESDE en Vercel." };
   const mail = MAILS_DUENOS[id].armar(`${env.appUrl}/panel`);
-  const para = prueba ? [email] : await emailsDuenos();
-  if (!para.length) return { error: prueba ? "Tu usuario no tiene email." : "No hay dueños para mandarle." };
+  const prueba = destino === "prueba";
+  const lista = prueba ? [] : (await duenos()).map((d) => d.email);
+  const para = prueba ? [email] : destino === "todos" ? lista : lista.filter((e) => e === destino.toLowerCase());
+  if (!para.length) return { error: prueba ? "Tu usuario no tiene email." : "Ese mail no es de ningún dueño." };
   let enviados = 0;
   let fallidos = 0;
   for (const e of para) {

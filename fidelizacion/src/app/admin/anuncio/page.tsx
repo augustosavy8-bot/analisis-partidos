@@ -3,7 +3,7 @@ import { requerirSuperadmin } from "@/lib/admin";
 import { env } from "@/lib/env";
 import { Tarjeta, Titulo } from "@/components/Panel";
 import { esIdMailDueno, MAILS_DUENOS, type IdMailDueno } from "@/lib/anuncio";
-import { contarDestinatarios } from "./actions";
+import { listarDuenos } from "./actions";
 import { BotonesAnuncio } from "./Botones";
 
 export const metadata = { title: "Mails a dueños" };
@@ -12,7 +12,7 @@ export default async function Anuncio({ searchParams }: PageProps<"/admin/anunci
   const { email } = await requerirSuperadmin();
   const { m } = await searchParams;
   const id: IdMailDueno = esIdMailDueno(m) ? m : "bienvenida";
-  const destinatarios = await contarDestinatarios();
+  const duenos = await listarDuenos();
   const mail = MAILS_DUENOS[id].armar(`${env.appUrl}/panel`);
   return (
     <>
@@ -35,7 +35,7 @@ export default async function Anuncio({ searchParams }: PageProps<"/admin/anunci
           Sale desde la dirección de MAIL_DESDE{env.mail?.responderA ? "; las respuestas llegan a MAIL_RESPONDER_A" : ""}.
           {!env.mail && <span className="text-red-700"> Falta configurar Resend.</span>}
         </p>
-        <BotonesAnuncio key={id} id={id} destinatarios={destinatarios} email={email} />
+        <BotonesAnuncio key={id} id={id} duenos={duenos} email={email} />
       </Tarjeta>
       <Tarjeta className="mt-4 !p-0 overflow-hidden">
         <iframe title="Vista previa" srcDoc={mail.html} className="h-[900px] w-full border-0" sandbox="" />

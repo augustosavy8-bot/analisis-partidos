@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { mandarAnuncio, type ResultadoAnuncio } from "./actions";
+import type { IdMailDueno } from "@/lib/anuncio";
 
-export function BotonesAnuncio({ destinatarios, email }: { destinatarios: number; email: string }) {
+export function BotonesAnuncio({ id, destinatarios, email }: { id: IdMailDueno; destinatarios: number; email: string }) {
   const [r, setR] = useState<ResultadoAnuncio | null>(null);
   const [p, start] = useTransition();
   const mandar = (prueba: boolean) => {
-    if (!prueba && !confirm(`¿Mandar el anuncio a ${destinatarios} ${destinatarios === 1 ? "dueño" : "dueños"}? No se puede deshacer.`)) return;
+    if (!prueba && !confirm(`¿Mandar este mail a ${destinatarios} ${destinatarios === 1 ? "dueño" : "dueños"}? No se puede deshacer.`)) return;
     setR(null);
-    start(async () => setR(await mandarAnuncio(prueba)));
+    start(async () => setR(await mandarAnuncio(id, prueba)));
   };
   return (
     <div className="space-y-3">

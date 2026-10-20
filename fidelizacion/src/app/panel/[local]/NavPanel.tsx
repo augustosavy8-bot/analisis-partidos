@@ -27,12 +27,26 @@ function secciones(personal: string): SeccionPanel[] {
 }
 
 /** Navegación del panel: pestañas arriba en escritorio; tab bar + hoja "Más" en celu. */
-export function NavPanel({ slug, personal, cuenta, vista }: { slug: string; personal: string; cuenta?: React.ReactNode; vista: "escritorio" | "movil" }) {
+export function NavPanel({
+  slug,
+  comercioId,
+  personal,
+  cuenta,
+  vista,
+}: {
+  slug: string;
+  /** Las secciones del comercio (facturación, chips) llevan ?c=: el superadmin ve todos los comercios. */
+  comercioId: string | null;
+  personal: string;
+  cuenta?: React.ReactNode;
+  vista: "escritorio" | "movil";
+}) {
   const actual = usePathname();
   const hoja = useRef<HTMLDialogElement>(null);
   const todas = secciones(personal);
-  const href = (s: SeccionPanel) => (s.absoluta ? s.ruta : `/panel/${slug}${s.ruta}`);
-  const activa = (s: SeccionPanel) => (s.ruta === "" ? actual === href(s) : actual.startsWith(href(s)));
+  const ruta = (s: SeccionPanel) => (s.absoluta ? s.ruta : `/panel/${slug}${s.ruta}`);
+  const href = (s: SeccionPanel) => (s.absoluta && comercioId ? `${s.ruta}?c=${comercioId}` : ruta(s));
+  const activa = (s: SeccionPanel) => (s.ruta === "" ? actual === ruta(s) : actual.startsWith(ruta(s)));
   const enMas = todas.some((s) => !s.principal && activa(s));
 
   if (vista === "escritorio") {

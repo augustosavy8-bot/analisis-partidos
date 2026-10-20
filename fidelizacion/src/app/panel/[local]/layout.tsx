@@ -15,7 +15,9 @@ import { avisoDeCuenta } from "@/lib/facturacion/aviso-cuenta";
 
 export default async function LayoutPanel({ children, params }: LayoutProps<"/panel/[local]">) {
   const { local: slug } = await params;
-  const { local, email } = await requerirLocal(slug);
+  const { local, email, admin } = await requerirLocal(slug);
+  const { data: delComercio } = await admin.from("locales").select("comercio_id").eq("id", local.id).maybeSingle();
+  const comercioId = (delComercio?.comercio_id as string | null | undefined) ?? null;
   const locales = await localesDelUsuario();
   const personal = formasTermino(local.termino_personal).Plural;
   const aviso = avisoDeCuenta(await accesoDelLocal(local.id));
@@ -50,7 +52,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
               <div className="hidden md:block">{cuenta}</div>
             </div>
             <div className="hidden md:mt-3 md:block md:pb-3">
-              <NavPanel vista="escritorio" slug={slug} personal={personal} />
+              <NavPanel vista="escritorio" slug={slug} comercioId={comercioId} personal={personal} />
             </div>
           </div>
         </header>
@@ -58,7 +60,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
           {aviso && <EstadoCuenta aviso={aviso} />}
           {children}
         </main>
-        <NavPanel vista="movil" slug={slug} personal={personal} cuenta={cuenta} />
+        <NavPanel vista="movil" slug={slug} comercioId={comercioId} personal={personal} cuenta={cuenta} />
         <Toasts />
         <Dialogos />
       </MotionProvider>

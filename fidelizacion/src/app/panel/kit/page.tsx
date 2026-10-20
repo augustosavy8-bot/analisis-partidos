@@ -16,9 +16,11 @@ export const metadata = { title: "Comprar chips", robots: { index: false } };
 const fecha = (iso: string) =>
   new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short", timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(iso));
 
-export default async function Kit() {
+export default async function Kit({ searchParams }: PageProps<"/panel/kit">) {
   await requerirUsuario();
-  const comercio = await comercioDelUsuario();
+  // ?c=<comercio>: el superadmin ve todos los comercios; sin esto agarraría el primero.
+  const { c } = await searchParams;
+  const comercio = await comercioDelUsuario(typeof c === "string" ? c : null);
   if (!comercio) {
     return (
       <Marco>

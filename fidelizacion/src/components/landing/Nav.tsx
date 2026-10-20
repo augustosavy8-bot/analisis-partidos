@@ -38,6 +38,9 @@ export function Nav() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <Link href="/mozo" className="px-3 pt-ui text-pt-ink-2 hover:text-pt-ink">
+            Generar QR
+          </Link>
           <Link href="/panel" className="hidden px-3 pt-ui text-pt-ink-2 hover:text-pt-ink sm:block">
             Ingresar
           </Link>

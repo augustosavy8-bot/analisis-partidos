@@ -11,6 +11,7 @@ export function Footer() {
           <Link href="/privacidad" className="hover:text-pt-ink">Privacidad</Link>
           <Link href="/arrepentimiento" className="hover:text-pt-ink">Botón de arrepentimiento</Link>
           <Link href="/sumate" className="hover:text-pt-ink">Sumá tu local</Link>
+          <Link href="/mozo" className="hover:text-pt-ink">Generar QR</Link>
           <Link href="/panel" className="hover:text-pt-ink">Ingresar</Link>
         </nav>
         <p className="pt-ui text-pt-ink-3">© {new Date().getFullYear()} POINT</p>

@@ -7,7 +7,6 @@ import { formasTermino } from "@/lib/terminos";
 import { LoginMozo } from "./LoginMozo";
 import { Insignia } from "@/components/app/Superficie";
 import { PantallaQR } from "./PantallaQR";
-import { RecordarLocal } from "../UltimoLocal";
 
 export const metadata = { title: "QR de respaldo", robots: { index: false } };
 
@@ -22,7 +21,6 @@ export default async function Mozo({ params }: PageProps<"/mozo/[local]">) {
     <div className="pt-app flex flex-1 flex-col">
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
         <CabeceraLocal local={local} />
-        <RecordarLocal slug={slug} nombre={local.nombre} />
         {mozo ? (
           <div className="mt-8 flex flex-1 flex-col">
             <PantallaQR slug={slug} nombre={mozo.nombre} />

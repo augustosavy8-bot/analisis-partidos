@@ -4,6 +4,7 @@ import { requerirLocal } from "@/lib/panel";
 import Link from "next/link";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { BotonLink } from "@/components/app/Boton";
+import { IconoFila } from "@/components/app/Superficie";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { AvisosHoy } from "./AvisosHoy";
 import { formasTermino } from "@/lib/terminos";
@@ -63,6 +64,19 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
           </Vacio>
         </div>
       )}
+
+      {/* QR de respaldo a mano: para clientes con celulares sin NFC. */}
+      <Link
+        href={`/mozo/${slug}`}
+        className="mb-4 flex items-center gap-3 rounded-pt-card bg-pt-pure p-4 shadow-pt-ui ring-1 ring-pt-border/60 transition-colors duration-150 hover:bg-pt-surface"
+      >
+        <IconoFila icono="qr" tono="acento" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-pt-ink">Generar QR</span>
+          <span className="block pt-app-detalle text-pt-ink-2">Para clientes sin NFC: entrás con tu PIN y te lo escanean con la cámara.</span>
+        </span>
+        <Icono nombre="chevron" tamaño={18} className="text-pt-ink-2" />
+      </Link>
 
       {acceso.limites && !dentroDelLimite(acceso, "clientes", m.clientes_total) && (
         <MejorarPlan titulo="Superaste los clientes de tu plan" className="mb-4">

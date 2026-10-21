@@ -9,9 +9,9 @@ export const runtime = "nodejs";
 /**
  * Webhook de Mercado Pago (configurado en Tus integraciones → Webhooks).
  *
- * 1. Validamos la firma x-signature. Si no es de MP → 401: no se guarda ni se
- *    procesa (si se guardara, cualquiera podría llenar la tabla).
- * 2. Guardamos la notificación cruda en eventos_pago.
+ * 1. Validamos la firma x-signature (y que no tenga más de 72 h). Si no es de MP
+ *    → 401: no se guarda ni se procesa (si se guardara, cualquiera podría llenar la tabla).
+ * 2. Guardamos la notificación cruda en eventos_pago, una sola vez por x-request-id.
  * 3. Procesamos: consultamos el recurso a la API y actualizamos la base.
  * 4. Respondemos 200 si salió bien. Si falló algo nuestro (base caída, MP lento)
  *    respondemos 500: MP reintenta cada 15 minutos, y como el procesamiento es
@@ -46,7 +46,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "firma inválida" }, { status: 401 });
   }
 
-  const { data: evento, error } = await crearClienteAdmin()
+  const db = crearClienteAdmin();
+  // Cada aviso (x-request-id) se guarda una sola vez: reenviar uno capturado no llena
+  // la tabla ni dispara trabajo de más. Si ya llegó y se procesó, listo; si había
+  // fallado, se reintenta ese mismo.
+  const { data: previo } = await db
+    .from("eventos_pago")
+    .select("id, procesado_en")
+    .eq("x_request_id", xRequestId!)
+    .eq("data_id", dataId)
+    .limit(1)
+    .maybeSingle();
+  if (previo?.procesado_en) return NextResponse.json({ ok: true, evento: previo.id, repetido: true });
+  if (previo) {
+    const r = await procesarEventoGuardado(previo.id);
+    return NextResponse.json({ ok: r.ok, evento: previo.id }, { status: r.ok ? 200 : 500 });
+  }
+
+  const { data: evento, error } = await db
     .from("eventos_pago")
     .insert({
       topic,

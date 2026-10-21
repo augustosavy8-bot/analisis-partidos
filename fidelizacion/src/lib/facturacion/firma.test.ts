@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createHmac } from "node:crypto";
-import { leerXSignature, manifestFirma, verificarFirmaMp } from "./firma";
+import { leerXSignature, manifestFirma, tsEnMs, verificarFirmaMp } from "./firma";
 
 const SECRETO = "clave-secreta-de-prueba";
+/** Un segundo después de la firma de los ejemplos. */
+const AHORA = 1704908010 * 1000 + 1000;
 const firmar = (manifest: string) => createHmac("sha256", SECRETO).update(manifest).digest("hex");
 
 describe("firma de webhooks de Mercado Pago", () => {
@@ -24,17 +26,32 @@ describe("firma de webhooks de Mercado Pago", () => {
 
   it("acepta una firma válida", () => {
     const v1 = firmar("id:987;request-id:abc-123;ts:1704908010;");
-    expect(verificarFirmaMp({ xSignature: `ts=1704908010,v1=${v1}`, xRequestId: "abc-123", dataId: "987", secreto: SECRETO })).toEqual({ valida: true });
+    expect(verificarFirmaMp({ xSignature: `ts=1704908010,v1=${v1}`, xRequestId: "abc-123", dataId: "987", secreto: SECRETO, ahora: AHORA })).toEqual({
+      valida: true,
+    });
   });
 
   it("rechaza firmas falsas, alteradas o con otra clave", () => {
     const v1 = firmar("id:987;request-id:abc-123;ts:1704908010;");
-    const base = { xSignature: `ts=1704908010,v1=${v1}`, xRequestId: "abc-123", dataId: "987", secreto: SECRETO };
+    const base = { xSignature: `ts=1704908010,v1=${v1}`, xRequestId: "abc-123", dataId: "987", secreto: SECRETO, ahora: AHORA };
     expect(verificarFirmaMp({ ...base, dataId: "988" }).valida).toBe(false); // otro recurso
     expect(verificarFirmaMp({ ...base, xRequestId: "otro" }).valida).toBe(false);
     expect(verificarFirmaMp({ ...base, xSignature: `ts=1704908011,v1=${v1}` }).valida).toBe(false); // otro ts
     expect(verificarFirmaMp({ ...base, secreto: "otra-clave" }).valida).toBe(false);
     expect(verificarFirmaMp({ ...base, xSignature: "ts=1,v1=zz" }).valida).toBe(false);
     expect(verificarFirmaMp({ ...base, xSignature: null }).valida).toBe(false);
+    expect(verificarFirmaMp({ ...base, xRequestId: null }).valida).toBe(false); // sin request-id no se puede deduplicar
+  });
+
+  it("rechaza firmas viejas (reenvío de un aviso capturado) o del futuro", () => {
+    const v1 = firmar("id:987;request-id:abc-123;ts:1704908010;");
+    const base = { xSignature: `ts=1704908010,v1=${v1}`, xRequestId: "abc-123", dataId: "987", secreto: SECRETO };
+    expect(verificarFirmaMp({ ...base, ahora: AHORA + 71 * 3_600_000 }).valida).toBe(true);
+    expect(verificarFirmaMp({ ...base, ahora: AHORA + 73 * 3_600_000 })).toEqual({ valida: false, motivo: "firma vencida" });
+    expect(verificarFirmaMp({ ...base, ahora: AHORA - 10 * 60_000 })).toEqual({ valida: false, motivo: "firma vencida" });
+    // ts en milisegundos también se entiende.
+    expect(tsEnMs("1704908010000")).toBe(1704908010000);
+    expect(tsEnMs("1704908010")).toBe(1704908010000);
+    expect(tsEnMs("abc")).toBeNull();
   });
 });

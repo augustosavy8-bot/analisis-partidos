@@ -36,14 +36,37 @@ export function manifestFirma(dataId: string | null, requestId: string | null, t
   return m;
 }
 
+/**
+ * Antigüedad máxima de una firma. Es amplia a propósito: si MP reintenta una
+ * notificación con la firma original, un margen corto rechazaría los reintentos
+ * legítimos. Contra el reenvío de un aviso capturado, además, cada x-request-id se
+ * procesa una sola vez (ruta del webhook).
+ */
+export const MAX_EDAD_FIRMA_MS = 72 * 3_600_000;
+/** Tolerancia por relojes adelantados. */
+const MAX_ADELANTO_MS = 5 * 60_000;
+
+/** ts de MP en milisegundos (viene en segundos o en milisegundos según la notificación). */
+export function tsEnMs(ts: string): number | null {
+  if (!/^\d{9,14}$/.test(ts)) return null;
+  const n = Number(ts);
+  return n < 1e12 ? n * 1000 : n;
+}
+
 export function verificarFirmaMp(p: {
   xSignature: string | null;
   xRequestId: string | null;
   dataId: string | null;
   secreto: string;
+  ahora?: number;
 }): ResultadoFirma {
   const firma = leerXSignature(p.xSignature);
   if (!firma) return { valida: false, motivo: "sin header x-signature (o mal formado)" };
+  if (!p.xRequestId) return { valida: false, motivo: "sin header x-request-id" };
+  const cuando = tsEnMs(firma.ts);
+  const ahora = p.ahora ?? Date.now();
+  if (cuando === null) return { valida: false, motivo: "ts inválido" };
+  if (ahora - cuando > MAX_EDAD_FIRMA_MS || cuando - ahora > MAX_ADELANTO_MS) return { valida: false, motivo: "firma vencida" };
   if (!/^[0-9a-f]{64}$/i.test(firma.v1)) return { valida: false, motivo: "v1 no es un HMAC-SHA256" };
   const esperado = createHmac("sha256", p.secreto).update(manifestFirma(p.dataId, p.xRequestId, firma.ts)).digest();
   const recibido = Buffer.from(firma.v1, "hex");

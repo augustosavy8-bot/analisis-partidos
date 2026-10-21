@@ -3,8 +3,9 @@ import { headers } from "next/headers";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { nuevoTokenDispositivo } from "@/lib/dispositivo";
 import { normalizarWhatsapp } from "@/lib/whatsapp";
+import { MENSAJE_OTRO_LOCAL, vinculoPermitido } from "@/lib/vinculo";
 import { guardarCumpleCliente } from "@/lib/tarjeta";
-import { error, json } from "@/lib/app/servidor";
+import { error, ingresoPermitido, json, numeroPermitido, registrarIntento, registrarIntentoNumero } from "@/lib/app/servidor";
 import { aplicarToqueApp, ErrorToque, usarToquePendiente } from "@/lib/app/toque-app";
 
 export const runtime = "nodejs";
@@ -36,9 +37,19 @@ export async function POST(req: Request) {
 
   try {
     const toque = await usarToquePendiente(c?.toquePendiente);
+    // Un número que ya tiene tarjeta es un ingreso a esa cuenta: mismos límites que
+    // /sesion (por IP y por número), si no esta ruta servía para saltearlos.
+    const db = crearClienteAdmin();
+    const { data: existente } = await db.from("clientes").select("id").eq("whatsapp", whatsapp).maybeSingle();
+    if (existente) {
+      if ((await vinculoPermitido(whatsapp, toque.localId)) === "otro_local") return error(MENSAJE_OTRO_LOCAL, 403);
+      if (!(await ingresoPermitido(req))) return error("Hiciste muchos intentos. Esperá unos minutos y probá de nuevo.", 429);
+      if (!(await numeroPermitido(whatsapp))) return error("Hubo muchos ingresos con este número. Probá de nuevo mañana.", 429);
+      await Promise.all([registrarIntento(req, true), registrarIntentoNumero(whatsapp, true)]);
+    }
     const { token, hash } = nuevoTokenDispositivo();
     const ua = `Point app · ${(await headers()).get("user-agent") ?? "iOS"}`;
-    const { data, error: e } = await crearClienteAdmin().rpc("alta_cliente", {
+    const { data, error: e } = await db.rpc("alta_cliente", {
       p_nombre: nombre,
       p_whatsapp: whatsapp,
       p_local_id: toque.localId,

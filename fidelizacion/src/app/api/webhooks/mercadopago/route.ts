@@ -28,8 +28,9 @@ export async function POST(req: Request) {
     cuerpo = { _no_json: texto.slice(0, 2000) };
   }
 
-  const datos = (cuerpo.data ?? {}) as { id?: string | number };
-  const dataId = url.searchParams.get("data.id") ?? (datos.id != null ? String(datos.id) : null) ?? url.searchParams.get("id");
+  // Sólo el data.id de la URL: es el que entra en la firma. Si se tomara el del
+  // cuerpo, un aviso firmado sin data.id en la URL podría reenviarse con otro id.
+  const dataId = url.searchParams.get("data.id");
   const topic = (cuerpo.type as string | undefined) ?? url.searchParams.get("type") ?? url.searchParams.get("topic");
   const xRequestId = req.headers.get("x-request-id");
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     firmaValida = false; // sin MP_WEBHOOK_SECRET configurado: nada es válido
   }
 
-  if (!firmaValida) {
+  if (!firmaValida || !dataId) {
     console.warn(`Webhook MP con firma inválida (topic=${topic}, data.id=${dataId})`);
     return NextResponse.json({ ok: false, error: "firma inválida" }, { status: 401 });
   }

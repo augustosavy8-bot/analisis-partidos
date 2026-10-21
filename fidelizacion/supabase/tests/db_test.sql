@@ -1080,6 +1080,17 @@ begin
   v_r := public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
   perform pg_temp.check(v_r = 'programado', 'cambio de plan: un plan ya pagado se conserva hasta fin de período');
 
+  -- Sube a Pro sin pagarlo y cancela: vuelve a Básico (el último plan pagado), no se queda Pro hasta fin de mes.
+  update public.suscripciones set plan_id = v_basico, plan_programado_id = null where id = v_s;
+  delete from public.pagos_suscripcion where suscripcion_id = v_s;
+  insert into public.pagos_suscripcion (suscripcion_id, mp_authorized_payment_id, monto_centavos, estado, intento, fecha_pago)
+  values (v_s, 'ap-cambio-plan-2', 1500000, 'processed', 1, now() - interval '1 day');
+  perform public.cambiar_plan_suscripcion(v_s, v_pro, true, 3000000, null);
+  v_ok := public.volver_a_plan_pagado(v_s, null) = v_basico;
+  perform pg_temp.check(v_ok and (select plan_id = v_basico from public.suscripciones where id = v_s),
+    'cambio de plan: subir sin pagar y cancelar vuelve al último plan pagado');
+  perform pg_temp.check(public.volver_a_plan_pagado(v_s, null) is null, 'cambio de plan: con el plan pagado no cambia nada');
+
   -- Un cambio a la vez.
   perform pg_temp.check(public.reservar_cambio_plan(v_s) and not public.reservar_cambio_plan(v_s),
     'cambio de plan: no se pueden hacer dos cambios en paralelo');

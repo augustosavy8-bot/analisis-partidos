@@ -10,6 +10,11 @@ export const dynamic = "force-dynamic";
 export async function DELETE(req: Request) {
   const cliente = await clienteDeRequest(req);
   if (!cliente) return error("Tu sesión venció. Volvé a entrar.", 401);
+  // Un celular recién vinculado a una cuenta que ya existía todavía no prueba que
+  // sea del dueño (no hay código por WhatsApp): no puede borrarla en las primeras 24 hs.
+  if (cliente.recienVinculado) {
+    return error("Por seguridad, podés eliminar la cuenta desde este celular 24 horas después de haberla vinculado.", 403);
+  }
   try {
     await eliminarCuenta(cliente.clienteId);
     return json({ ok: true });

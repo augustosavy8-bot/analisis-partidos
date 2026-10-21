@@ -14,6 +14,7 @@ import { comprobarPinMozo } from "@/lib/sesion-mozo";
 async function tarjetaActual(slug: string) {
   const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
   if (!local || !cliente) return null;
+  const recienVinculado = cliente.recienVinculado;
   const db = crearClienteAdmin();
   const { data } = await db
     .from("tarjetas")
@@ -21,7 +22,7 @@ async function tarjetaActual(slug: string) {
     .eq("cliente_id", cliente.clienteId)
     .eq("local_id", local.id)
     .maybeSingle();
-  return data;
+  return data ? { ...data, recienVinculado } : null;
 }
 
 export type RespuestaCanje = { requierePin?: { equipo: { id: string; nombre: string }[] }; error?: string } | undefined;
@@ -36,6 +37,10 @@ export async function solicitarCanje(slug: string, premioId: string, confirmacio
   const db = crearClienteAdmin();
 
   let mozoConfirmado: string | null = null;
+  // Celular recién vinculado a una cuenta existente (recuperó la tarjeta con el
+  // número): sin código por WhatsApp no sabemos si es el dueño, así que el canje
+  // lo confirma alguien del local con su PIN.
+  if (tarjeta.recienVinculado && !confirmacion) return pedirPin(db, tarjeta.local_id);
   if (confirmacion) {
     const r = await comprobarPinMozo(confirmacion.mozoId, confirmacion.pin.trim(), tarjeta.local_id);
     if (!r.ok) return { error: r.error };
@@ -53,17 +58,7 @@ export async function solicitarCanje(slug: string, premioId: string, confirmacio
     after(() => notificarCambioTarjeta(tarjeta.serial));
     redirect(`/t/${slug}?m=${alToque.movimiento_id}`);
   }
-  if (alToque?.motivo === "requiere_pin") {
-    const { data: equipo } = await db
-      .from("mozos")
-      .select("id, nombre")
-      .eq("local_id", tarjeta.local_id)
-      .eq("activo", true)
-      .not("pin_hash", "is", null)
-      .order("nombre");
-    if (!equipo?.length) return { error: "Para canjear, el local tiene que crear un PIN para su equipo en el panel." };
-    return { requierePin: { equipo } };
-  }
+  if (alToque?.motivo === "requiere_pin") return pedirPin(db, tarjeta.local_id);
   if (alToque?.motivo === "pin_invalido") return { error: "Esa persona no es de este local." };
   // El dueño desactivó el premio mientras el cliente tenía la tarjeta abierta: se recarga.
   if (alToque?.motivo === "premio_invalido") {
@@ -74,6 +69,18 @@ export async function solicitarCanje(slug: string, premioId: string, confirmacio
   // Sin toque reciente no hay canje (ni canje pendiente): la pantalla vuelve a
   // pedir que apoyen el llavero.
   refresh();
+}
+
+async function pedirPin(db: ReturnType<typeof crearClienteAdmin>, localId: string): Promise<RespuestaCanje> {
+  const { data: equipo } = await db
+    .from("mozos")
+    .select("id, nombre")
+    .eq("local_id", localId)
+    .eq("activo", true)
+    .not("pin_hash", "is", null)
+    .order("nombre");
+  if (!equipo?.length) return { error: "Para canjear, el local tiene que crear un PIN para su equipo en el panel." };
+  return { requierePin: { equipo } };
 }
 
 export type EstadoCumple = { error?: string; ok?: boolean };

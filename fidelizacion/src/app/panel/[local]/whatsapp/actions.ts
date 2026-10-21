@@ -16,6 +16,8 @@ export async function guardarPlantilla(slug: string, segmento: string, texto: st
   if (!esSegmento(segmento)) return { error: "Segmento inválido." };
   const limpio = texto.trim();
   if (limpio.length < 5 || limpio.length > 700) return { error: "El mensaje tiene que tener entre 5 y 700 caracteres." };
+  const bloqueo = await exigirFuncion(local.id, "editar_programa");
+  if (bloqueo) return { error: bloqueo };
   const plantillas = { ...local.plantillas_whatsapp, [segmento]: limpio };
   const { error } = await admin.from("locales").update({ plantillas_whatsapp: plantillas }).eq("id", local.id);
   if (error) return { error: "No se pudo guardar." };

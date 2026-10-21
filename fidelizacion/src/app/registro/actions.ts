@@ -9,6 +9,7 @@ import { urlResultado } from "@/lib/toque";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { leerCumple } from "@/lib/promos";
 import { guardarCumpleCliente } from "@/lib/tarjeta";
+import { MENSAJE_OTRO_LOCAL, vinculoPermitido } from "@/lib/vinculo";
 import { ingresoPermitidoIp, numeroPermitido, registrarIntentoIp, registrarIntentoNumero } from "@/lib/app/servidor";
 
 export type EstadoForm = { error?: string; valores?: Record<string, string> };
@@ -40,6 +41,7 @@ export async function registrarse(_prev: EstadoForm, form: FormData): Promise<Es
   // límites por IP y por número que en recuperar (todavía no hay código por WhatsApp).
   const { data: existente } = await crearClienteAdmin().from("clientes").select("id").eq("whatsapp", whatsapp).maybeSingle();
   if (existente) {
+    if ((await vinculoPermitido(whatsapp, toque.localId)) === "otro_local") return { error: MENSAJE_OTRO_LOCAL, valores };
     const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? null;
     if (!(await ingresoPermitidoIp(ip)) || !(await numeroPermitido(whatsapp))) {
       return { error: "Hiciste muchos intentos. Esperá un rato y probá de nuevo.", valores };
@@ -79,6 +81,7 @@ export async function recuperar(_prev: EstadoForm, form: FormData): Promise<Esta
   if (!cliente) {
     return { error: "No encontramos una tarjeta con ese WhatsApp. ¿Lo escribiste bien?", valores };
   }
+  if ((await vinculoPermitido(whatsapp, local.id)) === "otro_local") return { error: MENSAJE_OTRO_LOCAL, valores };
 
   const vinculo = await vincularCelular({ nombre: cliente.nombre, whatsapp, localId: local.id });
   if (!vinculo) redirect("/aviso?m=toque_vencido");

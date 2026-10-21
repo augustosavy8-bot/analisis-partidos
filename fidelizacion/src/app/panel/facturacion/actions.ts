@@ -135,7 +135,7 @@ const PUEDE: Record<AccionSuscripcion, string[]> = {
  * repite el mismo cambio y no hace nada nuevo (idempotente).
  */
 export async function gestionarSuscripcion(entrada: { comercioId: string; accion: AccionSuscripcion }): Promise<ResultadoGestion> {
-  await requerirUsuario();
+  const { userId } = await requerirUsuario();
   const comercio = await comercioDelUsuario(entrada.comercioId);
   if (!comercio) return { ok: false, error: "No encontramos tu comercio." };
   const accion = entrada.accion;
@@ -152,6 +152,13 @@ export async function gestionarSuscripcion(entrada: { comercioId: string; accion
   } catch (e) {
     console.error(`No se pudo ${accion} en MP`, comercio.id, resumenErrorMp(e));
     return { ok: false, error: "Mercado Pago no respondió. Probá de nuevo en un momento." };
+  }
+
+  // Subió de plan y todavía no lo pagó: al cancelar o pausar vuelve al último
+  // plan pagado (si no, usaba el plan caro hasta fin de mes pagando el barato).
+  if (accion !== "reactivar") {
+    const { error: e } = await crearClienteAdmin().rpc("volver_a_plan_pagado", { p_suscripcion_id: s.id, p_actor: userId });
+    if (e) console.error("volver_a_plan_pagado", comercio.id, e.message);
   }
 
   const nuevo =

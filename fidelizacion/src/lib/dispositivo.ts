@@ -36,7 +36,15 @@ export type ClienteActual = {
   nombre: string;
   /** Cumple (día y mes) si lo cargó. */
   cumple: { dia: number; mes: number } | null;
+  /**
+   * Este celular se vinculó hace menos de 24 hs a una cuenta que ya existía
+   * (recuperó la tarjeta con el número). Hasta que haya código por WhatsApp, los
+   * canjes desde un celular así piden el PIN de alguien del local.
+   */
+  recienVinculado: boolean;
 };
+
+const HORAS_VINCULO_RECIENTE = 24;
 
 /** Devuelve el cliente dueño del token de dispositivo, o null. */
 export async function clienteDesdeToken(token: string | undefined): Promise<ClienteActual | null> {
@@ -44,7 +52,7 @@ export async function clienteDesdeToken(token: string | undefined): Promise<Clie
   const db = crearClienteAdmin();
   const { data } = await db
     .from("dispositivos")
-    .select("id, cliente_id, clientes(nombre, cumple_dia, cumple_mes)")
+    .select("id, cliente_id, created_at, clientes(nombre, cumple_dia, cumple_mes, created_at)")
     .eq("token_hash", hashToken(token))
     .is("revocado_en", null)
     .maybeSingle();
@@ -53,8 +61,12 @@ export async function clienteDesdeToken(token: string | undefined): Promise<Clie
   after(async () => {
     await db.from("dispositivos").update({ ultimo_uso: new Date().toISOString() }).eq("id", data.id);
   });
-  const c = data.clientes as unknown as { nombre: string; cumple_dia: number | null; cumple_mes: number | null } | null;
+  const c = data.clientes as unknown as { nombre: string; cumple_dia: number | null; cumple_mes: number | null; created_at: string } | null;
+  const vinculado = new Date(data.created_at).getTime();
+  // La cuenta ya existía (10 minutos de margen: el alta y el vínculo del primer toque van juntos).
+  const cuentaPrevia = c ? new Date(c.created_at).getTime() < vinculado - 10 * 60_000 : false;
   return {
+    recienVinculado: cuentaPrevia && Date.now() - vinculado < HORAS_VINCULO_RECIENTE * 3_600_000,
     clienteId: data.cliente_id,
     nombre: c?.nombre ?? "",
     cumple: c?.cumple_dia && c.cumple_mes ? { dia: c.cumple_dia, mes: c.cumple_mes } : null,

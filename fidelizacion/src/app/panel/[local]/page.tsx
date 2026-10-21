@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Tarjeta, Titulo, Vacio } from "@/components/Panel";
 import { BotonLink } from "@/components/app/Boton";
 import { IconoFila } from "@/components/app/Superficie";
+import { AyudaNfc } from "@/components/app/AyudaNfc";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { AvisosHoy } from "./AvisosHoy";
 import { formasTermino } from "@/lib/terminos";
@@ -77,6 +78,7 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
         </span>
         <Icono nombre="chevron" tamaño={18} className="text-pt-ink-2" />
       </Link>
+      <AyudaNfc paraEquipo className="mb-4" />
 
       {acceso.limites && !dentroDelLimite(acceso, "clientes", m.clientes_total) && (
         <MejorarPlan titulo="Superaste los clientes de tu plan" className="mb-4">

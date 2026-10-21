@@ -5,6 +5,7 @@ import { salir } from "./actions";
 import { Icono } from "@/components/Icono";
 import { claseBoton } from "@/components/app/Boton";
 import { CheckCanje } from "@/components/Animaciones";
+import { AyudaNfc } from "@/components/app/AyudaNfc";
 
 type QR = { jti: string; url: string; svg: string; renovarEn: string };
 const ROTACION_MS = 30_000;
@@ -138,6 +139,8 @@ export function PantallaQR({ slug, nombre }: { slug: string; nombre: string }) {
           ? "El cliente ya lo escaneó. Generando uno nuevo…"
           : "Pedile al cliente que lo escanee con la cámara del celular. Cambia cada 30 segundos y sirve una sola vez."}
       </p>
+
+      <AyudaNfc paraEquipo className="mt-6 w-full max-w-xs" />
 
       {error && (
         <button onClick={() => void nuevo()} className={claseBoton("secundario", "sm", "mt-3")}>

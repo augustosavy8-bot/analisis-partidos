@@ -24,6 +24,7 @@ import { LlevalaEnBilletera } from "./LlevalaEnBilletera";
 import { FormCumple } from "./FormCumple";
 import { ListaPremios } from "./ListaPremios";
 import { Historial } from "./Historial";
+import { AyudaNfc } from "@/components/app/AyudaNfc";
 
 type DatosCelebracion = {
   /** "socio": se hizo socio con un toque que no sumó (límite de tiempo). */
@@ -312,6 +313,7 @@ export function SinTarjeta({ local }: { local: Local }) {
           </span>
           <p>En iPhone, cuando aparezca el aviso arriba de la pantalla, tocalo para abrir tu tarjeta.</p>
         </div>
+        <AyudaNfc className="mt-3" />
         <BotonLink href={`/recuperar?l=${local.slug}`} variante="primario" tamaño="lg" className="mt-6">
           Ya tengo tarjeta: recuperarla
         </BotonLink>

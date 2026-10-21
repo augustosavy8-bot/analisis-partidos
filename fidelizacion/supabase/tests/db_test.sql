@@ -997,6 +997,14 @@ begin
   values ('00000000-0000-4000-8000-0000000000c1', (select id from public.planes where codigo = 'pro'), 'past_due', 'mp-moroso', 3000000,
           now() - interval '5 days', now() + interval '20 days')
   returning id into v_s;
+  -- Sin ningún cobro aprobado: no hay gracia (sólo los días de sumar, desde el primer impago).
+  update public.suscripciones set past_due_desde = now() - interval '8 days' where id = v_s;
+  perform pg_temp.check(not public.suma_habilitada_local(v_aurora), 'morosidad: sin ningún cobro aprobado no hay gracia');
+  update public.suscripciones set past_due_desde = now() - interval '5 days' where id = v_s;
+  -- Un cobro aprobado (de una suscripción anterior): vuelve la gracia normal.
+  insert into public.pagos_suscripcion (suscripcion_id, mp_authorized_payment_id, monto_centavos, estado, estado_pago, intento, fecha_pago)
+  values ((select id from public.suscripciones where comercio_id = '00000000-0000-4000-8000-0000000000c1' and estado = 'cancelled' limit 1),
+          'ap-moroso-previo', 3000000, 'processed', 'approved', 1, now() - interval '40 days');
   perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: en gracia suma');
   update public.suscripciones set past_due_desde = now() - interval '16 days' where id = v_s;
   perform pg_temp.check(public.suma_habilitada_local(v_aurora), 'morosidad: pasada la gracia, sigue sumando unos días');
@@ -1048,6 +1056,14 @@ begin
   perform pg_temp.check(v_r = 'anulado'
     and (select plan_programado_id is null from public.suscripciones where id = v_s),
     'cambio de plan: elegir el plan actual anula el programado');
+
+  -- Programado + llega el cobro del mes antes de la hora exacta del fin del período: se aplica igual.
+  perform public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
+  v_ok := public.aplicar_plan_programado_por_cobro(v_s);
+  perform pg_temp.check(v_ok and (select plan_id = v_basico and plan_programado_id is null from public.suscripciones where id = v_s),
+    'cambio de plan: con el cobro del período nuevo la bajada programada se aplica aunque no haya llegado la hora');
+  perform public.cambiar_plan_suscripcion(v_s, v_pro, true, 3000000, null);
+  delete from public.historial_suscripcion where suscripcion_id = v_s and motivo = 'Cambio de plan inmediato';
 
   -- Programado + llega el fin del período: pasa a Básico y se apagan promos y regalos.
   perform public.cambiar_plan_suscripcion(v_s, v_basico, false, 1500000, null);
@@ -1226,6 +1242,10 @@ begin
   end loop;
   v_r := public.reservar_intento_pin(v_m, 5, 15);
   perform pg_temp.check((v_r->>'id') is null, 'pin: después de 5 fallos no deja intentar más');
+  -- Con IP: los fallos de otro dispositivo no bloquean a este.
+  for v_i in 1..5 loop perform public.reservar_intento_pin_ip(v_m, 'ip-atacante', 5, 15); end loop;
+  perform pg_temp.check((public.reservar_intento_pin_ip(v_m, 'ip-atacante', 5, 15)->>'id') is null, 'pin: 5 fallos bloquean a ese dispositivo');
+  perform pg_temp.check((public.reservar_intento_pin_ip(v_m, 'ip-local', 5, 15)->>'id') is not null, 'pin: pero no al celular del local');
 
   -- pending con tope: recién creada suma; vieja no.
   select id into v_local from public.locales where comercio_id = v_c limit 1;
@@ -1256,6 +1276,19 @@ begin
   update public.pedidos set reserva_hasta = now() - interval '1 minute' where id = v_p;
   perform public.liberar_reservas_vencidas();
   perform pg_temp.check((select estado from public.pedidos where id = v_p) = 'pendiente_pago', 'pedido: con un pago aprobado no vence');
+
+  -- Pagar un pedido ya vencido sin stock: no se marca pagado (no se vende lo que no hay).
+  v_ped := public.crear_pedido(v_c, '[{"codigo":"chip","cantidad":1}]', 'retiro', null);
+  v_p := (v_ped->>'pedido_id')::uuid;
+  update public.pedidos set reserva_hasta = now() - interval '1 minute' where id = v_p;
+  perform public.liberar_reservas_vencidas();
+  select stock into v_stock from public.productos where codigo = 'chip';
+  update public.productos set stock = 0 where codigo = 'chip';
+  perform pg_temp.check(public.registrar_pago_pedido(v_p, 'pay-audit-3', 'approved', null, (v_ped->>'total_centavos')::int, 'visa') = 'sin_stock',
+    'pedido: pagar un pedido vencido sin stock no se marca pagado');
+  perform pg_temp.check((select estado from public.pedidos where id = v_p) <> 'pagado' and (select stock from public.productos where codigo = 'chip') = 0,
+    'pedido: y el stock no queda negativo ni se toca');
+  update public.productos set stock = v_stock where codigo = 'chip';
 end $$;
 
 -- ---------------------------------------------------------------- arrepentimiento

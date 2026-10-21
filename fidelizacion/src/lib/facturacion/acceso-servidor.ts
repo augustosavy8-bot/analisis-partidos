@@ -14,6 +14,11 @@ export const accesoDelLocal = cache(async (localId: string): Promise<Acceso> => 
   const { data: local } = await crearClienteAdmin().from("locales").select("comercio_id").eq("id", localId).single();
   if (!local) return calcularAcceso(null, { diasGracia: 0, diasSumarTrasGracia: 0 });
   const [s, cfg] = await Promise.all([suscripcionVigente(local.comercio_id), configFacturacion()]);
+  let primerImpagoSinCobros: string | null = null;
+  if (s?.estado === "past_due") {
+    const { data } = await crearClienteAdmin().rpc("impago_sin_cobros", { p_comercio_id: local.comercio_id });
+    primerImpagoSinCobros = (data as string | null) ?? null;
+  }
   return calcularAcceso(
     s && {
       estado: s.estado,
@@ -23,6 +28,7 @@ export const accesoDelLocal = cache(async (localId: string): Promise<Acceso> => 
       currentPeriodEnd: s.currentPeriodEnd,
       cortesiaHasta: s.cortesiaHasta,
       creadaEn: s.creadaEn,
+      primerImpagoSinCobros,
     },
     cfg,
   );

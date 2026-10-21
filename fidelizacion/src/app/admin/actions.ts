@@ -277,6 +277,7 @@ export async function crearChip(localId: string, _prev: EstadoChip, form: FormDa
 
   if (!/^[0-9A-F]{8,20}$/.test(uid)) return { error: "El UID tiene que ser hexadecimal (ej: 04A1B2C3D4E5F6)." };
   if (etiqueta && etiqueta.length > 40) return { error: "La etiqueta es muy larga." };
+  if (mozoId && !(await mozoDelLocal(mozoId, localId))) return { error: "Esa persona no es de este local." };
 
   const datos: Record<string, unknown> = { uid, etiqueta, mozo_id: mozoId, local_id: localId, modo, da_socio: daSocio };
   let urlPrueba: string | undefined;
@@ -316,8 +317,19 @@ export async function alternarChipSocio(chipId: string, daSocio: boolean) {
 
 export async function asignarMozo(chipId: string, mozoId: string | null) {
   await requerirSuperadmin();
-  await crearClienteAdmin().from("chips").update({ mozo_id: mozoId }).eq("id", chipId);
+  const db = crearClienteAdmin();
+  if (mozoId) {
+    // El chip suma a nombre de esa persona: tiene que ser del mismo local que el chip.
+    const { data: chip } = await db.from("chips").select("local_id").eq("id", chipId).maybeSingle();
+    if (!chip || !(await mozoDelLocal(mozoId, chip.local_id))) return;
+  }
+  await db.from("chips").update({ mozo_id: mozoId }).eq("id", chipId);
   refresh();
+}
+
+async function mozoDelLocal(mozoId: string, localId: string) {
+  const { data } = await crearClienteAdmin().from("mozos").select("id").eq("id", mozoId).eq("local_id", localId).maybeSingle();
+  return !!data;
 }
 
 /** Chips de prueba: genera un token nuevo (el anterior deja de funcionar). */

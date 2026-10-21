@@ -28,7 +28,14 @@ export async function mozoActual(slug?: string): Promise<SesionMozo | null> {
 }
 
 /** Límites del PIN: por persona (atómico en la base), por día y por IP (frena probar PINs en muchos mozos a la vez). */
+/** Por persona del equipo y dispositivo, en el día. */
 const MAX_FALLOS_DIA = 15;
+/**
+ * Por persona del equipo en el día, desde cualquier lado: frena al que prueba
+ * desde muchas IPs (con PIN de 6 dígitos son ~27 mil años en promedio) sin que
+ * un tercero pueda bloquearle el PIN a todo el local equivocándose a propósito.
+ */
+const MAX_FALLOS_DIA_TOTAL = 100;
 const MAX_FALLOS_IP_HORA = 15;
 
 const hashIpPin = (ip: string | null) => createHash("sha256").update(`pin:${ip ?? "sin-ip"}|${env.hmacSecret}`).digest("hex");
@@ -58,17 +65,23 @@ export async function comprobarPinMozo(
   const ipHash = hashIpPin(await ipActual());
   const haceUnaHora = new Date(Date.now() - 3_600_000).toISOString();
   const haceUnDia = new Date(Date.now() - 86_400_000).toISOString();
-  const [{ count: fallosIp }, { count: fallosDia }] = await Promise.all([
+  const [{ count: fallosIp }, { count: fallosDia }, { count: fallosDiaTotal }] = await Promise.all([
     db.from("intentos_app").select("id", { count: "exact", head: true }).eq("ip_hash", ipHash).eq("exitoso", false).gte("created_at", haceUnaHora),
+    db.from("intentos_pin").select("id", { count: "exact", head: true }).eq("mozo_id", mozo.id).eq("ip_hash", ipHash).eq("exitoso", false).gte("created_at", haceUnDia),
     db.from("intentos_pin").select("id", { count: "exact", head: true }).eq("mozo_id", mozo.id).eq("exitoso", false).gte("created_at", haceUnDia),
   ]);
   if ((fallosIp ?? 0) >= MAX_FALLOS_IP_HORA) return { ok: false, error: "Demasiados intentos desde este celular. Probá en una hora." };
-  if ((fallosDia ?? 0) >= MAX_FALLOS_DIA) return { ok: false, error: "Este PIN quedó bloqueado por hoy por muchos intentos. El encargado puede cambiarlo desde el panel." };
+  if ((fallosDia ?? 0) >= MAX_FALLOS_DIA || (fallosDiaTotal ?? 0) >= MAX_FALLOS_DIA_TOTAL) {
+    return { ok: false, error: "Este PIN quedó bloqueado por hoy por muchos intentos. El encargado puede cambiarlo desde el panel." };
+  }
+  // Los PIN viejos de 4 o 5 dígitos ya no sirven: se adivinan probando.
+  if (pin.length < 6) return { ok: false, error: "El PIN ahora es de 6 dígitos. Pedile al encargado que te cree uno nuevo en el panel." };
 
   // Atómico: la base cuenta los fallos y anota este intento como fallido ANTES de
   // verificar el PIN, así muchos intentos en paralelo no pasan todos el límite.
-  const { data: intento, error: errIntento } = await db.rpc("reservar_intento_pin", {
+  const { data: intento, error: errIntento } = await db.rpc("reservar_intento_pin_ip", {
     p_mozo_id: mozo.id,
+    p_ip_hash: ipHash,
     p_max_fallos: MAX_FALLOS,
     p_ventana_min: VENTANA_FALLOS_MIN,
   });

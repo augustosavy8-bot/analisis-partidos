@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { redactarEvento } from "@/lib/redactar";
 
 /**
  * Sentry (alertas de errores). Sin NEXT_PUBLIC_SENTRY_DSN no hace nada: se activa al
@@ -25,6 +26,9 @@ export async function register() {
       genAI: { inputs: false, outputs: false },
       stackFrameVariables: false,
     },
+    // El link de la billetera lleva el token en el path (/w/<serial>/<token>): se tapa.
+    beforeSend: (evento) => redactarEvento(evento),
+    beforeBreadcrumb: (miga) => redactarEvento(miga),
     integrations: [Sentry.captureConsoleIntegration({ levels: ["error"] })],
     // Avisos de Node (ExperimentalWarning, DeprecationWarning) que salen por console.error: no son errores de Point.
     ignoreErrors: [/ExperimentalWarning/, /DeprecationWarning/, /\(node:\d+\) \w*Warning/],

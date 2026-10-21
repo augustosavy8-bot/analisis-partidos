@@ -31,6 +31,12 @@ export type SuscripcionAcceso = {
   cortesiaHasta: string | null;
   /** Alta de la suscripción: pone un tope a "pending" (tarjeta sin confirmar). */
   creadaEn?: string | null;
+  /**
+   * Si el comercio nunca tuvo un cobro aprobado: su primer impago (en cualquier
+   * suscripción). Sin cobros no hay gracia, y cancelar y volver a suscribirse no
+   * reinicia el plazo. Misma regla en la base (suma_habilitada_local, migración 046).
+   */
+  primerImpagoSinCobros?: string | null;
 };
 
 /** Cuánto puede quedar en "pending" (MP no confirmó la tarjeta) con todo andando. */
@@ -73,6 +79,11 @@ export function calcularAcceso(s: SuscripcionAcceso | null, cfg: ConfigAcceso, a
       return { ...base, nivel: "sin_sumar", hasta: null };
     }
     case "past_due": {
+      if (s.primerImpagoSinCobros) {
+        const finSumar = new Date(s.primerImpagoSinCobros).getTime() + cfg.diasSumarTrasGracia * DIA;
+        if (t < finSumar) return { ...base, nivel: "restringido", hasta: new Date(finSumar).toISOString() };
+        return { ...base, nivel: "sin_sumar", hasta: null };
+      }
       const desde = s.pastDueDesde ? new Date(s.pastDueDesde).getTime() : t;
       const finGracia = desde + cfg.diasGracia * DIA;
       const finSumar = finGracia + cfg.diasSumarTrasGracia * DIA;

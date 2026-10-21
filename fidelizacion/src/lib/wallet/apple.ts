@@ -160,7 +160,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
 
 /**
  * Marca como actualizados los pases indicados y manda push (APNs) a todos los
- * dispositivos registrados. Si APNs responde 410, borra ese dispositivo.
+ * dispositivos registrados. Si APNs responde 410 (o 400 con otros envíos bien), borra ese dispositivo.
  */
 async function actualizarYAvisar(filtro: { serial: string } | { localId: string }): Promise<number> {
   const cred = env.appleWallet;
@@ -182,7 +182,11 @@ async function actualizarYAvisar(filtro: { serial: string } | { localId: string 
   if (!porToken.size) return seriales.length;
 
   const resultados = await enviarPushes(cred, [...porToken.keys()]);
-  const bajas = resultados.filter((r) => r.status === 410).map((r) => porToken.get(r.token)!);
+  // 410: Apple dio de baja el token. 400 (BadDeviceToken): token falso o inválido; se
+  // borra sólo si en la misma tanda hubo envíos que salieron bien (si fallan todos, el
+  // problema es nuestro —certificado, topic— y no hay que borrar a todos).
+  const algunoOk = resultados.some((r) => r.status === 200);
+  const bajas = resultados.filter((r) => r.status === 410 || (r.status === 400 && algunoOk)).map((r) => porToken.get(r.token)!);
   if (bajas.length) await db.from("apple_devices").delete().in("device_library_id", bajas);
   const fallidos = resultados.filter((r) => r.status !== 200 && r.status !== 410).length;
   if (fallidos) console.error(`Apple Wallet: ${fallidos} de ${resultados.length} push fallaron (status ${[...new Set(resultados.map((r) => r.status))].join(", ")})`);

@@ -14,12 +14,16 @@ import { pesosACentavos } from "./dinero";
  * de orden o si alguien lo reenvía: el resultado es el mismo (idempotencia).
  */
 
-type Suscripcion = { id: string; comercio_id: string; estado: EstadoSuscripcion; trial_ends_at: string | null };
+type Suscripcion = { id: string; comercio_id: string; estado: EstadoSuscripcion; trial_ends_at: string | null; plan_programado_id?: string | null };
 
 const db = () => crearClienteAdmin();
 
 async function suscripcionPorMp(mpId: string): Promise<Suscripcion | null> {
-  const { data } = await db().from("suscripciones").select("id, comercio_id, estado, trial_ends_at").eq("mp_preapproval_id", mpId).maybeSingle();
+  const { data } = await db()
+    .from("suscripciones")
+    .select("id, comercio_id, estado, trial_ends_at, plan_programado_id")
+    .eq("mp_preapproval_id", mpId)
+    .maybeSingle();
   return (data as Suscripcion | null) ?? null;
 }
 
@@ -113,7 +117,10 @@ export async function procesarPreapproval(id: string): Promise<string> {
   if (resp.payer_email) cambios.mp_payer_email = resp.payer_email;
   if (resp.auto_recurring?.transaction_amount != null) cambios.precio_centavos = pesosACentavos(resp.auto_recurring.transaction_amount);
   // Mientras esté en prueba o activa, el fin del período es el próximo cobro que programó MP.
-  if (resp.next_payment_date && (nuevo === "trialing" || nuevo === "authorized")) {
+  // Con una bajada de plan programada no se corre: se corre con el cobro, que la aplica
+  // (si no, el período se extendía antes de llegar al fin y la bajada no se aplicaba nunca).
+  const bajadaPendiente = !!(await suscripcionPorMp(id))?.plan_programado_id;
+  if (resp.next_payment_date && (nuevo === "trialing" || nuevo === "authorized") && !bajadaPendiente) {
     cambios.current_period_end = resp.next_payment_date;
     if (nuevo === "trialing") cambios.trial_ends_at = resp.next_payment_date;
   }
@@ -147,8 +154,14 @@ async function procesarCuota(id: string): Promise<string> {
   if (error) throw new Error(`registrar_cuota: ${error.message}`);
 
   // Antes de extender el período: si había una bajada de plan programada, se aplica ahora.
-  await aplicarPlanProgramado(s.id);
+  // Un cobro aprobado es el comienzo del período nuevo: se aplica sin mirar la hora.
   const efecto = efectoDeCuota(cuota);
+  if (efecto.tipo === "cobrada") {
+    const { error: e } = await db().rpc("aplicar_plan_programado_por_cobro", { p_suscripcion_id: s.id });
+    if (e) throw new Error(`aplicar_plan_programado_por_cobro: ${e.message}`);
+  } else {
+    await aplicarPlanProgramado(s.id);
+  }
   const nuevo = estadoTrasCuota(s.estado, efecto);
   if (efecto.tipo === "sin_cambios") return `cuota ${id} (${cuota.status}): registrada, sin cambios`;
 
@@ -194,6 +207,7 @@ export async function registrarPagoDePedido(pago: Awaited<ReturnType<typeof obte
   });
   if (error) throw new Error(`registrar_pago_pedido: ${error.message}`);
   if (data === "monto_distinto") console.error(`PAGO CON MONTO DISTINTO: pago=${pago.id} pedido=${pedidoId}`);
+  if (data === "sin_stock") console.error(`PAGO DE UN PEDIDO CANCELADO SIN STOCK (reembolsar): pago=${pago.id} pedido=${pedidoId}`);
   return `pago ${pago.id} (${pago.status}) del pedido ${pedidoId}: ${data}`;
 }
 

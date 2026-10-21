@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { tarjetaPorPase } from "@/lib/billetera";
-import { formatearFecha, premiosDelLocal, proximoPremio, tarjetaDelCliente } from "@/lib/tarjeta";
+import { premiosDelLocal, proximoPremio, tarjetaDelCliente } from "@/lib/tarjeta";
 import { PointCard } from "@/components/landing/PointCard";
-import { Aviso, Encabezado, Lista, Seccion } from "@/components/app/Superficie";
+import { Aviso, Encabezado } from "@/components/app/Superficie";
 import { BotonLink } from "@/components/app/Boton";
-import { textoMovimiento } from "@/lib/movimientos";
 import { TemaLocal } from "@/components/app/TemaLocal";
 import { INSIGNIA_SOCIO, varsTarjetaSocio } from "@/lib/socios";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
-/** Vista de sólo lectura de la tarjeta, abierta desde la billetera (sin cookie). */
+/** Vista de sólo lectura de la tarjeta, abierta desde la billetera (sin cookie): nombre y puntos, sin historial. */
 export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">) {
   const { serial, token } = await params;
   const pase = await tarjetaPorPase(serial, token);
@@ -48,18 +47,8 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
           </Aviso>
         )}
 
-        {tarjeta.movimientos.length > 0 && (
-          <Seccion titulo="Últimos movimientos" className="!mt-7">
-            <Lista>
-              {tarjeta.movimientos.slice(0, 8).map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 pt-app-detalle">
-                  <span className="text-pt-ink">{textoMovimiento(m)}</span>
-                  <span className="shrink-0 text-pt-ink-2">{formatearFecha(m.created_at, local.zona_horaria)}</span>
-                </li>
-              ))}
-            </Lista>
-          </Seccion>
-        )}
+        {/* Sin historial: este link es el QR del pase y no se puede revocar (quien lo
+            escanee lo tiene para siempre). El historial está en la tarjeta completa. */}
 
         <BotonLink href={`/t/${local.slug}`} variante="primario" tamaño="lg" className="mt-8">
           Abrir la tarjeta completa (para canjear)

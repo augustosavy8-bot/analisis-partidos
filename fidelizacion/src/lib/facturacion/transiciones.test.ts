@@ -117,3 +117,16 @@ describe("control de acceso por plan", () => {
     expect(puedeUsar(vieja, "canjear")).toBe(true);
   });
 });
+
+describe("impago sin ningún cobro aprobado", () => {
+  it("no tiene gracia y cuenta desde el primer impago", () => {
+    const hace2 = new Date(AHORA.getTime() - 2 * 86_400_000).toISOString();
+    const hace9 = new Date(AHORA.getTime() - 9 * 86_400_000).toISOString();
+    // Con cobros previos: gracia normal.
+    expect(calcularAcceso(susc({ estado: "past_due", pastDueDesde: hace2 }), CFG, AHORA).nivel).toBe("gracia");
+    // Sin cobros: directo a restringido (sigue sumando 7 días)...
+    expect(calcularAcceso(susc({ estado: "past_due", pastDueDesde: hace2, primerImpagoSinCobros: hace2 }), CFG, AHORA).nivel).toBe("restringido");
+    // ...contados desde el primer impago aunque la suscripción sea nueva.
+    expect(calcularAcceso(susc({ estado: "past_due", pastDueDesde: hace2, primerImpagoSinCobros: hace9 }), CFG, AHORA).nivel).toBe("sin_sumar");
+  });
+});

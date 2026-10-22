@@ -1,6 +1,6 @@
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { normalizarWhatsapp } from "@/lib/whatsapp";
-import { MENSAJE_OTRO_LOCAL, vinculoPermitido } from "@/lib/vinculo";
+import { esLocalNuevo } from "@/lib/vinculo";
 import { aplicarToqueApp, ErrorToque, usarToquePendiente } from "@/lib/app/toque-app";
 import {
   error,
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
     if (!cliente) {
       return error("No encontramos tarjetas con ese WhatsApp. Tu tarjeta se crea la primera vez que sumás en un local adherido.", 404);
     }
-    if ((await vinculoPermitido(whatsapp, toque.localId)) === "otro_local") return error(MENSAJE_OTRO_LOCAL, 403);
-    const token = await nuevoDispositivoApp(cliente.id, req.headers.get("user-agent") ?? "iOS");
+    const aVerificar = await esLocalNuevo(whatsapp, toque.localId);
+    const token = await nuevoDispositivoApp(cliente.id, req.headers.get("user-agent") ?? "iOS", aVerificar);
     const respuesta = await aplicarToqueApp(cliente.id, toque);
     return json({ token, nombre: cliente.nombre, ...respuesta });
   } catch (e) {

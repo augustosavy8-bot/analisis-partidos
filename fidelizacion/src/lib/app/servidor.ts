@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import QRCode from "qrcode";
 import { NextResponse } from "next/server";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
+import { marcarAVerificar } from "@/lib/vinculo";
 import { clienteDesdeToken, hashToken, nuevoTokenDispositivo, type ClienteActual } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
 import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
@@ -71,12 +72,13 @@ export async function registrarIntentoIp(ip: string | null, exitoso: boolean) {
 }
 
 /** Da un token de dispositivo nuevo al cliente (como vincularCelular en la web). */
-export async function nuevoDispositivoApp(clienteId: string, userAgent: string) {
+export async function nuevoDispositivoApp(clienteId: string, userAgent: string, aVerificar = false) {
   const { token, hash } = nuevoTokenDispositivo();
   const { error: e } = await crearClienteAdmin()
     .from("dispositivos")
     .insert({ cliente_id: clienteId, token_hash: hash, user_agent: `Point app · ${userAgent}`.slice(0, 300) });
   if (e) throw new Error(e.message);
+  if (aVerificar) await marcarAVerificar(hash);
   return token;
 }
 

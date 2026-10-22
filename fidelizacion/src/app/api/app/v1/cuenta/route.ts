@@ -11,9 +11,9 @@ export async function DELETE(req: Request) {
   const cliente = await clienteDeRequest(req);
   if (!cliente) return error("Tu sesión venció. Volvé a entrar.", 401);
   // Un celular recién vinculado a una cuenta que ya existía todavía no prueba que
-  // sea del dueño (no hay código por WhatsApp): no puede borrarla en las primeras 24 hs.
+  // sea del dueño (no hay código por WhatsApp): no puede borrarla por un tiempo.
   if (cliente.recienVinculado) {
-    return error("Por seguridad, podés eliminar la cuenta desde este celular 24 horas después de haberla vinculado.", 403);
+    return error("Por seguridad, este celular todavía no puede eliminar la cuenta. Hacelo desde el celular donde ya la tenías, o escribinos.", 403);
   }
   try {
     await eliminarCuenta(cliente.clienteId);

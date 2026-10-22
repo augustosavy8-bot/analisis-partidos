@@ -1,4 +1,5 @@
 import "server-only";
+import { marcarAVerificar } from "@/lib/vinculo";
 import { cookies, headers } from "next/headers";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import {
@@ -38,6 +39,8 @@ export async function vincularCelular(opts: {
   nombre: string;
   whatsapp: string;
   localId: string;
+  /** El número ya era cliente pero no tenía tarjeta en este local (ver lib/vinculo). */
+  aVerificar?: boolean;
 }): Promise<{ clienteId: string; clienteExistia: boolean; resultado: ResultadoToque } | null> {
   const store = await cookies();
   const toque = leerToquePendiente(store.get(COOKIE_TOQUE)?.value);
@@ -55,6 +58,7 @@ export async function vincularCelular(opts: {
     p_user_agent: ua,
   });
   if (error || !data) throw new Error(error?.message ?? "No se pudo registrar");
+  if (opts.aVerificar) await marcarAVerificar(hash);
 
   store.set(COOKIE_DISPOSITIVO, token, opcionesCookie(DURACION_DISPOSITIVO));
   const resultado = await aplicarToque(data.cliente_id, toque);

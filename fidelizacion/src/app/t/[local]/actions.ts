@@ -14,15 +14,17 @@ import { comprobarPinMozo } from "@/lib/sesion-mozo";
 async function tarjetaActual(slug: string) {
   const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
   if (!local || !cliente) return null;
-  const recienVinculado = cliente.recienVinculado;
   const db = crearClienteAdmin();
   const { data } = await db
     .from("tarjetas")
-    .select("id, serial, local_id")
+    .select("id, serial, local_id, created_at")
     .eq("cliente_id", cliente.clienteId)
     .eq("local_id", local.id)
     .maybeSingle();
-  return data ? { ...data, recienVinculado } : null;
+  if (!data) return null;
+  // Las tarjetas que se crearon desde este celular no piden PIN: sólo las que la cuenta ya tenía.
+  const recienVinculado = cliente.recienVinculado && new Date(data.created_at) < new Date(cliente.vinculadoEn);
+  return { ...data, recienVinculado };
 }
 
 export type RespuestaCanje = { requierePin?: { equipo: { id: string; nombre: string }[] }; error?: string } | undefined;

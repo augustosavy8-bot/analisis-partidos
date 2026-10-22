@@ -38,10 +38,13 @@ export type ClienteActual = {
   cumple: { dia: number; mes: number } | null;
   /**
    * Este celular se vinculó hace menos de 24 hs a una cuenta que ya existía
-   * (recuperó la tarjeta con el número). Hasta que haya código por WhatsApp, los
-   * canjes desde un celular así piden el PIN de alguien del local.
+   * (recuperó la tarjeta con el número), o se vinculó desde un local donde la
+   * cuenta no tenía tarjeta y sigue a verificar. Hasta que haya código por
+   * WhatsApp, canjear una tarjeta anterior al vínculo pide el PIN de alguien del local.
    */
   recienVinculado: boolean;
+  /** Cuándo se vinculó este celular: las tarjetas creadas desde acá no piden PIN. */
+  vinculadoEn: string;
 };
 
 const HORAS_VINCULO_RECIENTE = 24;
@@ -52,7 +55,7 @@ export async function clienteDesdeToken(token: string | undefined): Promise<Clie
   const db = crearClienteAdmin();
   const { data } = await db
     .from("dispositivos")
-    .select("id, cliente_id, created_at, clientes(nombre, cumple_dia, cumple_mes, created_at)")
+    .select("id, cliente_id, created_at, verificar_hasta, clientes(nombre, cumple_dia, cumple_mes, created_at)")
     .eq("token_hash", hashToken(token))
     .is("revocado_en", null)
     .maybeSingle();
@@ -66,7 +69,10 @@ export async function clienteDesdeToken(token: string | undefined): Promise<Clie
   // La cuenta ya existía (10 minutos de margen: el alta y el vínculo del primer toque van juntos).
   const cuentaPrevia = c ? new Date(c.created_at).getTime() < vinculado - 10 * 60_000 : false;
   return {
-    recienVinculado: cuentaPrevia && Date.now() - vinculado < HORAS_VINCULO_RECIENTE * 3_600_000,
+    recienVinculado:
+      (cuentaPrevia && Date.now() - vinculado < HORAS_VINCULO_RECIENTE * 3_600_000) ||
+      (!!data.verificar_hasta && new Date(data.verificar_hasta).getTime() > Date.now()),
+    vinculadoEn: data.created_at,
     clienteId: data.cliente_id,
     nombre: c?.nombre ?? "",
     cumple: c?.cumple_dia && c.cumple_mes ? { dia: c.cumple_dia, mes: c.cumple_mes } : null,

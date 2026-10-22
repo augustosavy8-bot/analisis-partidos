@@ -14,7 +14,8 @@
         "usesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:fidelizacion-beta.vercel.app"
+        "applinks:fidelizacion-beta.vercel.app",
+        "applinks:pointclub.app"
       ],
       "entitlements": {
         "com.apple.developer.applesignin": [

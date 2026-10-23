@@ -13,9 +13,13 @@ const DURACION_TURNO = 12 * 60 * 60;
 const MAX_FALLOS = 5;
 const VENTANA_FALLOS_MIN = 15;
 
-/** `pv`: huella del PIN con el que se entró; si el encargado cambia el PIN, la sesión se cae. */
+/**
+ * `pv`: huella del PIN con el que se entró; si el encargado cambia el PIN, la sesión se cae.
+ * `"panel"`: entró un dueño o encargado con su sesión del panel, sin PIN.
+ */
 export type SesionMozo = { mozoId: string; nombre: string; localId: string; localSlug: string; pv: string; exp: number };
 
+const PV_PANEL = "panel";
 const huellaPin = (pinHash: string) => createHash("sha256").update(pinHash).digest("base64url").slice(0, 16);
 
 export async function mozoActual(slug?: string): Promise<SesionMozo | null> {
@@ -24,7 +28,9 @@ export async function mozoActual(slug?: string): Promise<SesionMozo | null> {
   if (!s || (slug && s.localSlug !== slug)) return null;
   // El mozo pudo haber sido desactivado (o cambiado su PIN) durante el turno.
   const { data } = await crearClienteAdmin().from("mozos").select("activo, pin_hash").eq("id", s.mozoId).maybeSingle();
-  return data?.activo && data.pin_hash && huellaPin(data.pin_hash) === s.pv ? s : null;
+  if (!data?.activo) return null;
+  if (s.pv === PV_PANEL) return s;
+  return data.pin_hash && huellaPin(data.pin_hash) === s.pv ? s : null;
 }
 
 /** Límites del PIN: por persona (atómico en la base), por día y por IP (frena probar PINs en muchos mozos a la vez). */
@@ -119,6 +125,19 @@ export async function ingresarMozo(
   };
   (await cookies()).set(COOKIE_MOZO, firmar("mozo", sesion, env.hmacSecret), opcionesCookie(DURACION_TURNO));
   return { ok: true };
+}
+
+/** QR de respaldo sin PIN para quien ya gestiona el local desde el panel (lo valida quien llama). */
+export async function ingresarMozoDesdePanel(mozo: { id: string; nombre: string }, local: { id: string; slug: string }) {
+  const sesion: SesionMozo = {
+    mozoId: mozo.id,
+    nombre: mozo.nombre,
+    localId: local.id,
+    localSlug: local.slug,
+    pv: PV_PANEL,
+    exp: Math.floor(Date.now() / 1000) + DURACION_TURNO,
+  };
+  (await cookies()).set(COOKIE_MOZO, firmar("mozo", sesion, env.hmacSecret), opcionesCookie(DURACION_TURNO));
 }
 
 export async function salirMozo() {

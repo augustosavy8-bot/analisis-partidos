@@ -40,6 +40,15 @@ export const requerirLocal = cache(async (slug: string) => {
   return { db, admin: crearClienteAdmin(), userId, email, local: local as Local & { plantillas_whatsapp: Record<string, string> } };
 });
 
+/** ¿El usuario logueado en el panel gestiona este local? Sin redirigir (para páginas públicas). */
+export async function gestionaLocal(slug: string): Promise<boolean> {
+  const db = await crearClienteServidor();
+  const { data } = await db.auth.getClaims();
+  if (!data?.claims?.sub) return false;
+  const { data: local } = await db.from("locales").select("id").eq("slug", slug).maybeSingle();
+  return !!local;
+}
+
 export function fechaHora(iso: string | null, zona: string) {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("es-AR", {

@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Refresca la sesión de Supabase Auth de los usuarios del panel.
- * Sólo corre en /panel y /admin: los clientes finales no usan Supabase Auth.
+ * Corre en /panel, /admin y /mozo (el QR de respaldo no pide PIN a quien tiene el panel abierto):
+ * los clientes finales no usan Supabase Auth.
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -33,5 +34,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*", "/admin/:path*", "/auth/:path*"],
+  matcher: ["/panel/:path*", "/admin/:path*", "/auth/:path*", "/mozo/:path*"],
 };

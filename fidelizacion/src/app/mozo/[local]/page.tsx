@@ -7,6 +7,8 @@ import { formasTermino } from "@/lib/terminos";
 import { LoginMozo } from "./LoginMozo";
 import { Insignia } from "@/components/app/Superficie";
 import { PantallaQR } from "./PantallaQR";
+import { gestionaLocal } from "@/lib/panel";
+import { ElegirSinPin } from "./ElegirSinPin";
 
 export const metadata = { title: "QR de respaldo", robots: { index: false } };
 
@@ -16,6 +18,7 @@ export default async function Mozo({ params }: PageProps<"/mozo/[local]">) {
   if (!local) notFound();
 
   const mozo = await mozoActual(slug);
+  const delPanel = !mozo && (await gestionaLocal(slug));
 
   return (
     <div className="pt-app flex flex-1 flex-col">
@@ -40,13 +43,22 @@ export default async function Mozo({ params }: PageProps<"/mozo/[local]">) {
               </p>
             </div>
             <div className="mt-6 rounded-pt-card bg-pt-pure p-5 shadow-pt-ui ring-1 ring-pt-border/60">
-              <LoginMozo slug={slug} mozos={await mozosConPin(local.id)} />
+              {delPanel ? (
+                <ElegirSinPin slug={slug} mozos={await mozosActivos(local.id)} />
+              ) : (
+                <LoginMozo slug={slug} mozos={await mozosConPin(local.id)} />
+              )}
             </div>
           </>
         )}
       </main>
     </div>
   );
+}
+
+async function mozosActivos(localId: string) {
+  const { data } = await crearClienteAdmin().from("mozos").select("id, nombre").eq("local_id", localId).eq("activo", true).order("nombre");
+  return data ?? [];
 }
 
 async function mozosConPin(localId: string) {

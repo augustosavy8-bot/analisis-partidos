@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Crypto from "expo-crypto";
 import * as Haptics from "expo-haptics";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -118,6 +118,7 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
   const [grabando, setGrabando] = useState(false);
   const [grabados, setGrabados] = useState<Grabado[]>([]);
   const [conNfc, setConNfc] = useState(true);
+  const [recargando, setRecargando] = useState(false);
 
   const manejar = useCallback(
     (e: unknown) => {
@@ -131,13 +132,26 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
     [onVencida],
   );
 
+  // Locales con su equipo. Se recarga deslizando hacia abajo (si el dueño crea a alguien mientras tanto).
+  const cargar = useCallback(
+    () =>
+      apiAdmin
+        .locales(sesion.token)
+        .then((r) => setLocales(r.locales.filter((l) => l.activo)))
+        .catch((e) => setError(manejar(e))),
+    [sesion.token, manejar],
+  );
+
   useEffect(() => {
     hayNfc().then(setConNfc);
-    apiAdmin
-      .locales(sesion.token)
-      .then((r) => setLocales(r.locales.filter((l) => l.activo)))
-      .catch((e) => setError(manejar(e)));
-  }, [sesion.token, manejar]);
+    cargar();
+  }, [cargar]);
+
+  async function recargar() {
+    setRecargando(true);
+    await cargar();
+    setRecargando(false);
+  }
 
   const local = locales?.find((l) => l.id === localId) ?? null;
 
@@ -181,7 +195,11 @@ function Grabador({ sesion, onVencida }: { sesion: SesionAdmin; onVencida: () =>
   }
 
   return (
-    <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={estilos.contenido}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
+    >
       {!conNfc && <Text style={estilos.error}>Este celular no tiene NFC disponible.</Text>}
 
       <Text style={estilos.seccion}>1. Local</Text>

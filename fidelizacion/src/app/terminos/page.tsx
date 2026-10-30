@@ -28,13 +28,12 @@ export default function Terminos() {
         </section>
 
         <section>
-          <h2 className="font-semibold text-stone-900">3. Suscripción, prueba gratis y cobro</h2>
+          <h2 className="font-semibold text-stone-900">3. Suscripción y cobro</h2>
           <ul className="list-disc space-y-1 pl-5">
             <li>El servicio se contrata por suscripción mensual con renovación automática, debitada por Mercado Pago de la tarjeta que cargues.</li>
             <li>
-              Los planes, sus precios y lo que incluye cada uno se muestran dentro del panel antes de contratar. La primera suscripción de cada
-              comercio incluye una prueba gratis (los días se indican al contratar); al terminar, se cobra el primer mes. La prueba gratis es una
-              sola vez por comercio.
+              Los planes, sus precios y lo que incluye cada uno se muestran dentro del panel antes de contratar. El primer mes se cobra al
+              suscribirte y el plan queda activo en ese momento. Si en algún momento ofrecemos una prueba gratis, se indica al contratar.
             </li>
             <li>Los precios están en pesos argentinos e incluyen los impuestos que correspondan.</li>
             <li>
@@ -61,8 +60,7 @@ export default function Terminos() {
           <h2 className="font-semibold text-stone-900">5. Baja y cancelación</h2>
           <p>
             Podés pausar o cancelar tu suscripción cuando quieras, en línea y sin trámites, desde <strong>Panel → Facturación → Cancelar
-            suscripción</strong>. Al cancelar no se te cobra más y conservás el servicio hasta el final del período ya pagado. Si cancelás durante
-            la prueba gratis, no se te cobra nada.
+            suscripción</strong>. Al cancelar no se te cobra más y conservás el servicio hasta el final del período ya pagado.
           </p>
         </section>
 

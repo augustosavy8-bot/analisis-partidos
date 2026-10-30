@@ -23,7 +23,7 @@ const PREGUNTAS = [
   },
   {
     p: "¿Cuánto cuesta?",
-    r: "Hay planes mensuales según el tamaño de tu negocio, con prueba gratis y sin permanencia: cancelás cuando quieras desde tu panel. Los precios los ves al crear tu cuenta, o escribinos y te ayudamos a elegir.",
+    r: "Hay planes mensuales según el tamaño de tu negocio, sin permanencia: cancelás cuando quieras desde tu panel. Los precios los ves al crear tu cuenta, o escribinos y te ayudamos a elegir.",
   },
 ];
 

@@ -25,7 +25,7 @@ export function FormNuevoLocal({ appUrl }: { appUrl: string }) {
       <Tarjeta className="space-y-4">
         <p className="text-lg font-semibold">✓ Local “{c.nombre}” creado</p>
         <p className="text-sm text-amber-800">
-          Todavía no suma puntos: el dueño tiene que entrar al panel y activar su suscripción (arranca con prueba gratis).
+          Todavía no suma puntos: el dueño tiene que entrar al panel y activar su suscripción.
         </p>
         {c.email && c.password && <Credenciales email={c.email} password={c.password} url={`${appUrl}/panel`} />}
         {c.email && !c.password && !c.errorDueno && (

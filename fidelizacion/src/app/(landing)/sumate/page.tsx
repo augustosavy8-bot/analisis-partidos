@@ -40,7 +40,7 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
           <>
             <h1 className="pt-h1 text-pt-ink">Sumá tu local.</h1>
             <p className="pt-lead mt-4 text-pt-ink-2">
-              Creá tu cuenta en un minuto. Después elegís el plan y empezás tu prueba gratis.
+              Creá tu cuenta en un minuto. Después elegís el plan y empezás a sumar puntos.
             </p>
             <div className="mt-10 rounded-pt-lg bg-pt-ink p-6 text-white shadow-pt-product md:p-10">
               {(sociales.google || sociales.apple) && (

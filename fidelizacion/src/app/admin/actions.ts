@@ -68,7 +68,7 @@ export async function crearLocal(_prev: EstadoLocal, form: FormData): Promise<Es
     p_rubro: rubro ?? "",
     p_owner: null,
     p_origen: "admin",
-    // Sin cortesía: todo se cobra. El dueño activa su suscripción (con prueba gratis) al entrar.
+    // Sin cortesía: todo se cobra. El dueño activa su suscripción al entrar.
     p_cortesia_plan: null,
   });
   if (errorComercio || !comercioId) return { error: "No se pudo crear el comercio." };

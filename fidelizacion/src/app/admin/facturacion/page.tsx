@@ -15,12 +15,14 @@ const ESTADOS: Record<string, string> = {
   trialing: "En prueba",
   pending: "Confirmando",
   authorized: "Activa",
+  transferencia: "Activa · transferencia",
   past_due: "Pago pendiente",
   paused: "Pausada",
   cancelled: "Cancelada",
 };
 const TONO: Record<string, string> = {
   authorized: "bg-emerald-50 text-emerald-800",
+  transferencia: "bg-emerald-50 text-emerald-800",
   trialing: "bg-sky-50 text-sky-800",
   past_due: "bg-red-50 text-red-700",
   paused: "bg-amber-50 text-amber-800",
@@ -50,8 +52,14 @@ export default async function FacturacionAdmin() {
     if (!actual || (actual.estado === "cancelled" && s.estado !== "cancelled")) porComercio.set(s.comercio_id, s);
   }
   const vigentes = [...porComercio.values()];
-  const cuenta = (e: string) => vigentes.filter((s) => s.estado === e).length;
-  const mrr = vigentes.filter((s) => s.estado === "authorized" || s.estado === "past_due").reduce((t, s) => t + (s.precio_centavos ?? 0), 0);
+  // Pagó por transferencia: cortesía con precio (vence sola al terminar el período pagado).
+  const ahora = new Date().toISOString();
+  const estadoVista = (s: NonNullable<typeof subs>[number]) =>
+    s.estado === "cortesia" && s.precio_centavos && (!s.cortesia_hasta || s.cortesia_hasta > ahora) ? "transferencia" : s.estado;
+  const cuenta = (e: string) => vigentes.filter((s) => estadoVista(s) === e).length;
+  const mrr = vigentes
+    .filter((s) => ["authorized", "past_due", "transferencia"].includes(estadoVista(s)))
+    .reduce((t, s) => t + (s.precio_centavos ?? 0), 0);
   const enPrueba = vigentes.filter((s) => s.estado === "trialing").reduce((t, s) => t + (s.precio_centavos ?? 0), 0);
   const cobrado =
     (cuotas ?? []).reduce((t, c) => t + c.monto_centavos, 0) + (pagosKit ?? []).reduce((t, p) => t + p.monto_centavos - p.reembolsado_centavos, 0);
@@ -66,7 +74,7 @@ export default async function FacturacionAdmin() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Dato etiqueta="Ingreso mensual (MRR)" valor={formatearPesos(mrr)} detalle={`+ ${formatearPesos(enPrueba)} cuando terminen las pruebas`} />
         <Dato etiqueta="Cobrado 30 días" valor={formatearPesos(cobrado)} detalle="cuotas + kits (neto de reembolsos)" />
-        <Dato etiqueta="Activas / en prueba" valor={`${cuenta("authorized")} / ${cuenta("trialing")}`} detalle={`${cuenta("cortesia")} en cortesía`} />
+        <Dato etiqueta="Activas / en prueba" valor={`${cuenta("authorized") + cuenta("transferencia")} / ${cuenta("trialing")}`} detalle={`${cuenta("cortesia")} en cortesía`} />
         <Dato etiqueta="Pago pendiente" valor={String(cuenta("past_due"))} detalle={`${cuenta("paused")} pausadas · ${canceladas30} canceladas (30 d)`} />
       </div>
       <div className="mt-3 flex flex-wrap gap-3 text-sm">
@@ -113,7 +121,7 @@ export default async function FacturacionAdmin() {
                   {s ? (
                     <>
                       <span className="text-sm text-stone-500">{plan}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONO[s.estado] ?? "bg-stone-100 text-stone-600"}`}>{ESTADOS[s.estado] ?? s.estado}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONO[estadoVista(s)] ?? "bg-stone-100 text-stone-600"}`}>{ESTADOS[estadoVista(s)] ?? s.estado}</span>
                       <span className="w-24 text-right text-sm tabular-nums">{s.precio_centavos ? formatearPesos(s.precio_centavos) : "—"}</span>
                     </>
                   ) : (

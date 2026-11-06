@@ -40,34 +40,6 @@ export async function conciliar(): Promise<ReporteConciliacion> {
     else if (ok) r.planesAplicados++;
   }
 
-  // 2b. Pagadas por transferencia (activas sin suscripción de MP): MP no avisa cuando
-  // vencen, así que al pasar el período quedan con pago pendiente (corre la gracia).
-  const ahora = new Date().toISOString();
-  const { data: manuales } = await db
-    .from("suscripciones")
-    .select("id, plan_id, current_period_end")
-    .eq("estado", "authorized")
-    .is("mp_preapproval_id", null)
-    .lte("current_period_end", ahora);
-  for (const s of manuales ?? []) {
-    const { error } = await db
-      .from("suscripciones")
-      .update({ estado: "past_due", past_due_desde: s.current_period_end })
-      .eq("id", s.id)
-      .eq("estado", "authorized");
-    if (error) anotar(`transferencia vencida ${s.id}`, error.message);
-    else
-      await db.from("historial_suscripcion").insert({
-        suscripcion_id: s.id,
-        de_estado: "authorized",
-        a_estado: "past_due",
-        de_plan_id: s.plan_id,
-        a_plan_id: s.plan_id,
-        motivo: "Venció el período pagado por transferencia",
-        origen: "sistema",
-      });
-  }
-
   // 3. Suscripciones vivas: estado y próximo cobro según MP.
   const { data: vivas } = await db
     .from("suscripciones")

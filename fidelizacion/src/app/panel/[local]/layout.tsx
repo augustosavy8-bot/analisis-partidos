@@ -7,6 +7,7 @@ import { Dialogos } from "@/components/app/Dialogos";
 import { MotionProvider } from "@/components/landing/MotionProvider";
 import { salir } from "../ingresar/actions";
 import { NavPanel } from "./NavPanel";
+import { InstalarPanel } from "./InstalarPanel";
 import { BotonTema } from "@/components/app/BotonTema";
 import { formasTermino } from "@/lib/terminos";
 import { EstadoCuenta } from "@/components/app/EstadoCuenta";
@@ -24,6 +25,7 @@ export default async function LayoutPanel({ children, params }: LayoutProps<"/pa
 
   const cuenta = (
     <div className="flex items-center gap-2">
+      <InstalarPanel />
       {locales.length > 1 && (
         <Link href="/panel" className="flex h-pt-control-sm items-center rounded-full px-3 text-[13px] font-semibold text-pt-ink-2 transition-colors duration-150 hover:bg-pt-surface hover:text-pt-ink">
           Cambiar local

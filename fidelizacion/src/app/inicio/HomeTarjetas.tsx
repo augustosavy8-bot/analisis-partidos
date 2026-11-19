@@ -296,16 +296,16 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
     resorte(
       (p) => {
         ubicar(vuela, desde, destino, p, 0, 90);
-        fondoRef.current!.style.opacity = String(Math.min(1, Math.max(0, p)) * 0.95);
+        if (fondoRef.current) fondoRef.current.style.opacity = String(Math.min(1, Math.max(0, p)) * 0.95);
         if (!vecinas && p > 0.55) {
           vecinas = true;
           entrarVecinas(activa);
-          infoRef.current!.style.opacity = "1";
+          if (infoRef.current) infoRef.current.style.opacity = "1";
         }
       },
       () => {
         if (!vecinas) entrarVecinas(activa);
-        infoRef.current!.style.opacity = "1";
+        if (infoRef.current) infoRef.current.style.opacity = "1";
         lista[activa].style.opacity = "1";
         vuela.remove();
         carrusel.style.pointerEvents = "";
@@ -365,17 +365,20 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
     resorte(
       (p) => {
         ubicar(vuela, desde, hasta, p, 90, 0);
-        fondoRef.current!.style.opacity = String(Math.max(0, fondoInicial * (1 - Math.min(1, p))));
+        // Si mientras vuela se cambia de página (otro toque, un link), los refs ya son null.
+        if (fondoRef.current) fondoRef.current.style.opacity = String(Math.max(0, fondoInicial * (1 - Math.min(1, p))));
       },
       () => {
-        homeRef.current!.style.visibility = "";
         vuela.remove();
-        overlayRef.current!.hidden = true;
         bloquearScroll(false);
-        carruselRef.current!.style.transform = "";
-        carruselRef.current!.style.pointerEvents = "";
         e.animando = false;
-        homeRef.current!.focus({ preventScroll: true });
+        if (homeRef.current) homeRef.current.style.visibility = "";
+        if (overlayRef.current) overlayRef.current.hidden = true;
+        if (carruselRef.current) {
+          carruselRef.current.style.transform = "";
+          carruselRef.current.style.pointerEvents = "";
+        }
+        homeRef.current?.focus({ preventScroll: true });
       },
     );
   }
@@ -465,8 +468,8 @@ export function HomeTarjetas({ nombre, tarjetas, movimientos }: Props) {
       resorte(
         (p) => {
           carrusel.style.transform = `translateY(${inicio * (1 - p)}px)`;
-          fondoRef.current!.style.opacity = String(mezcla(fondoDesde, 0.95, Math.min(1, p)));
-          infoRef.current!.style.opacity = String(Math.min(1, p));
+          if (fondoRef.current) fondoRef.current.style.opacity = String(mezcla(fondoDesde, 0.95, Math.min(1, p)));
+          if (infoRef.current) infoRef.current.style.opacity = String(Math.min(1, p));
         },
         undefined,
         { k: 260, c: 26 },

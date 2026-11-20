@@ -10,7 +10,7 @@ export default async function Interesados() {
   const { db } = await requerirSuperadmin();
   const { data, error } = await db
     .from("interesados")
-    .select("id, nombre, local, rubro, ciudad, whatsapp, mensaje, estado, created_at")
+    .select("id, nombre, local, rubro, ciudad, whatsapp, mensaje, estado, created_at, referidor:locales!interesados_referido_por_fkey(nombre)")
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw new Error(error.message);
@@ -33,6 +33,7 @@ export default async function Interesados() {
                 key={f.id}
                 i={{
                   ...f,
+                  referidoPor: (f.referidor as unknown as { nombre: string } | null)?.nombre ?? null,
                   fecha: fechaHora(f.created_at, "America/Argentina/Buenos_Aires"),
                   whatsappLindo: formatearWhatsapp(f.whatsapp),
                 }}

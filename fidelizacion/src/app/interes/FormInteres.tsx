@@ -8,7 +8,7 @@ import { CheckCanje } from "@/components/Animaciones";
 const campo =
   "block h-12 w-full rounded-2xl border-0 bg-white/[0.06] px-4 text-base text-white outline-none ring-1 ring-inset ring-white/15 transition placeholder:text-white/40 focus:bg-white/[0.1] focus:ring-2 focus:ring-[#E6633A]";
 
-export function FormInteres() {
+export function FormInteres({ referido = null }: { referido?: string | null }) {
   const [estado, accion, pendiente] = useActionState<EstadoInteres, FormData>(registrarInteres, {});
   const v = estado.valores ?? {};
 
@@ -25,6 +25,7 @@ export function FormInteres() {
   return (
     <form action={accion} className="grid gap-3 sm:grid-cols-2">
       <input name="sitio" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+      {referido && <input type="hidden" name="ref" value={referido} />}
       <label className="block">
         <span className="text-sm text-white/70">Tu nombre</span>
         <input name="nombre" required maxLength={80} defaultValue={v.nombre} autoComplete="name" className={`mt-1 ${campo}`} />

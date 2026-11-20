@@ -16,6 +16,8 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
   const sp = await searchParams;
   const contacto = sp.modo === "contacto";
   const plan = typeof sp.plan === "string" ? sp.plan : null;
+  // Llegó por la recomendación de un local (link del cartel de opiniones del panel).
+  const ref = typeof sp.ref === "string" && /^[a-z0-9-]{2,60}$/.test(sp.ref) ? sp.ref : null;
   const sociales = await proveedoresActivos();
   const siguienteSocial = `/panel/completar${plan && /^[a-z0-9_]{2,30}$/.test(plan) ? `?plan=${plan}` : ""}`;
 
@@ -28,7 +30,7 @@ export default async function Sumate({ searchParams }: PageProps<"/sumate">) {
             <h1 className="pt-h1 text-pt-ink">Te ayudamos a empezar.</h1>
             <p className="pt-lead mt-4 text-pt-ink-2">Dejanos tus datos y te escribimos por WhatsApp para armar tu programa.</p>
             <div className="mt-10 rounded-pt-lg bg-pt-ink p-6 text-white shadow-pt-product md:p-10">
-              <FormInteres />
+              <FormInteres referido={ref} />
             </div>
             <p className="mt-6 text-center pt-ui text-pt-ink-2">
               <Link href="/sumate" className="underline underline-offset-4 hover:text-pt-ink">

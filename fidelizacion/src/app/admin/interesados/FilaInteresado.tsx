@@ -15,6 +15,8 @@ type Interesado = {
   estado: "nuevo" | "contactado" | "descartado";
   fecha: string;
   whatsappLindo: string;
+  /** Local que lo recomendó: si se suma, ese local tiene un mes a mitad de precio. */
+  referidoPor: string | null;
 };
 
 const ESTILO = {
@@ -37,6 +39,9 @@ export function FilaInteresado({ i }: { i: Interesado }) {
           {i.rubro}
           {i.ciudad && ` · ${i.ciudad}`} · {i.whatsappLindo} · {i.fecha}
         </p>
+        {i.referidoPor && (
+          <p className="mt-1 text-sm font-medium text-emerald-700">Recomendado por {i.referidoPor} · si se suma, {i.referidoPor} tiene un mes a mitad de precio</p>
+        )}
         {i.mensaje && <p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">“{i.mensaje}”</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2">

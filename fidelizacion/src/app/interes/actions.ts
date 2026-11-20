@@ -29,9 +29,13 @@ export async function registrarInteres(_prev: EstadoInteres, form: FormData): Pr
   const whatsapp = normalizarWhatsapp(valores.whatsapp);
   if (!whatsapp) return { error: "Revisá el WhatsApp (con código de área).", valores };
 
-  const { error } = await crearClienteAdmin()
+  const db = crearClienteAdmin();
+  // Recomendado por un local (?ref= del link de WhatsApp): sólo si el local existe.
+  const ref = campo("ref");
+  const { data: referidor } = /^[a-z0-9-]{2,60}$/.test(ref) ? await db.from("locales").select("id").eq("slug", ref).maybeSingle() : { data: null };
+  const { error } = await db
     .from("interesados")
-    .insert({ ...valores, ciudad: valores.ciudad || null, mensaje: valores.mensaje || null, whatsapp });
+    .insert({ ...valores, ciudad: valores.ciudad || null, mensaje: valores.mensaje || null, whatsapp, referido_por: referidor?.id ?? null });
   if (error) return { error: "No se pudo enviar. Probá de nuevo en un rato.", valores };
   return { ok: true };
 }

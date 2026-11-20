@@ -8,6 +8,9 @@ import { IconoFila } from "@/components/app/Superficie";
 import { AyudaNfc } from "@/components/app/AyudaNfc";
 import { GraficoVisitas } from "./GraficoVisitas";
 import { AvisosHoy } from "./AvisosHoy";
+import { Opinion } from "./Opinion";
+import { corresponderOpinion } from "@/lib/opiniones";
+import { env } from "@/lib/env";
 import { formasTermino } from "@/lib/terminos";
 import { Icono, type NombreIcono } from "@/components/Icono";
 import { MejorarPlan } from "@/components/app/MejorarPlan";
@@ -40,6 +43,7 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
   const t = formasTermino(local.termino_personal);
 
   const alta = bienvenida === "1" ? await altaReciente(admin, local.id) : null;
+  const pedirOpinion = !alta && (await corresponderOpinion(local.id, userId));
 
   const pctRecurrentes = m.clientes_activos ? Math.round((m.clientes_recurrentes / m.clientes_activos) * 100) : 0;
   const maxMozo = Math.max(1, ...m.ranking_mozos.map((r) => r.sumas));
@@ -50,6 +54,7 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
       <Titulo detalle="Últimos 30 días, salvo que diga otra cosa.">Resumen</Titulo>
 
       {m.clientes_total > 0 && <AvisosHoy db={db} localId={local.id} slug={slug} />}
+      {pedirOpinion && <Opinion slug={slug} linkReferido={`${env.appUrl}/sumate?modo=contacto&ref=${slug}`} />}
 
       {m.clientes_total === 0 && (
         <div className="mb-4">

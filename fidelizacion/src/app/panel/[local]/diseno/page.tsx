@@ -7,7 +7,7 @@ import { EditorDiseno } from "./EditorDiseno";
 import { MejorarPlan } from "@/components/app/MejorarPlan";
 import { accesoDelLocal } from "@/lib/facturacion/acceso-servidor";
 import { puedeUsar } from "@/lib/facturacion/acceso";
-import { coloresClub, nombreClub } from "@/lib/socios";
+import { coloresClub, nombreClub, premiosPara } from "@/lib/socios";
 
 /** Fondo y acento de la tarjeta de socio (lo guardado o lo por defecto). */
 function colorClub(local: Parameters<typeof coloresClub>[0]) {
@@ -32,7 +32,9 @@ export default async function Diseno({ params }: PageProps<"/panel/[local]/disen
   const club = conClub ? { nombre: local.club_nombre ?? "", porDefecto: nombreClub({ ...local, club_nombre: null }), ...colorClub(local) } : null;
   // Punto de partida: lo que hoy usan las tarjetas (lo guardado o lo calculado).
   const colores = coloresTarjeta(local);
-  const premio = premios[0] ? { nombre: premios[0].nombre, puntos: premios[0].puntos_necesarios } : null;
+  // Vista previa de la tarjeta común: su primer premio (el de todos o el de no socios).
+  const primero = premiosPara(premios, false)[0] ?? premios[0];
+  const premio = primero ? { nombre: primero.nombre, puntos: primero.puntos_necesarios } : null;
 
   return (
     <>

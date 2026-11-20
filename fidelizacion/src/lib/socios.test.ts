@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alClub, CLUB_POR_DEFECTO, coloresClub, comoSocio, delClub, nombreClub, socioDesde, varsTarjetaSocio } from "./socios";
+import { aclaracionPara, alClub, CLUB_POR_DEFECTO, coloresClub, comoSocio, delClub, esParaPremio, nombreClub, premiosPara, socioDesde, varsTarjetaSocio } from "./socios";
 
 const local = { nombre: "Di Vinee", color_primario: "#5a1a2b", color_secundario: "#e8c46a", color_texto: "#ffffff", color_etiqueta: "#e8c46a" };
 
@@ -34,5 +34,35 @@ describe("club de socios", () => {
     expect(alClub("Bodega Amigos")).toBe("a Bodega Amigos");
     expect(socioDesde("2026-10-16T02:00:00Z", "America/Argentina/Buenos_Aires")).toBe("10/2026");
     expect(socioDesde("2026-11-01T02:00:00Z", "America/Argentina/Buenos_Aires")).toBe("10/2026");
+  });
+});
+
+describe("premios por grupo", () => {
+  const premios = [
+    { nombre: "20 % socios", para: "socios" },
+    { nombre: "5 % no socios", para: "no_socios" },
+    { nombre: "Copa para todos", para: "todos" },
+    { nombre: "Sin dato (premio viejo)", para: null },
+  ];
+
+  it("un socio ve los de todos y los de socios", () => {
+    expect(premiosPara(premios, true).map((p) => p.nombre)).toEqual(["20 % socios", "Copa para todos", "Sin dato (premio viejo)"]);
+  });
+
+  it("un no socio ve los de todos y los de no socios", () => {
+    expect(premiosPara(premios, false).map((p) => p.nombre)).toEqual(["5 % no socios", "Copa para todos", "Sin dato (premio viejo)"]);
+  });
+
+  it("aclara el grupo sólo en los premios de un grupo", () => {
+    expect(aclaracionPara("socios")).toBe("socios");
+    expect(aclaracionPara("no_socios")).toBe("no socios");
+    expect(aclaracionPara("todos")).toBeNull();
+    expect(aclaracionPara(null)).toBeNull();
+  });
+
+  it("sólo acepta los tres valores", () => {
+    expect(["todos", "socios", "no_socios"].every(esParaPremio)).toBe(true);
+    expect(esParaPremio("vip")).toBe(false);
+    expect(esParaPremio(null)).toBe(false);
   });
 });

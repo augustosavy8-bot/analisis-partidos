@@ -19,7 +19,7 @@ import { appleWalletActivo } from "@/lib/wallet/apple";
 import { SinTarjeta, VistaTarjeta } from "./VistaTarjeta";
 import { TemaLocal } from "@/components/app/TemaLocal";
 import { temaDelLocal } from "@/lib/tema";
-import { nombreClub, varsTarjetaSocio } from "@/lib/socios";
+import { nombreClub, premiosPara, varsTarjetaSocio } from "@/lib/socios";
 
 /** La barra del navegador toma el fondo del bar. */
 export async function generateViewport({ params }: PageProps<"/t/[local]">): Promise<Viewport> {
@@ -46,7 +46,7 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
   const [local, cliente] = await Promise.all([buscarLocal(slug), clienteActual()]);
   if (!local) notFound();
 
-  const [premios, promos, tarjeta] = await Promise.all([
+  const [premiosLocal, promos, tarjeta] = await Promise.all([
     premiosDelLocal(local.id),
     promosDelLocal(local.id),
     cliente ? tarjetaDelCliente(cliente.clienteId, local.id) : Promise.resolve(null),
@@ -60,6 +60,8 @@ export default async function Tarjeta({ params, searchParams }: PageProps<"/t/[l
       </>
     );
   }
+  // Sólo los premios de su grupo: los de todos y los de socios o los de no socios.
+  const premios = premiosPara(premiosLocal, !!tarjeta.socio_desde);
   const cumple = cliente.cumple;
   const promoAhora = promoVigente(promos, local.zona_horaria);
 

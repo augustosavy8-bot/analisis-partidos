@@ -6,7 +6,7 @@ import { env } from "@/lib/env";
 import { premiosDelLocal, proximoPremio } from "@/lib/tarjeta";
 import { proveedorWallet } from "@/lib/wallet";
 import { sincronizarClaseLocal } from "@/lib/wallet/google";
-import { nombreClub, socioDesde } from "@/lib/socios";
+import { nombreClub, premiosPara, socioDesde } from "@/lib/socios";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, { params }: RouteContext<"/t/[local]
   try {
     // La clase tiene que existir antes que el objeto (y así queda al día con los premios).
     await sincronizarClaseLocal(local.id);
-    const proximo = proximoPremio(premios, tarjeta.puntos);
+    const proximo = proximoPremio(premiosPara(premios, !!tarjeta.socio_desde), tarjeta.puntos);
     const { url } = await google.generarPase({
       serial: tarjeta.serial,
       token: tarjeta.wallet_auth_token,

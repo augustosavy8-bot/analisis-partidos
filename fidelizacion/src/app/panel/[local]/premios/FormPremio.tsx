@@ -6,9 +6,11 @@ import { BotonPrimario, EtiquetaPanel, inputPanel } from "@/components/Panel";
 import { avisar } from "@/components/app/Toasts";
 import { ErrorForm } from "@/components/Campo";
 
-type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number };
+type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number; para?: string };
 
-export function FormPremio({ slug, premio, alGuardar }: { slug: string; premio?: Premio; alGuardar?: () => void }) {
+export function FormPremio({ slug, premio, conClub, alGuardar }: { slug: string; premio?: Premio; conClub?: boolean; alGuardar?: () => void }) {
+  // Con club de socios (o si el premio ya era de un grupo) se elige para quién es.
+  const conPara = conClub || (!!premio?.para && premio.para !== "todos");
   const [estado, accion, pendiente] = useActionState<EstadoPremio, FormData>(
     guardarPremio.bind(null, slug, premio?.id ?? null),
     {},
@@ -39,6 +41,16 @@ export function FormPremio({ slug, premio, alGuardar }: { slug: string; premio?:
         <EtiquetaPanel>Descripción (opcional)</EtiquetaPanel>
         <input name="descripcion" maxLength={140} defaultValue={premio?.descripcion ?? ""} placeholder="Ej: Cualquier café de la carta" className={inputPanel} />
       </label>
+      {conPara && (
+        <label className="block sm:col-span-3">
+          <EtiquetaPanel>Para quién</EtiquetaPanel>
+          <select name="para" defaultValue={premio?.para ?? "todos"} className={inputPanel}>
+            <option value="todos">Todos los clientes</option>
+            <option value="socios">Sólo socios del club</option>
+            <option value="no_socios">Sólo los que no son socios</option>
+          </select>
+        </label>
+      )}
       {estado.error && (
         <div className="sm:col-span-3">
           <ErrorForm mensaje={estado.error} />

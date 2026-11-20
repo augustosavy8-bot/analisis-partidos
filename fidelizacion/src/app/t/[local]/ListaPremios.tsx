@@ -44,6 +44,7 @@ export function ListaPremios({ slug, premios, puntos, alToque, termino }: Props)
                 <p className="truncate text-[15px] font-semibold text-pt-ink">{p.nombre}</p>
                 <p className="pt-app-detalle text-pt-ink-2">
                   {p.puntos_necesarios} puntos
+                  {p.para === "socios" && " · exclusivo socios"}
                   {alcanza ? <span className="font-medium text-pt-accent-ink"> · listo para canjear</span> : <span> · te {faltan === 1 ? "falta 1" : `faltan ${faltan}`}</span>}
                 </p>
               </div>

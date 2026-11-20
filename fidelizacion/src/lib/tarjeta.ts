@@ -2,8 +2,9 @@ import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import type { MotivoMovimiento, TipoMovimiento } from "@/lib/movimientos";
 import type { Promo } from "@/lib/promos";
+import type { ParaPremio } from "@/lib/socios";
 
-export type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number };
+export type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number; para: ParaPremio };
 export type Movimiento = {
   id: string;
   tipo: TipoMovimiento;
@@ -17,11 +18,12 @@ export type Movimiento = {
   mozo: string | null;
 };
 
+/** Todos los premios activos del local. La tarjeta de un cliente usa premiosPara (los de su grupo). */
 export async function premiosDelLocal(localId: string): Promise<Premio[]> {
   const db = crearClienteAdmin();
   const { data } = await db
     .from("premios")
-    .select("id, nombre, descripcion, puntos_necesarios")
+    .select("id, nombre, descripcion, puntos_necesarios, para")
     .eq("local_id", localId)
     .eq("activo", true)
     .order("puntos_necesarios")

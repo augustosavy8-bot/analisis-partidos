@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { actualizarDisenoLocal } from "@/lib/wallet";
 import { requerirLocal } from "@/lib/panel";
 import { exigirFuncion, exigirLimite } from "@/lib/facturacion/acceso-servidor";
+import { esParaPremio } from "@/lib/socios";
 
 export type EstadoPremio = { error?: string; ok?: number };
 
@@ -16,6 +17,9 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
   if (nombre.length < 2 || nombre.length > 60) return { error: "El nombre tiene que tener entre 2 y 60 letras." };
   if (descripcion && descripcion.length > 140) return { error: "La descripción es muy larga (máx. 140)." };
   if (!Number.isInteger(puntos) || puntos < 1 || puntos > 1000) return { error: "Los puntos tienen que ser un número entre 1 y 1000." };
+  // Para quién es: sólo viene si el local tiene club de socios (si no, queda como estaba).
+  const para = form.get("para");
+  if (para !== null && !esParaPremio(para)) return { error: "Elegí para quién es el premio." };
 
   // Plan y estado de la cuenta: lo decide el servidor (nunca el navegador).
   const bloqueo = await exigirFuncion(local.id, "crear_premio");
@@ -26,7 +30,7 @@ export async function guardarPremio(slug: string, id: string | null, _prev: Esta
     if (limite) return { error: limite };
   }
 
-  const datos = { nombre, descripcion, puntos_necesarios: puntos };
+  const datos = { nombre, descripcion, puntos_necesarios: puntos, ...(para !== null ? { para } : {}) };
   if (id) {
     const { error } = await admin.from("premios").update(datos).eq("id", id).eq("local_id", local.id);
     if (error) return { error: "No se pudo guardar. Probá de nuevo." };

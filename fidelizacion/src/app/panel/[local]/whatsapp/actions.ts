@@ -8,6 +8,7 @@ import { esSegmento, SEGMENTOS } from "@/lib/reactivar";
 import { redactarMensajeReactivar } from "@/lib/ia";
 import { promosDelLocal, premiosDelLocal } from "@/lib/tarjeta";
 import { describirPromo } from "@/lib/promos";
+import { aclaracionPara } from "@/lib/socios";
 
 const UUID = /^[0-9a-f-]{36}$/;
 
@@ -61,7 +62,10 @@ export async function escribirConIA(slug: string, dias: number, pedido: string):
     rubro: local.rubro,
     dias,
     cantidad: (lista ?? []).length,
-    premios: premios.map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
+    premios: premios.map((p) => {
+      const grupo = aclaracionPara(p.para);
+      return { nombre: grupo ? `${p.nombre} (sólo ${grupo})` : p.nombre, puntos: p.puntos_necesarios };
+    }),
     promos: promos.map((p) => `${p.nombre}: ${describirPromo(p)}`),
     pedido: pedidoLimpio,
   });

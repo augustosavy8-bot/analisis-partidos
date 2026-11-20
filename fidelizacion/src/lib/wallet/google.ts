@@ -2,7 +2,7 @@ import "server-only";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { proximoPremio } from "@/lib/tarjeta";
-import { nombreClub, socioDesde } from "@/lib/socios";
+import { aclaracionPara, nombreClub, premiosPara, socioDesde } from "@/lib/socios";
 import type { DatosPase, ProveedorWallet } from "./index";
 import {
   agregarMensaje,
@@ -40,7 +40,7 @@ export async function sincronizarClaseLocal(localId: string) {
         .select("slug, nombre, logo_url, icono_url, color_primario, color_secundario, latitud, longitud, nombre_programa, texto_dorso, franja_url")
         .eq("id", localId)
         .maybeSingle(),
-      db.from("premios").select("nombre, puntos_necesarios").eq("local_id", localId).eq("activo", true).order("puntos_necesarios"),
+      db.from("premios").select("nombre, puntos_necesarios, para").eq("local_id", localId).eq("activo", true).order("puntos_necesarios"),
     ]);
     if (!local) return;
     await upsertClase(
@@ -50,7 +50,11 @@ export async function sincronizarClaseLocal(localId: string) {
         nombre: local.nombre,
         logoUrl: local.logo_url,
         colorPrimario: local.color_primario,
-        premios: (premios ?? []).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
+        // Una sola clase para socios y no socios: los premios de un grupo lo aclaran.
+        premios: (premios ?? []).map((p) => {
+          const grupo = aclaracionPara(p.para);
+          return { nombre: grupo ? `${p.nombre} (${grupo})` : p.nombre, puntos: p.puntos_necesarios };
+        }),
         ubicacion: local.latitud != null && local.longitud != null ? { latitud: local.latitud, longitud: local.longitud } : null,
         nombrePrograma: local.nombre_programa,
         textoDorso: local.texto_dorso,
@@ -89,11 +93,11 @@ async function datosTarjeta(serial: string, soloRegistradas: boolean): Promise<(
   if (!t.locales) return null;
   const { data: premios } = await db
     .from("premios")
-    .select("id, nombre, descripcion, puntos_necesarios")
+    .select("id, nombre, descripcion, puntos_necesarios, para")
     .eq("local_id", t.local_id)
     .eq("activo", true)
     .order("puntos_necesarios");
-  const proximo = proximoPremio(premios ?? [], t.puntos);
+  const proximo = proximoPremio(premiosPara(premios ?? [], !!t.socio_desde), t.puntos);
   return {
     tarjetaId: t.id,
     serial: t.serial,

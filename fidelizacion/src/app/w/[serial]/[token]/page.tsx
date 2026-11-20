@@ -6,7 +6,7 @@ import { PointCard } from "@/components/landing/PointCard";
 import { Aviso, Encabezado } from "@/components/app/Superficie";
 import { BotonLink } from "@/components/app/Boton";
 import { TemaLocal } from "@/components/app/TemaLocal";
-import { INSIGNIA_SOCIO, varsTarjetaSocio } from "@/lib/socios";
+import { INSIGNIA_SOCIO, premiosPara, varsTarjetaSocio } from "@/lib/socios";
 
 export const metadata: Metadata = { title: "Mi tarjeta", robots: { index: false } };
 
@@ -17,8 +17,9 @@ export default async function Pase({ params }: PageProps<"/w/[serial]/[token]">)
   if (!pase) notFound();
   const { local } = pase;
 
-  const [tarjeta, premios] = await Promise.all([tarjetaDelCliente(pase.clienteId, local.id), premiosDelLocal(local.id)]);
+  const [tarjeta, premiosLocal] = await Promise.all([tarjetaDelCliente(pase.clienteId, local.id), premiosDelLocal(local.id)]);
   if (!tarjeta) notFound();
+  const premios = premiosPara(premiosLocal, !!tarjeta.socio_desde);
   const objetivo = proximoPremio(premios, tarjeta.puntos);
   const canjeables = premios.filter((p) => tarjeta.puntos >= p.puntos_necesarios);
 

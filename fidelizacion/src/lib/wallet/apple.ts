@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { crearClienteAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
-import { comoSocio, nombreClub, socioDesde } from "@/lib/socios";
+import { comoSocio, nombreClub, premiosPara, socioDesde } from "@/lib/socios";
 import { imagenIcono, imagenLogoPase, imagenStripPase } from "@/lib/imagenes-billetera";
 import type { DatosPase, ProveedorWallet } from "./index";
 import { armarPassJson, enviarPushes, firmarPkpass, type ImagenesPase } from "./apple-core";
@@ -102,7 +102,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
       .select(`serial, wallet_auth_token, puntos, socio_desde, clientes(nombre), locales(${COLUMNAS_LOCAL})`)
       .eq("id", pase.tarjeta_id)
       .maybeSingle(),
-    db.from("premios").select("nombre, puntos_necesarios").eq("local_id", pase.local_id).eq("activo", true).order("puntos_necesarios"),
+    db.from("premios").select("nombre, puntos_necesarios, para").eq("local_id", pase.local_id).eq("activo", true).order("puntos_necesarios"),
     db
       .from("mensajes_local")
       .select("titulo, texto")
@@ -146,7 +146,7 @@ export async function generarPkpass(pase: FilaPase): Promise<Buffer> {
         colorEtiqueta: local.color_etiqueta,
         nombrePrograma: local.nombre_programa,
         textoDorso: local.texto_dorso,
-        premios: (premios ?? []).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
+        premios: premiosPara(premios ?? [], !!t.socio_desde).map((p) => ({ nombre: p.nombre, puntos: p.puntos_necesarios })),
         latitud: local.latitud,
         longitud: local.longitud,
       },

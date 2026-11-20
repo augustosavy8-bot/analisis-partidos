@@ -12,10 +12,14 @@ export const metadata = { title: "Premios" };
 export default async function Premios({ params }: PageProps<"/panel/[local]/premios">) {
   const { local: slug } = await params;
   const { db, local } = await requerirLocal(slug);
-  const [{ data: premios }, { data: canjes }] = await Promise.all([
-    db.from("premios").select("id, nombre, descripcion, puntos_necesarios, activo").eq("local_id", local.id).order("puntos_necesarios"),
+  const [{ data: premios }, { data: canjes }, { data: idsSocios }, { count: llaverosSocio }] = await Promise.all([
+    db.from("premios").select("id, nombre, descripcion, puntos_necesarios, activo, para").eq("local_id", local.id).order("puntos_necesarios"),
     db.from("canjes").select("premio_id").eq("local_id", local.id).eq("estado", "confirmado"),
+    db.rpc("panel_socios", { p_local_id: local.id }),
+    db.from("chips").select("id", { count: "exact", head: true }).eq("local_id", local.id).eq("da_socio", true),
   ]);
+  // Club de socios (llavero de socios o ya hay socios): cada premio puede ser para socios o no socios.
+  const conClub = ((idsSocios as string[] | null)?.length ?? 0) > 0 || (llaverosSocio ?? 0) > 0;
   const acceso = await accesoDelLocal(local.id);
   const activos = (premios ?? []).filter((p) => p.activo).length;
   const puedeCrear = puedeUsar(acceso, "crear_premio") && dentroDelLimite(acceso, "premios", activos + 1);
@@ -28,7 +32,7 @@ export default async function Premios({ params }: PageProps<"/panel/[local]/prem
       {puedeCrear ? (
         <Tarjeta className="mb-4">
           <h2 id="nuevo-premio" className="pt-app-seccion mb-3 text-pt-ink">Nuevo premio</h2>
-          <FormPremio slug={slug} />
+          <FormPremio slug={slug} conClub={conClub} />
         </Tarjeta>
       ) : puedeUsar(acceso, "crear_premio") ? (
         <MejorarPlan titulo={`Llegaste a ${acceso.limites?.premios} premios activos`} className="mb-4">
@@ -55,12 +59,15 @@ export default async function Premios({ params }: PageProps<"/panel/[local]/prem
         <Tarjeta className="overflow-hidden !p-0">
           <ul className="divide-y divide-pt-border">
             {premios.map((p) => (
-              <FilaPremio key={p.id} slug={slug} premio={{ ...p, canjes: usos.get(p.id) ?? 0 }} />
+              <FilaPremio key={p.id} slug={slug} conClub={conClub} premio={{ ...p, canjes: usos.get(p.id) ?? 0 }} />
             ))}
           </ul>
         </Tarjeta>
       )}
-      <p className="mt-3 pt-app-detalle text-pt-ink-2">Los premios ocultos no aparecen en la tarjeta del cliente.</p>
+      <p className="mt-3 pt-app-detalle text-pt-ink-2">
+        Los premios ocultos no aparecen en la tarjeta del cliente.
+        {conClub && " Los de socios sólo los ven y canjean los socios del club; los de no socios, el resto."}
+      </p>
     </>
   );
 }

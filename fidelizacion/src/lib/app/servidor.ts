@@ -7,7 +7,7 @@ import { marcarAVerificar } from "@/lib/vinculo";
 import { clienteDesdeToken, hashToken, nuevoTokenDispositivo, type ClienteActual } from "@/lib/dispositivo";
 import { env } from "@/lib/env";
 import { COLUMNAS_LOCAL, type Local } from "@/lib/locales";
-import { comoSocio, nombreClub } from "@/lib/socios";
+import { comoSocio, nombreClub, premiosPara } from "@/lib/socios";
 import { limpiarDeVezEnCuando } from "@/lib/limpieza";
 import { textoMovimiento } from "@/lib/movimientos";
 import { appleWalletActivo } from "@/lib/wallet/apple";
@@ -113,15 +113,18 @@ async function tarjetasConLocal(clienteId: string, slug?: string): Promise<FilaT
   return ((data ?? []) as unknown as FilaTarjeta[]).filter((t) => t.locales);
 }
 
+type PremioLocal = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number; para: string };
+
+/** Premios activos de cada local (de todos los grupos: cada tarjeta se queda con los suyos con premiosPara). */
 async function premiosPorLocal(localIds: string[]) {
-  if (!localIds.length) return new Map<string, { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number }[]>();
+  if (!localIds.length) return new Map<string, PremioLocal[]>();
   const { data } = await crearClienteAdmin()
     .from("premios")
-    .select("id, local_id, nombre, descripcion, puntos_necesarios")
+    .select("id, local_id, nombre, descripcion, puntos_necesarios, para")
     .in("local_id", localIds)
     .eq("activo", true)
     .order("puntos_necesarios");
-  const mapa = new Map<string, { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number }[]>();
+  const mapa = new Map<string, PremioLocal[]>();
   for (const p of data ?? []) mapa.set(p.local_id, [...(mapa.get(p.local_id) ?? []), p]);
   return mapa;
 }
@@ -130,7 +133,7 @@ export async function tarjetasDelCliente(clienteId: string): Promise<TarjetaResu
   const filas = await tarjetasConLocal(clienteId);
   const premios = await premiosPorLocal(filas.map((t) => t.locales!.id));
   return filas
-    .map((t) => resumenDeFila(t, premios.get(t.locales!.id) ?? []))
+    .map((t) => resumenDeFila(t, premiosPara(premios.get(t.locales!.id) ?? [], !!t.socio_desde)))
     .sort((a, b) => b.puntos - a.puntos || a.local.nombre.localeCompare(b.local.nombre, "es"));
 }
 
@@ -147,7 +150,7 @@ export async function detalleTarjeta(clienteId: string, slug: string): Promise<{
   if (!t) return null;
   const local = t.locales!;
   const [premios, { data: movs }] = await Promise.all([
-    premiosPorLocal([local.id]).then((m) => m.get(local.id) ?? []),
+    premiosPorLocal([local.id]).then((m) => premiosPara(m.get(local.id) ?? [], !!t.socio_desde)),
     crearClienteAdmin()
       .from("movimientos")
       .select("id, tipo, puntos, motivo, detalle, created_at")

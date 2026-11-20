@@ -9,16 +9,16 @@ import { Insignia } from "@/components/app/Superficie";
 import { confirmar } from "@/components/app/Dialogos";
 import { avisar } from "@/components/app/Toasts";
 
-type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number; activo: boolean; canjes: number };
+type Premio = { id: string; nombre: string; descripcion: string | null; puntos_necesarios: number; activo: boolean; canjes: number; para: string };
 
-export function FilaPremio({ slug, premio }: { slug: string; premio: Premio }) {
+export function FilaPremio({ slug, premio, conClub }: { slug: string; premio: Premio; conClub: boolean }) {
   const [editando, setEditando] = useState(false);
   const [pendiente, start] = useTransition();
 
   if (editando) {
     return (
       <li className="px-4 py-4">
-        <FormPremio slug={slug} premio={premio} alGuardar={() => setEditando(false)} />
+        <FormPremio slug={slug} premio={premio} conClub={conClub} alGuardar={() => setEditando(false)} />
         <button onClick={() => setEditando(false)} className={claseBoton("fantasma", "sm", "mt-2")}>
           Cancelar
         </button>
@@ -31,6 +31,8 @@ export function FilaPremio({ slug, premio }: { slug: string; premio: Premio }) {
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-[15px] font-medium text-pt-ink">
           {premio.nombre}
+          {premio.para === "socios" && <Insignia tono="acento">sólo socios</Insignia>}
+          {premio.para === "no_socios" && <Insignia>sólo no socios</Insignia>}
           {!premio.activo && <Insignia>oculto</Insignia>}
         </p>
         <p className="pt-app-detalle text-pt-ink-2">

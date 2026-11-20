@@ -71,6 +71,23 @@ export function alClub(nombre: string) {
   return /^club\b/i.test(nombre) ? `al ${nombre}` : `a ${nombre}`;
 }
 
+/** Para quién es un premio: todos, sólo los socios del club o sólo los que no son socios. */
+export type ParaPremio = "todos" | "socios" | "no_socios";
+
+export function esParaPremio(v: unknown): v is ParaPremio {
+  return v === "todos" || v === "socios" || v === "no_socios";
+}
+
+/** Los premios de una tarjeta: los de todos y los de su grupo (socio o no socio). */
+export function premiosPara<T extends { para?: string | null }>(premios: T[], esSocio: boolean): T[] {
+  return premios.filter((p) => !p.para || p.para === "todos" || (p.para === "socios") === esSocio);
+}
+
+/** "socios" / "no socios" para aclarar un premio en listas que ven todos; null si es para todos. */
+export function aclaracionPara(para: string | null | undefined): string | null {
+  return para === "socios" ? "socios" : para === "no_socios" ? "no socios" : null;
+}
+
 /** Mes y año en que se hizo socio ("10/2026"), en la zona del local. */
 export function socioDesde(iso: string, zona: string) {
   return new Intl.DateTimeFormat("es-AR", { month: "2-digit", year: "numeric", timeZone: zona }).format(new Date(iso));

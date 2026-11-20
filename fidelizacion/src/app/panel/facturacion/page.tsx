@@ -40,6 +40,13 @@ function describir(s: SuscripcionVigente): { titulo: string; detalle: string; to
   const precio = s.precioCentavos !== null ? formatearPesos(s.precioCentavos) : null;
   switch (s.estado) {
     case "cortesia":
+      // Cortesía con precio: pagó por transferencia (lo carga Point a mano).
+      if (s.precioCentavos)
+        return {
+          titulo: `Plan ${s.planNombre} · activo`,
+          detalle: s.cortesiaHasta ? `Pagado hasta el ${fecha(s.cortesiaHasta)}.` : "Pagado.",
+          tono: "ok",
+        };
       return {
         titulo: `Plan ${s.planNombre} · cortesía de Point`,
         detalle: s.cortesiaHasta ? `Sin cargo hasta el ${fecha(s.cortesiaHasta)}.` : "Sin cargo y sin fecha de fin.",
@@ -226,7 +233,7 @@ export default async function Facturacion({ searchParams }: PageProps<"/panel/fa
           </Seccion>
         </div>
       )}
-      {(suscripcion.estado === "cancelled" || suscripcion.estado === "cortesia") && (
+      {(suscripcion.estado === "cancelled" || (suscripcion.estado === "cortesia" && !suscripcion.precioCentavos)) && (
         <div className="mt-4">
           <BotonLink href="/panel/facturacion?nueva=1">{suscripcion.estado === "cortesia" ? "Activar mi suscripción" : "Volver a activar"}</BotonLink>
         </div>

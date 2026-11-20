@@ -21,7 +21,7 @@ describe("cartel del estado de la cuenta", () => {
   it("pausada, cancelada y cortesía por vencer explican hasta cuándo", () => {
     expect(avisoDeCuenta(acc({ nivel: "restringido", estado: "paused" }), AHORA)?.boton).toBe("Reactivar");
     expect(avisoDeCuenta(acc({ estado: "cancelled", hasta: "2026-10-20T12:00:00Z" }), AHORA)?.texto).toMatch(/20 de octubre/);
-    expect(avisoDeCuenta(acc({ estado: "cortesia", hasta: "2026-10-20T12:00:00Z" }), AHORA)?.titulo).toMatch(/cortesía/);
+    expect(avisoDeCuenta(acc({ estado: "cortesia", hasta: "2026-10-20T12:00:00Z" }), AHORA)?.titulo).toMatch(/por vencer/);
     expect(avisoDeCuenta(acc({ nivel: "sin_suscripcion", estado: null }), AHORA)?.boton).toBe("Activar");
   });
 });

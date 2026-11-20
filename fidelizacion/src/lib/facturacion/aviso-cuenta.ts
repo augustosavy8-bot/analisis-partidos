@@ -75,7 +75,7 @@ export function avisoDeCuenta(a: Acceso, ahora: Date = new Date()): AvisoCuenta 
       }
       // Cortesía con fecha de fin cercana.
       if (a.estado === "cortesia" && new Date(a.hasta).getTime() - ahora.getTime() < 15 * DIA) {
-        return { tono: "info", titulo: "Tu cortesía está por terminar", texto: `Es sin cargo hasta el ${fechaCorta(a.hasta)}. Activá tu suscripción para seguir sin cortes.`, boton: "Ver planes" };
+        return { tono: "info", titulo: "Tu plan está por vencer", texto: `Está activo hasta el ${fechaCorta(a.hasta)}. Renová tu suscripción para seguir sin cortes.`, boton: "Ver planes" };
       }
       return null;
     }

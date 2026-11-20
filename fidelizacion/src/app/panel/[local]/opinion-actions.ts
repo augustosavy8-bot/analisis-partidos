@@ -37,13 +37,6 @@ export async function comentar(slug: string, id: string, comentario: string): Pr
   return { ok: true };
 }
 
-/** Cerró el cartel sin opinar: no vuelve a aparecer por un mes. */
-export async function cerrarOpinion(slug: string): Promise<void> {
-  const { admin, local, userId } = await requerirLocal(slug);
-  if (!(await puedeOpinar(local.id, local.slug, userId))) return;
-  await admin.from("opiniones").insert({ local_id: local.id, user_id: userId });
-}
-
 /** 1 o 2 estrellas: mail a Point para llamar ese mismo día. */
 async function avisarOpinionBaja(local: string, email: string, estrellas: number, comentario: string | null) {
   const para = env.mail?.responderA;

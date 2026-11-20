@@ -4,14 +4,15 @@ import { useState, useTransition } from "react";
 import { Icono } from "@/components/Icono";
 import { claseBoton } from "@/components/app/Boton";
 import { claseTextarea } from "@/components/app/Campos";
-import { cerrarOpinion, comentar, opinar } from "./opinion-actions";
+import { comentar, opinar } from "./opinion-actions";
 
 type Paso = "estrellas" | "recomendar" | "mejorar" | "gracias" | "cerrado";
 
 /**
  * "¿Cómo te está resultando Point?": cartel del Resumen. 4-5 estrellas invita a
  * recomendar Point (el referido le da al local un mes a mitad de precio); 1-3
- * pregunta qué mejorar. Se guarda al tocar las estrellas.
+ * pregunta qué mejorar. Se guarda al tocar las estrellas. Cerrarlo sin contestar sólo
+ * lo oculta hasta la próxima vez que entre al Resumen.
  */
 export function Opinion({ slug, linkReferido }: { slug: string; linkReferido: string }) {
   const [paso, setPaso] = useState<Paso>("estrellas");
@@ -34,11 +35,7 @@ export function Opinion({ slug, linkReferido }: { slug: string; linkReferido: st
       setPaso(n >= 4 ? "recomendar" : "mejorar");
     });
 
-  const cerrar = () => {
-    // Si ya opinó, cerrar sólo oculta el cartel; si no, se recuerda por un mes.
-    if (paso === "estrellas") start(() => cerrarOpinion(slug));
-    setPaso("cerrado");
-  };
+  const cerrar = () => setPaso("cerrado");
 
   const mensaje = `¡Hola! Te recomiendo Point, la tarjeta de puntos con llavero que uso en mi local: los clientes suman con un toque y vuelven más. Mirá: ${linkReferido}`;
 

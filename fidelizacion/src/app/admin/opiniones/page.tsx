@@ -34,10 +34,10 @@ export default async function Opiniones() {
     <>
       <Titulo>Opiniones</Titulo>
       <p className="-mt-3 mb-5 text-sm text-stone-500">
-        Lo que los dueños contestan en el cartel del Resumen (aparece después de 2 semanas y 20 visitas). Con 1 o 2 estrellas te llega un mail.
+        Lo que los dueños contestan en el cartel del Resumen (se pregunta una vez, a partir de las 2 semanas del alta). Con 1 o 2 estrellas te llega un mail.
       </p>
       {vigentes.length === 0 ? (
-        <Vacio>Todavía nadie opinó. El cartel les aparece a los locales con al menos 2 semanas y 20 visitas.</Vacio>
+        <Vacio>Todavía nadie opinó. El cartel les aparece a los dueños de locales con al menos 2 semanas.</Vacio>
       ) : (
         <>
           <div className="mb-4 flex items-baseline gap-3">

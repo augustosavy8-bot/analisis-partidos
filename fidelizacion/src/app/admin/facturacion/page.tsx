@@ -52,10 +52,14 @@ export default async function FacturacionAdmin() {
     if (!actual || (actual.estado === "cancelled" && s.estado !== "cancelled")) porComercio.set(s.comercio_id, s);
   }
   const vigentes = [...porComercio.values()];
-  // Pagó por transferencia: cortesía con precio (vence sola al terminar el período pagado).
+  // Cortesía con precio: pagó por transferencia (vence sola al terminar el período pagado).
+  // Cortesía sin precio y con fecha de fin: está a prueba hasta que pague. Sin fecha: cortesía.
   const ahora = new Date().toISOString();
-  const estadoVista = (s: NonNullable<typeof subs>[number]) =>
-    s.estado === "cortesia" && s.precio_centavos && (!s.cortesia_hasta || s.cortesia_hasta > ahora) ? "transferencia" : s.estado;
+  const estadoVista = (s: NonNullable<typeof subs>[number]) => {
+    if (s.estado !== "cortesia" || (s.cortesia_hasta && s.cortesia_hasta <= ahora)) return s.estado;
+    if (s.precio_centavos) return "transferencia";
+    return s.cortesia_hasta ? "trialing" : "cortesia";
+  };
   const cuenta = (e: string) => vigentes.filter((s) => estadoVista(s) === e).length;
   const mrr = vigentes
     .filter((s) => ["authorized", "past_due", "transferencia"].includes(estadoVista(s)))

@@ -1,8 +1,7 @@
 import { LogoPoint } from "@/components/MarcaPoint";
 import Link from "next/link";
 import { requerirSuperadmin } from "@/lib/admin";
-import { BotonTema } from "@/components/app/BotonTema";
-import { salir } from "../panel/ingresar/actions";
+import { BarraAdmin, LateralAdmin } from "./NavAdmin";
 
 export const metadata = { title: { default: "Administración", template: "%s · Admin" }, robots: { index: false } };
 
@@ -10,34 +9,23 @@ export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
   const { email } = await requerirSuperadmin();
   return (
     <div
-      className="flex flex-1 flex-col"
+      className="flex flex-1"
       style={{ ["--marca" as string]: "#1c1917", ["--marca-texto" as string]: "#ffffff", ["--marca-acento" as string]: "#e7e5e4" }}
     >
-      <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-          <Link href="/admin" className="flex items-center gap-2 font-semibold">
-            <LogoPoint alto={26} />
-            <span className="ml-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">Admin</span>
-          </Link>
-          <nav className="flex gap-4 text-sm text-stone-600">
-            <Link href="/admin" className="hover:text-stone-900">Estado</Link>
-            <Link href="/admin/facturacion" className="hover:text-stone-900">Facturación</Link>
-            <Link href="/admin/interesados" className="hover:text-stone-900">Interesados</Link>
-            <Link href="/admin/opiniones" className="hover:text-stone-900">Opiniones</Link>
-            <Link href="/admin/anuncio" className="hover:text-stone-900">Mails</Link>
-            <Link href="/admin/locales/nuevo" className="hover:text-stone-900">Nuevo local</Link>
-            <Link href="/panel" className="hover:text-stone-900">Paneles</Link>
-          </nav>
-          <div className="ml-auto flex items-center gap-3 text-sm text-stone-500">
-            <span className="hidden sm:inline">{email}</span>
-            <BotonTema />
-            <form action={salir}>
-              <button className="underline underline-offset-4">Salir</button>
-            </form>
+      <LateralAdmin email={email} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Celular: sólo el logo arriba; las secciones van en la barra de abajo. */}
+        <header className="border-b border-stone-200 bg-white md:hidden">
+          <div className="flex items-center px-4 py-3">
+            <Link href="/admin" className="flex items-center gap-2 font-semibold">
+              <LogoPoint alto={24} />
+              <span className="ml-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">Admin</span>
+            </Link>
           </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+        </header>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-6">{children}</main>
+      </div>
+      <BarraAdmin email={email} />
     </div>
   );
 }

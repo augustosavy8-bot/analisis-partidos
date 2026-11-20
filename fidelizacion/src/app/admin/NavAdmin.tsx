@@ -26,9 +26,20 @@ function activa(actual: string, href: string) {
   return actual.startsWith(href);
 }
 
+/**
+ * Sección marcada como activa: la que se tocó (al instante, mientras carga) o la de
+ * la URL. Cuando la URL cambia, el toque pendiente deja de contar solo.
+ */
+function useActual() {
+  const ruta = usePathname();
+  const [toque, setToque] = useState<{ href: string; desde: string } | null>(null);
+  const actual = toque && toque.desde === ruta ? toque.href : ruta;
+  return { actual, tocar: (href: string) => href !== ruta && setToque({ href, desde: ruta }) };
+}
+
 /** Barra lateral del superadmin en escritorio. */
 export function LateralAdmin({ email }: { email: string }) {
-  const actual = usePathname();
+  const { actual, tocar } = useActual();
   return (
     <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-stone-200 bg-white px-3 py-4 md:flex">
       <Link href="/admin" className="mb-6 flex items-center gap-2 px-2 font-semibold">
@@ -42,6 +53,7 @@ export function LateralAdmin({ email }: { email: string }) {
             <Link
               key={s.href}
               href={s.href}
+              onClick={() => tocar(s.href)}
               aria-current={on ? "page" : undefined}
               className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${
                 on ? "bg-stone-900 font-semibold text-white" : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
@@ -70,7 +82,7 @@ export function LateralAdmin({ email }: { email: string }) {
 
 /** Celular: cabecera chica arriba y barra abajo; la sección activa sube en un círculo. */
 export function BarraAdmin({ email }: { email: string }) {
-  const actual = usePathname();
+  const { actual, tocar } = useActual();
   const [mas, setMas] = useState(false);
 
   const principales = SECCIONES.filter((s) => s.principal);
@@ -88,7 +100,10 @@ export function BarraAdmin({ email }: { email: string }) {
               <Link
                 key={s.href}
                 href={s.href}
-                onClick={() => setMas(false)}
+                onClick={() => {
+                  tocar(s.href);
+                  setMas(false);
+                }}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] ${activa(actual, s.href) ? "bg-stone-100 font-semibold" : "text-stone-700"}`}
               >
                 <Icono nombre={s.icono} tamaño={18} /> {s.nombre}
@@ -114,7 +129,7 @@ export function BarraAdmin({ email }: { email: string }) {
             <>
               {/* Activa: el ícono sube en un círculo que "muerde" el borde de la barra. */}
               <span
-                className={`flex items-center justify-center rounded-full transition-all duration-200 ${
+                className={`flex items-center justify-center rounded-full transition-all duration-150 ${
                   on
                     ? "-mt-8 mb-0.5 h-14 w-14 border-[5px] border-[var(--background)] bg-white text-stone-900 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
                     : "h-7 w-7 text-stone-500"
@@ -127,13 +142,20 @@ export function BarraAdmin({ email }: { email: string }) {
               <span className={`mt-0.5 text-[11px] leading-tight ${on ? "font-bold text-stone-900" : "text-stone-500"}`}>{s.nombre}</span>
             </>
           );
-          const clase = "flex min-w-0 flex-1 flex-col items-center";
+          const clase = "flex min-w-0 flex-1 touch-manipulation select-none flex-col items-center [-webkit-tap-highlight-color:transparent]";
           return s.esMas ? (
             <button key="mas" onClick={() => setMas((v) => !v)} aria-expanded={mas} className={clase}>
               {contenido}
             </button>
           ) : (
-            <Link key={s.href} href={s.href} onClick={() => setMas(false)} aria-current={on ? "page" : undefined} className={clase}>
+            <Link
+              key={s.href}
+              href={s.href}
+              onClick={() => {
+                tocar(s.href);
+                setMas(false);
+              }}
+              aria-current={on ? "page" : undefined} className={clase}>
               {contenido}
             </Link>
           );

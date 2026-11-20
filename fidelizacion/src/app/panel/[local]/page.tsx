@@ -43,7 +43,7 @@ export default async function Resumen({ params, searchParams }: PageProps<"/pane
   const t = formasTermino(local.termino_personal);
 
   const alta = bienvenida === "1" ? await altaReciente(admin, local.id) : null;
-  const pedirOpinion = !alta && (await corresponderOpinion(local.id, userId));
+  const pedirOpinion = !alta && (await corresponderOpinion(local.id, slug, userId));
 
   const pctRecurrentes = m.clientes_activos ? Math.round((m.clientes_recurrentes / m.clientes_activos) * 100) : 0;
   const maxMozo = Math.max(1, ...m.ranking_mozos.map((r) => r.sumas));

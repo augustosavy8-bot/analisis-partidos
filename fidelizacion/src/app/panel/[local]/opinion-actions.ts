@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { requerirLocal } from "@/lib/panel";
-import { esMiembro } from "@/lib/opiniones";
+import { puedeOpinar } from "@/lib/opiniones";
 import { enviarMail } from "@/lib/mail";
 import { env } from "@/lib/env";
 
@@ -12,7 +12,7 @@ const escapar = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<"
 export async function opinar(slug: string, estrellas: number): Promise<{ id?: string; error?: string }> {
   const { admin, local, userId, email } = await requerirLocal(slug);
   if (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5) return { error: "Elegí de 1 a 5 estrellas." };
-  if (!(await esMiembro(local.id, userId))) return { error: "Sólo opinan los dueños y encargados del local." };
+  if (!(await puedeOpinar(local.id, local.slug, userId))) return { error: "Sólo opinan los dueños y encargados del local." };
   const { data, error } = await admin.from("opiniones").insert({ local_id: local.id, user_id: userId, estrellas }).select("id").single();
   if (error || !data) return { error: "No se pudo guardar. Probá de nuevo." };
   if (estrellas <= 2) after(() => avisarOpinionBaja(local.nombre, email, estrellas, null));
@@ -40,7 +40,7 @@ export async function comentar(slug: string, id: string, comentario: string): Pr
 /** Cerró el cartel sin opinar: no vuelve a aparecer por un mes. */
 export async function cerrarOpinion(slug: string): Promise<void> {
   const { admin, local, userId } = await requerirLocal(slug);
-  if (!(await esMiembro(local.id, userId))) return;
+  if (!(await puedeOpinar(local.id, local.slug, userId))) return;
   await admin.from("opiniones").insert({ local_id: local.id, user_id: userId });
 }
 
